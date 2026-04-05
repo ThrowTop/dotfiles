@@ -1,7 +1,8 @@
 # Auto-attach to (or create) the "main" tmux session on every interactive login.
 # `exec` replaces the fish process with tmux — detaching closes the terminal window.
-
-
+if uwsm check may-start
+  exec uwsm start hyprland.desktop
+end
 zoxide init fish | source
 
 # overwrite greeting
@@ -58,7 +59,9 @@ alias rip="expac --timefmt='%Y-%m-%d %T' '%l\t%n %v' | sort | tail -200 | nl"
 alias cls=clear
 alias co='codium 0.'
 
-bind \co 'codium .; commandline -f repaint'
+bind \co 'nvim .; commandline -f repaint'
+bind \ce 'thunar . >/dev/null 2>&1 &; disown; commandline -f repaint'
+bind \CO 'sudo -E nvim .; commandline -f repaint'
 
 
 
@@ -69,7 +72,6 @@ set -U fish_history 10000
 set fish_greeting
 
 # Zoxide
-zoxide init fish | source
 
 set -Ux EDITOR nvim
 set -Ua fish_user_paths ~/.local/bin ~/dotfiles/bin
