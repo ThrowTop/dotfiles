@@ -1,0 +1,179 @@
+#!/usr/bin/env bash
+# dot - dotfiles manager using GNU Stow + fzf
+set -euo pipefail
+
+DOTFILES="${DOTFILES_DIR:-$HOME/dotfiles}"
+
+die()  { echo "error: $*" >&2; exit 1; }
+info() { echo "  $*"; }
+
+_is_managed() { [[ -d "$DOTFILES/$1" ]]; }
+
+_stow()   { (cd "$DOTFILES" && stow --target="$HOME" --restow "$1"); }
+_unstow() { (cd "$DOTFILES" && stow --target="$HOME" -D "$1"); }
+
+# ── add ─────────────────────────────────────────────────────────────────────
+
+_add_one() {
+  # Accepts either:
+  #   a bare name (looks up ~/.config/<name> first, then ~/<name>)
+  #   a path starting with ~ or /
+  local input="$1"
+  local pkg src dest_parent
+
+  if [[ -d "$HOME/.config/$input" || -f "$HOME/.config/$input" ]]; then
+    pkg="$input"
+    src="$HOME/.config/$input"
+    dest_parent="$DOTFILES/$pkg/.config"
+  elif [[ -e "$HOME/$input" ]]; then
+    pkg="${input#.}"   # .bashrc → bashrc, .gitconfig → gitconfig
+    src="$HOME/$input"
+    dest_parent="$DOTFILES/$pkg"
+  else
+    die "Not found: '$input'  (checked ~/.config/$input and ~/$input)"
+  fi
+
+  _is_managed "$pkg" && die "'$pkg' is already managed (~/dotfiles/$pkg exists)"
+
+  mkdir -p "$dest_parent"
+  mv "$src" "$dest_parent/"
+  _stow "$pkg"
+  info "added '$pkg'  →  $(realpath --relative-to="$HOME" "$src" 2>/dev/null || echo "$src")"
+}
+
+cmd_add() {
+  if [[ $# -gt 0 ]]; then
+    _add_one "$1"
+    return
+  fi
+
+  # Interactive mode — build candidate list
+  local candidates=()
+
+  while IFS= read -r dir; do
+    local name; name=$(basename "$dir")
+    _is_managed "$name" || candidates+=(".config/$name")
+  done < <(find "$HOME/.config" -maxdepth 1 -mindepth 1 -type d | sort)
+
+  for f in .bashrc .bash_profile .bash_logout .zshrc .zprofile .profile \
+            .gitconfig .vimrc .tmux.conf .inputrc .xinitrc .xprofile .Xresources; do
+    if [[ -f "$HOME/$f" ]]; then
+      local pkg="${f#.}"
+      _is_managed "$pkg" || candidates+=("$f")
+    fi
+  done
+
+  [[ ${#candidates[@]} -eq 0 ]] && { echo "Nothing new to add."; return; }
+
+  local selected
+  selected=$(
+    printf "%s\n" "${candidates[@]}" |
+    fzf --multi \
+        --prompt "Add to dotfiles > " \
+        --header "TAB = multi-select   ENTER = confirm   ESC = cancel" \
+        --preview '
+          item={}
+          if [[ "$item" == .config/* ]]; then
+            ls -1 --color=always "$HOME/${item}" 2>/dev/null
+          else
+            file "$HOME/$item"; echo; cat "$HOME/$item" 2>/dev/null | head -30
+          fi
+        ' \
+        --preview-window=right:40%
+  ) || return 0   # ESC / Ctrl-C exits cleanly
+
+  local name
+  while IFS= read -r name; do
+    [[ -z "$name" ]] && continue
+    # Strip leading ".config/" to get bare name for .config items
+    local bare="${name#.config/}"
+    _add_one "$bare"
+  done <<< "$selected"
+}
+
+# ── remove ───────────────────────────────────────────────────────────────────
+
+cmd_remove() {
+  local pkg="${1:-}"
+  [[ -z "$pkg" ]] && die "Usage: dot remove <package>"
+  [[ -d "$DOTFILES/$pkg" ]] || die "Package '$pkg' not found"
+
+  _unstow "$pkg"
+
+  # Restore .config items
+  if [[ -d "$DOTFILES/$pkg/.config" ]]; then
+    for item in "$DOTFILES/$pkg/.config"/*/; do
+      [[ -e "$item" ]] || continue
+      mv "$item" "$HOME/.config/"
+    done
+  fi
+  # Restore home dotfiles (skip the .config pass-through dir)
+  for item in "$DOTFILES/$pkg"/.[!.]*  "$DOTFILES/$pkg"/[!.]*; do
+    [[ -e "$item" ]] || continue
+    [[ "$(basename "$item")" == ".config" ]] && continue
+    mv "$item" "$HOME/"
+  done
+
+  rm -rf "$DOTFILES/$pkg"
+  info "removed '$pkg', files restored"
+}
+
+# ── list ─────────────────────────────────────────────────────────────────────
+
+cmd_list() {
+  echo "Managed packages in $DOTFILES:"
+  local count=0
+  for pkg in "$DOTFILES"/*/; do
+    [[ -d "$pkg" ]] || continue
+    local name; name=$(basename "$pkg")
+    # Show where it maps to
+    if [[ -d "$pkg/.config" ]]; then
+      echo "  $name  →  ~/.config/$name"
+    else
+      echo "  $name  →  ~/$( ls -1 "$pkg" | head -1 )"
+    fi
+    (( count++ ))
+  done
+  [[ $count -eq 0 ]] && echo "  (none yet — run 'dot add' to get started)"
+}
+
+# ── sync ─────────────────────────────────────────────────────────────────────
+
+cmd_sync() {
+  local msg="${1:-sync dotfiles $(date +%Y-%m-%d)}"
+  cd "$DOTFILES"
+  git add -A
+  if git diff --cached --quiet; then
+    echo "Nothing to commit."
+  else
+    git commit -m "$msg"
+  fi
+  git push
+}
+
+# ── help / dispatch ──────────────────────────────────────────────────────────
+
+usage() {
+  cat <<EOF
+dot — dotfiles manager (GNU Stow + fzf)
+
+  dot add [name]      Add a ~/.config dir or dotfile (interactive if no arg)
+  dot remove <pkg>    Unstow a package and restore files to original location
+  dot list            Show all managed packages
+  dot sync [msg]      git commit -a and push
+  dot status          git status in the dotfiles repo
+  dot edit            Open dotfiles dir in \$EDITOR
+EOF
+}
+
+cmd="${1:-help}"; shift || true
+case "$cmd" in
+  add)    cmd_add "$@" ;;
+  remove) cmd_remove "$@" ;;
+  list)   cmd_list ;;
+  sync)   cmd_sync "$@" ;;
+  status) (cd "$DOTFILES" && git status) ;;
+  edit)   "${EDITOR:-vim}" "$DOTFILES" ;;
+  help|-h|--help) usage ;;
+  *) die "Unknown command '$cmd'. Run 'dot help'." ;;
+esac
