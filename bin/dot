@@ -15,22 +15,22 @@ _unstow() { (cd "$DOTFILES" && stow --target="$HOME" -D "$1"); }
 # ── add ─────────────────────────────────────────────────────────────────────
 
 _add_one() {
-  # Accepts either:
-  #   a bare name (looks up ~/.config/<name> first, then ~/<name>)
-  #   a path starting with ~ or /
+  # Input is a path relative to $HOME, e.g.:
+  #   .config/nvim   → ~/.config/nvim
+  #   .bashrc        → ~/.bashrc
+  #   whatever       → ~/whatever
   local input="$1"
-  local pkg src dest_parent
+  local src="$HOME/$input"
 
-  if [[ -d "$HOME/.config/$input" || -f "$HOME/.config/$input" ]]; then
-    pkg="$input"
-    src="$HOME/.config/$input"
+  [[ -e "$src" ]] || die "Not found: ~/$input"
+
+  local pkg dest_parent
+  if [[ "$input" == .config/* ]]; then
+    pkg="${input#.config/}"
     dest_parent="$DOTFILES/$pkg/.config"
-  elif [[ -e "$HOME/$input" ]]; then
-    pkg="${input#.}"   # .bashrc → bashrc, .gitconfig → gitconfig
-    src="$HOME/$input"
-    dest_parent="$DOTFILES/$pkg"
   else
-    die "Not found: '$input'  (checked ~/.config/$input and ~/$input)"
+    pkg="${input#.}"   # .bashrc → bashrc, .gitconfig → gitconfig
+    dest_parent="$DOTFILES/$pkg"
   fi
 
   _is_managed "$pkg" && die "'$pkg' is already managed (~/dotfiles/$pkg exists)"
@@ -38,7 +38,7 @@ _add_one() {
   mkdir -p "$dest_parent"
   mv "$src" "$dest_parent/"
   _stow "$pkg"
-  info "added '$pkg'  →  $(realpath --relative-to="$HOME" "$src" 2>/dev/null || echo "$src")"
+  info "added '$pkg'  →  ~/$input"
 }
 
 cmd_add() {
@@ -85,9 +85,7 @@ cmd_add() {
   local name
   while IFS= read -r name; do
     [[ -z "$name" ]] && continue
-    # Strip leading ".config/" to get bare name for .config items
-    local bare="${name#.config/}"
-    _add_one "$bare"
+    _add_one "$name"
   done <<< "$selected"
 }
 
