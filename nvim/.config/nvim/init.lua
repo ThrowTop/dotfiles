@@ -71,6 +71,11 @@ vim.keymap.set("n", "<leader>q", "<C-w>q", { noremap = true, silent = true })
 vim.keymap.set("n", "<C-s>", ":w<CR>", { noremap = true, silent = true })
 vim.keymap.set("i", "<C-s>", "<ESC>:w<CR>", { noremap = true, silent = true })
 
+-- Delete without clobbering clipboard (use black-hole register)
+vim.keymap.set("n", "d", '"_d', { noremap = true, silent = true })
+vim.keymap.set("n", "dd", '"_dd', { noremap = true, silent = true })
+vim.keymap.set("v", "d", '"_d', { noremap = true, silent = true })
+
 -- Ctrl+C to copy (visual mode)
 vim.keymap.set("v", "<C-c>", '"+y', { noremap = true, silent = true })
 
