@@ -5,10 +5,16 @@ return {
     version = "*",
     opts = {
       keymap = {
-        preset = "default",
-        ["<Tab>"] = { "select_next", "fallback" },
-        ["<S-Tab>"] = { "select_prev", "fallback" },
-        ["<CR>"] = { "accept", "fallback" },
+        preset = "none",
+        ["<Tab>"]   = { "accept", "select_next", "fallback" },
+        ["<Right>"] = { "accept", "fallback" },
+        ["<Down>"]  = { "select_next", "fallback" },
+        ["<Up>"]    = { "select_prev", "fallback" },
+        ["j"]       = { "select_next", "fallback" },
+        ["k"]       = { "select_prev", "fallback" },
+        ["<CR>"]    = { "cancel", "fallback" },
+        ["<Esc>"]   = { "cancel", "fallback" },
+        ["<C-Space>"] = { "show", "fallback" },
       },
       completion = {
         documentation = {
@@ -49,7 +55,7 @@ return {
               library = vim.api.nvim_get_runtime_file("", true),
               checkThirdParty = false,
             },
-            diagnostics = { globals = { "vim" } },
+            diagnostics = { globals = { "vim", "hl" } },
             telemetry = { enable = false },
           },
         },

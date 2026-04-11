@@ -6,12 +6,14 @@ vim.opt.tabstop = 4
 vim.opt.shiftwidth = 4
 vim.opt.softtabstop = 4
 vim.opt.expandtab = true
+vim.opt.autoindent = true   -- carry indent from previous line
+vim.opt.smartindent = true  -- add indent after {, remove after }, etc.
 
 -- Display
 vim.opt.number = true
 vim.opt.relativenumber = false
 vim.opt.cursorline = true
-vim.opt.wrap = true
+vim.opt.wrap = false
 
 -- Searching
 vim.opt.ignorecase = true
@@ -85,7 +87,14 @@ vim.keymap.set("v", "<C-c>", '"+y', { noremap = true, silent = true })
 --vim.keymap.set("v", "<C-v>", '"+p', { noremap = true, silent = true })
 
 -- <leader>e to toggle file explorer (Space + e)
-vim.keymap.set("n", "<leader>e", ":Neotree toggle<CR>", { noremap = true, silent = true })
+-- Neo-tree is view-only; focus is always returned to the editor immediately.
+vim.keymap.set("n", "<leader>e", function()
+  vim.cmd("Neotree toggle")
+  -- If the toggle just opened neo-tree and gave it focus, jump back
+  if vim.bo.filetype == "neo-tree" then
+    vim.cmd("wincmd p")
+  end
+end, { noremap = true, silent = true })
 
 -- <leader>p to fuzzy find files (Space + p)
 -- searches from cwd, so works both in nvim . and nvim <file>
