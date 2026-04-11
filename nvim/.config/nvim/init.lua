@@ -80,9 +80,9 @@ vim.keymap.set("v", "d", '"_d', { noremap = true, silent = true })
 vim.keymap.set("v", "<C-c>", '"+y', { noremap = true, silent = true })
 
 -- Ctrl+V to paste
-vim.keymap.set("i", "<C-v>", '<ESC>"+pa', { noremap = true, silent = true })
-vim.keymap.set("n", "<C-v>", '"+p', { noremap = true, silent = true })
-vim.keymap.set("v", "<C-v>", '"+p', { noremap = true, silent = true })
+--vim.keymap.set("i", "<C-v>", '<ESC>"+pa', { noremap = true, silent = true })
+--vim.keymap.set("n", "<C-v>", '"+p', { noremap = true, silent = true })
+--vim.keymap.set("v", "<C-v>", '"+p', { noremap = true, silent = true })
 
 -- <leader>e to toggle file explorer (Space + e)
 vim.keymap.set("n", "<leader>e", ":Neotree toggle<CR>", { noremap = true, silent = true })
