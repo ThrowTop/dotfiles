@@ -12,6 +12,37 @@ _is_managed() { [[ -d "$DOTFILES/$1" ]]; }
 _stow()   { (cd "$DOTFILES" && stow --target="$HOME" --restow "$1"); }
 _unstow() { (cd "$DOTFILES" && stow --target="$HOME" -D "$1"); }
 
+# Stow a package, auto-removing any conflicting files/dirs first.
+_stow_force() {
+  local pkg="$1" output attempt=0 conflicts conflict_path
+
+  while (( ++attempt <= 20 )); do
+    output=$(cd "$DOTFILES" && stow --target="$HOME" --restow --simulate "$pkg" 2>&1) && {
+      (cd "$DOTFILES" && stow --target="$HOME" --restow "$pkg")
+      return 0
+    }
+
+    conflicts=()
+    while IFS= read -r line; do
+      if [[ "$line" =~ \*\ existing\ target\ is.*:[[:space:]](.+)$ ]]; then
+        conflicts+=("${BASH_REMATCH[1]}")
+      fi
+    done <<< "$output"
+
+    if [[ ${#conflicts[@]} -eq 0 ]]; then
+      echo "$output" >&2
+      die "stow failed for '$pkg' (unexpected error)"
+    fi
+
+    for conflict_path in "${conflicts[@]}"; do
+      info "removing conflict: ~/$conflict_path"
+      rm -rf "$HOME/$conflict_path"
+    done
+  done
+
+  die "could not resolve conflicts for '$pkg' after 20 attempts"
+}
+
 # ── add ─────────────────────────────────────────────────────────────────────
 
 _add_one() {
@@ -63,7 +94,7 @@ cmd_add() {
     fi
   done
 
-  [[ ${#candidates[@]} -eq 0 ]] && { echo "Nothing new to add."; return; }
+  if [[ ${#candidates[@]} -eq 0 ]]; then echo "Nothing new to add."; return; fi
 
   local selected
   selected=$(
@@ -116,6 +147,30 @@ cmd_remove() {
   info "removed '$pkg', files restored"
 }
 
+# ── restore ──────────────────────────────────────────────────────────────────
+
+cmd_restore() {
+  local target_pkg="${1:-}" packages=()
+
+  if [[ -n "$target_pkg" ]]; then
+    [[ -d "$DOTFILES/$target_pkg" ]] || die "Package '$target_pkg' not found"
+    packages=("$target_pkg")
+  else
+    for pkg in "$DOTFILES"/*/; do
+      [[ -d "$pkg" ]] || continue
+      packages+=("$(basename "$pkg")")
+    done
+  fi
+
+  if [[ ${#packages[@]} -eq 0 ]]; then echo "No packages found in $DOTFILES."; return; fi
+
+  for pkg in "${packages[@]}"; do
+    info "restoring '$pkg'..."
+    _stow_force "$pkg"
+  done
+  info "done"
+}
+
 # ── list ─────────────────────────────────────────────────────────────────────
 
 cmd_list() {
@@ -124,15 +179,58 @@ cmd_list() {
   for pkg in "$DOTFILES"/*/; do
     [[ -d "$pkg" ]] || continue
     local name; name=$(basename "$pkg")
-    # Show where it maps to
-    if [[ -d "$pkg/.config" ]]; then
-      echo "  $name  →  ~/.config/$name"
+
+    # Check link status by examining expected stow symlink targets
+    local status="not linked"
+    if [[ -d "$DOTFILES/$name/.config" ]]; then
+      # .config-style package: stow creates ~/.config/<subdir> symlinks
+      for subdir in "$DOTFILES/$name/.config"/*/; do
+        [[ -d "$subdir" ]] || continue
+        local subname; subname=$(basename "$subdir")
+        local link="$HOME/.config/$subname"
+        if [[ -L "$link" ]]; then
+          status="linked"; break
+        fi
+      done
     else
-      echo "  $name  →  ~/$( ls -1 "$pkg" | head -1 )"
+      # Flat package: stow creates ~/item symlinks for each top-level item
+      for item in "$DOTFILES/$name"/* "$DOTFILES/$name"/.[!.]*; do
+        [[ -e "$item" ]] || continue
+        local iname; iname=$(basename "$item")
+        local link="$HOME/$iname"
+        if [[ -L "$link" ]]; then
+          status="linked"; break
+        fi
+      done
     fi
-    (( count++ ))
+
+    local dest
+    if [[ -d "$pkg/.config" ]]; then
+      dest="~/.config/$name"
+    else
+      dest="~/$(ls -1 "$pkg" 2>/dev/null | head -1)"
+    fi
+
+    printf "  %-20s → %-35s [%s]\n" "$name" "$dest" "$status"
+    count=$(( count + 1 ))
   done
-  [[ $count -eq 0 ]] && echo "  (none yet — run 'dot add' to get started)"
+  if [[ $count -eq 0 ]]; then echo "  (none yet — run 'dot add' to get started)"; fi
+}
+
+# ── links ────────────────────────────────────────────────────────────────────
+
+cmd_links() {
+  echo "Active symlinks → $DOTFILES:"
+  local count=0
+  while IFS= read -r link; do
+    local real; real=$(readlink -f "$link" 2>/dev/null) || continue
+    [[ "$real" == "$DOTFILES/"* ]] || continue
+    local rel_link="${link#$HOME/}"
+    local pkg; pkg=$(echo "$real" | sed "s|^$DOTFILES/||" | cut -d'/' -f1)
+    printf "  ~/%-45s [%s]\n" "$rel_link" "$pkg"
+    count=$(( count + 1 ))
+  done < <(find "$HOME" -maxdepth 5 -type l 2>/dev/null | sort)
+  if [[ $count -eq 0 ]]; then echo "  (no active symlinks found pointing to $DOTFILES)"; fi
 }
 
 # ── sync ─────────────────────────────────────────────────────────────────────
@@ -157,7 +255,9 @@ dot — dotfiles manager (GNU Stow + fzf)
 
   dot add [name]      Add a ~/.config dir or dotfile (interactive if no arg)
   dot remove <pkg>    Unstow a package and restore files to original location
-  dot list            Show all managed packages
+  dot restore [pkg]   Re-stow all packages (or one), removing conflicting files
+  dot list            Show managed packages and their link status
+  dot links           Show all active symlinks pointing to dotfiles
   dot sync [msg]      git commit -a and push
   dot status          git status in the dotfiles repo
   dot edit            Open dotfiles dir in \$EDITOR
@@ -166,12 +266,14 @@ EOF
 
 cmd="${1:-help}"; shift || true
 case "$cmd" in
-  add)    cmd_add "$@" ;;
-  remove) cmd_remove "$@" ;;
-  list)   cmd_list ;;
-  sync)   cmd_sync "$@" ;;
-  status) (cd "$DOTFILES" && git status) ;;
-  edit)   "${EDITOR:-vim}" "$DOTFILES" ;;
+  add)     cmd_add "$@" ;;
+  remove)  cmd_remove "$@" ;;
+  restore) cmd_restore "$@" ;;
+  list)    cmd_list ;;
+  links)   cmd_links ;;
+  sync)    cmd_sync "$@" ;;
+  status)  (cd "$DOTFILES" && git status) ;;
+  edit)    "${EDITOR:-vim}" "$DOTFILES" ;;
   help|-h|--help) usage ;;
   *) die "Unknown command '$cmd'. Run 'dot help'." ;;
 esac
