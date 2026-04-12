@@ -54,7 +54,6 @@ hl.exec_once("foot --server")
 hl.exec_once("hyprpaper")
 hl.exec_once("hypridle")
 hl.exec_once("gsettings set org.gnome.desktop.interface color-scheme prefer-dark")
-hl.exec_once("amixer -c 0 sset Speaker 100% unmute")
 
 -- -------------------------
 -- LOOK AND FEEL
@@ -152,16 +151,21 @@ hl.config({
         scroll_button      = 274,
         scroll_button_lock = false,
 
+        touchpad           = {
+            natural_scroll       = true,
+            drag_lock            = false,
+            disable_while_typing = true,
+            scroll_factor        = 0.5,
+        },
     },
 })
-
 hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 
-hl.device({
-    name          = "znt0001:00-14e5:650e-touchpad",
-    sensitivity   = 0,
-    accel_profile = "adaptive",
-})
+-- hl.device({
+--     name                 = "znt0001:00-14e5:650e-touchpad",
+--     sensitivity          = 0.3,
+--     disable_while_typing = false,
+-- })
 
 -- -------------------------
 -- KEYBINDINGS
@@ -204,18 +208,23 @@ hl.bind(mainMod .. " + SHIFT + K", hl.window.move({ direction = "up" }))
 hl.bind(mainMod .. " + SHIFT + L", hl.window.move({ direction = "right" }))
 
 -- Workspaces: 1-3 pinned to left (HDMI-A-1), 4-6 pinned to right (DP-2)
-hl.workspace_rule({ workspace = "1", monitor = "HDMI-A-1" })
-hl.workspace_rule({ workspace = "2", monitor = "DP-2" })
-hl.workspace_rule({ workspace = "3", monitor = "HDMI-A-1" })
-hl.workspace_rule({ workspace = "4", monitor = "DP-2" })
-hl.workspace_rule({ workspace = "5", monitor = "DP-2" })
-hl.workspace_rule({ workspace = "6", monitor = "DP-2" })
 
-for i = 1, 6 do
+if not is_laptop then
+    hl.workspace_rule({ workspace = "1", monitor = "HDMI-A-1" })
+    hl.workspace_rule({ workspace = "2", monitor = "DP-2" })
+    hl.workspace_rule({ workspace = "3", monitor = "HDMI-A-1" })
+    hl.workspace_rule({ workspace = "4", monitor = "DP-2" })
+    hl.workspace_rule({ workspace = "5", monitor = "DP-2" })
+    hl.workspace_rule({ workspace = "6", monitor = "DP-2" })
+end
+
+for i = 1, 9 do
     hl.bind(mainMod .. " + " .. i, hl.workspace(i))
     hl.bind(mainMod .. " + SHIFT + " .. i, hl.window.move({ workspace = tostring(i) }))
 end
 
+hl.bind(mainMod .. " + 0", hl.workspace(10))
+hl.bind(mainMod .. " + SHIFT + 0", hl.window.move({ workspace = tostring(10) }))
 -- Scroll through workspaces on current monitor
 hl.bind(mainMod .. " + Prior", hl.workspace("r+1"))
 hl.bind(mainMod .. " + Next", hl.workspace("r-1"))

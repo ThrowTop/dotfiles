@@ -6,14 +6,14 @@ vim.opt.tabstop = 4
 vim.opt.shiftwidth = 4
 vim.opt.softtabstop = 4
 vim.opt.expandtab = true
-vim.opt.autoindent = true   -- carry indent from previous line
-vim.opt.smartindent = true  -- add indent after {, remove after }, etc.
+vim.opt.autoindent = true  -- carry indent from previous line
+vim.opt.smartindent = true -- add indent after {, remove after }, etc.
 
 -- Display
 vim.opt.number = true
 vim.opt.relativenumber = false
 vim.opt.cursorline = true
-vim.opt.wrap = false
+vim.opt.wrap = true
 
 -- Searching
 vim.opt.ignorecase = true
@@ -45,20 +45,20 @@ vim.g.mapleader = " "
 -- Bootstrap lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
-  vim.fn.system({
-    "git",
-    "clone",
-    "--filter=blob:none",
-    "https://github.com/folke/lazy.nvim.git",
-    "--branch=stable",
-    lazypath,
-  })
+    vim.fn.system({
+        "git",
+        "clone",
+        "--filter=blob:none",
+        "https://github.com/folke/lazy.nvim.git",
+        "--branch=stable",
+        lazypath,
+    })
 end
 vim.opt.rtp:prepend(lazypath)
 
 -- Load plugins
 require("lazy").setup("plugins", {
-  install = { colorscheme = { "onedark" } },
+    install = { colorscheme = { "onedark" } },
 })
 
 -- Suppress unsaved changes nag. q/wq behave normally otherwise.
@@ -97,11 +97,11 @@ vim.keymap.set("v", "<C-c>", '"+y', { noremap = true, silent = true })
 -- <leader>e to toggle file explorer (Space + e)
 -- Neo-tree is view-only; focus is always returned to the editor immediately.
 vim.keymap.set("n", "<leader>e", function()
-  vim.cmd("Neotree toggle")
-  -- If the toggle just opened neo-tree and gave it focus, jump back
-  if vim.bo.filetype == "neo-tree" then
-    vim.cmd("wincmd p")
-  end
+    vim.cmd("Neotree toggle")
+    -- If the toggle just opened neo-tree and gave it focus, jump back
+    if vim.bo.filetype == "neo-tree" then
+        vim.cmd("wincmd p")
+    end
 end, { noremap = true, silent = true })
 
 -- <leader>p to fuzzy find files (Space + p)
@@ -118,19 +118,19 @@ vim.keymap.set("n", "<S-Tab>", ":bprevious<CR>", { noremap = true, silent = true
 -- Ctrl+W closes current buffer without closing neovim
 -- If it's the last buffer, just quit neovim
 local function close_buffer()
-  local listed = vim.fn.getbufinfo({ buflisted = 1 })
-  if #listed > 1 then
-    vim.cmd("bprevious")
-    vim.cmd("bdelete! #")
-  else
-    vim.cmd("quit!")
-  end
+    local listed = vim.fn.getbufinfo({ buflisted = 1 })
+    if #listed > 1 then
+        vim.cmd("bprevious")
+        vim.cmd("bdelete! #")
+    else
+        vim.cmd("quit!")
+    end
 end
 vim.keymap.set("n", "<C-w>", close_buffer, { noremap = true, silent = true })
 
 -- Jump to buffer by number: Space + 1-9
 for i = 1, 9 do
-  vim.keymap.set("n", "<leader>" .. i, function()
-    require("bufferline").go_to(i, true)
-  end, { noremap = true, silent = true })
+    vim.keymap.set("n", "<leader>" .. i, function()
+        require("bufferline").go_to(i, true)
+    end, { noremap = true, silent = true })
 end
