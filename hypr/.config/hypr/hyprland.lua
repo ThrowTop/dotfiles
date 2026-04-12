@@ -133,7 +133,7 @@ hl.animation({ leaf = "zoomFactor", enabled = true, speed = 7, bezier = "quick" 
 hl.config({
     dwindle = { pseudotile = true, preserve_split = true },
     master  = { new_status = "master" },
-    misc    = { force_default_wallpaper = 0, disable_hyprland_logo = true },
+    misc    = { force_default_wallpaper = 0, disable_hyprland_logo = true, vfr = true },
 })
 
 -- -------------------------

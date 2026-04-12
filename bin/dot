@@ -247,6 +247,33 @@ cmd_sync() {
   git push
 }
 
+# ── save ─────────────────────────────────────────────────────────────────────
+# Commit everything and push — overwrites remote with local state.
+
+cmd_save() {
+  local msg="${1:-sync dotfiles $(date +%Y-%m-%d)}"
+  cd "$DOTFILES"
+  git add -A
+  if git diff --cached --quiet; then
+    info "nothing to commit, pushing anyway..."
+  else
+    git commit -m "$msg"
+  fi
+  git push --force
+  info "saved"
+}
+
+# ── load ─────────────────────────────────────────────────────────────────────
+# Force pull from remote and restow all packages — overwrites local state.
+
+cmd_load() {
+  cd "$DOTFILES"
+  git fetch origin
+  git reset --hard origin/master
+  info "pulled latest from remote"
+  cmd_restore
+}
+
 # ── help / dispatch ──────────────────────────────────────────────────────────
 
 usage() {
@@ -259,6 +286,8 @@ dot — dotfiles manager (GNU Stow + fzf)
   dot list            Show managed packages and their link status
   dot links           Show all active symlinks pointing to dotfiles
   dot sync [msg]      git commit -a and push
+  dot save [msg]      commit + force push (overwrites remote)
+  dot load            force pull + restow all (overwrites local)
   dot status          git status in the dotfiles repo
   dot edit            Open dotfiles dir in \$EDITOR
 EOF
@@ -272,6 +301,8 @@ case "$cmd" in
   list)    cmd_list ;;
   links)   cmd_links ;;
   sync)    cmd_sync "$@" ;;
+  save)    cmd_save "$@" ;;
+  load)    cmd_load ;;
   status)  (cd "$DOTFILES" && git status) ;;
   edit)    "${EDITOR:-vim}" "$DOTFILES" ;;
   help|-h|--help) usage ;;
