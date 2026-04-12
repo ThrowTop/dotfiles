@@ -7,6 +7,18 @@ local hscripts = os.getenv("HOME") .. "/.config/hypr/scripts"
 
 
 local is_laptop = io.open("/sys/class/power_supply/BAT1") ~= nil
+
+local debug = true
+
+
+local function d(str)
+    if debug then
+        hl.exec_cmd(string.format("notify-send %q", str))
+    end
+end
+d("hyprland lua loaded")
+
+
 -- -------------------------
 -- MONITORS
 -- -------------------------
@@ -178,27 +190,57 @@ hl.bind(mainMod .. " + C", hl.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + F", hl.window.fullscreen_state({ internal = 2, client = 0 }))
 hl.bind(mainMod .. " + SHIFT + F", hl.window.fullscreen())
 hl.bind(mainMod .. " + SHIFT + P", hl.window.pseudo())
-hl.bind(mainMod .. " + J", hl.layout("togglesplit"))
 
--- Focus
-hl.bind(mainMod .. " + left", hl.focus({ direction = "left" }))
-hl.bind(mainMod .. " + right", hl.focus({ direction = "right" }))
-hl.bind(mainMod .. " + up", hl.focus({ direction = "up" }))
-hl.bind(mainMod .. " + down", hl.focus({ direction = "down" }))
+-- Focus (hjkl)
+hl.bind(mainMod .. " + H", hl.focus({ direction = "left" }))
+hl.bind(mainMod .. " + J", hl.focus({ direction = "down" }))
+hl.bind(mainMod .. " + K", hl.focus({ direction = "up" }))
+hl.bind(mainMod .. " + L", hl.focus({ direction = "right" }))
 
--- Move windows
-hl.bind(mainMod .. " + SHIFT + left", hl.window.move({ direction = "left" }))
-hl.bind(mainMod .. " + SHIFT + right", hl.window.move({ direction = "right" }))
-hl.bind(mainMod .. " + SHIFT + up", hl.window.move({ direction = "up" }))
-hl.bind(mainMod .. " + SHIFT + down", hl.window.move({ direction = "down" }))
+-- Move windows (hjkl)
+hl.bind(mainMod .. " + SHIFT + H", hl.window.move({ direction = "left" }))
+hl.bind(mainMod .. " + SHIFT + J", hl.window.move({ direction = "down" }))
+hl.bind(mainMod .. " + SHIFT + K", hl.window.move({ direction = "up" }))
+hl.bind(mainMod .. " + SHIFT + L", hl.window.move({ direction = "right" }))
 
--- Workspaces
-for i = 1, 9 do
+-- Workspaces: 1-3 pinned to left (HDMI-A-1), 4-6 pinned to right (DP-2)
+hl.workspace_rule({ workspace = "1", monitor = "HDMI-A-1" })
+hl.workspace_rule({ workspace = "2", monitor = "DP-2" })
+hl.workspace_rule({ workspace = "3", monitor = "HDMI-A-1" })
+hl.workspace_rule({ workspace = "4", monitor = "DP-2" })
+hl.workspace_rule({ workspace = "5", monitor = "DP-2" })
+hl.workspace_rule({ workspace = "6", monitor = "DP-2" })
+
+for i = 1, 6 do
     hl.bind(mainMod .. " + " .. i, hl.workspace(i))
-    hl.bind(mainMod .. " + SHIFT + " .. i, hl.window.move({ workspace = i }))
+    hl.bind(mainMod .. " + SHIFT + " .. i, hl.window.move({ workspace = tostring(i) }))
 end
-hl.bind(mainMod .. " + 0", hl.workspace(10))
-hl.bind(mainMod .. " + SHIFT + 0", hl.window.move({ workspace = 10 }))
+
+-- Scroll through workspaces on current monitor
+hl.bind(mainMod .. " + Prior", hl.workspace("r+1"))
+hl.bind(mainMod .. " + Next", hl.workspace("r-1"))
+hl.bind(mainMod .. " + SHIFT + Prior", hl.window.move({ workspace = "r-1" }))
+hl.bind(mainMod .. " + SHIFT + Next", hl.window.move({ workspace = "r+1" }))
+
+-- Monitor focus (left = HDMI-A-1, right/main = DP-2)
+hl.bind("ALT + 1", hl.focus({ monitor = "HDMI-A-1" }))
+hl.bind("ALT + 2", hl.focus({ monitor = "DP-2" }))
+
+-- Move active window to a monitor's current workspace
+local function moveWindowToMonitor(monitorName)
+    for _, mon in ipairs(hl.get_monitors()) do
+        if mon.name == monitorName then
+            local ws = mon.active_workspace
+            if ws then
+                hl.window.move({ workspace = tostring(ws.id) })()
+            end
+            return
+        end
+    end
+end
+
+hl.bind("ALT + SHIFT + 1", function() moveWindowToMonitor("HDMI-A-1") end)
+hl.bind("ALT + SHIFT + 2", function() moveWindowToMonitor("DP-2") end)
 
 hl.bind(mainMod .. " + mouse_down", hl.workspace("e+1"))
 hl.bind(mainMod .. " + mouse_up", hl.workspace("e-1"))

@@ -69,6 +69,14 @@ vim.cmd("cnoreabbrev wq wq!")
 vim.keymap.set("n", "<leader>q", "<C-w>q", { noremap = true, silent = true })
 
 -- Keybindings
+-- F8 (remapped CapsLock) as Escape / go to normal mode
+vim.keymap.set("i", "<F8>", "<ESC>", { noremap = true, silent = true })
+vim.keymap.set("v", "<F8>", "<ESC>", { noremap = true, silent = true })
+vim.keymap.set("c", "<F8>", "<ESC>", { noremap = true, silent = true })
+
+-- Ctrl+Backspace to delete word before cursor in insert mode (like VSCode)
+vim.keymap.set("i", "<C-BS>", "<C-w>", { noremap = true, silent = true })
+
 -- Ctrl+S to save
 vim.keymap.set("n", "<C-s>", ":w<CR>", { noremap = true, silent = true })
 vim.keymap.set("i", "<C-s>", "<ESC>:w<CR>", { noremap = true, silent = true })

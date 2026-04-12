@@ -52,4 +52,10 @@ return {
       require("nvim-autopairs").setup()
     end,
   },
+
+  -- Animated cursor
+  {
+    "sphamba/smear-cursor.nvim",
+    opts = {},
+  },
 }
