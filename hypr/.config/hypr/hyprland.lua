@@ -183,7 +183,9 @@ hl.bind(mainMod .. " + T", hl.exec_cmd(hscripts .. "/touchscreen.sh"))
 hl.bind(mainMod .. " + SHIFT + U", hl.exec_cmd("pkill qs; qs -c noctalia-shell"))
 hl.bind(mainMod .. " + M", hl.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.exit()'"))
 
-hl.exec_cmd("notify-send test")
+hl.bind("SUPER + g", function()
+    os.execute("notify-send wtf lmfao")
+end)
 
 -- Noctalia
 local ipc = "qs -c noctalia-shell ipc call"
