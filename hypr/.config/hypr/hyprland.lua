@@ -33,6 +33,7 @@ end
 -- ENVIRONMENT VARIABLES
 -- -------------------------
 hl.env("GTK_THEME", "Adwaita:dark")
+hl.env("QT_QPA_PLATFORMTHEME", "hyprland")
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
 hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
@@ -51,10 +52,9 @@ hl.permission("/usr/(lib|libexec|lib64)/xdg-desktop-portal-hyprland", "screencop
 hl.exec_once("vicinae server")
 hl.exec_once("qs -c noctalia-shell")
 hl.exec_once("foot --server")
-hl.exec_once("hyprpaper")
+hl.exec_once("hyprpaper & waypaper --restore")
 hl.exec_once("hypridle")
 hl.exec_once("gsettings set org.gnome.desktop.interface color-scheme prefer-dark")
-
 -- -------------------------
 -- LOOK AND FEEL
 -- -------------------------
@@ -177,11 +177,13 @@ hl.bind(mainMod .. " + E", hl.exec_cmd("thunar"))
 hl.bind(mainMod .. " + B", hl.exec_cmd(browser))
 hl.bind("ALT + Space", hl.exec_cmd("vicinae toggle"))
 hl.bind(mainMod .. " + V", hl.exec_cmd("vicinae vicinae://launch/clipboard/history"))
-hl.bind(mainMod .. " + R", hl.exec_cmd("vicinae vicinae://launch/clipboard/history"))
 hl.bind("Print", hl.exec_cmd(hscripts .. "/screenshot.sh"))
 hl.bind(mainMod .. " + Print", hl.exec_cmd("hyprpicker | wl-copy"))
 hl.bind(mainMod .. " + T", hl.exec_cmd(hscripts .. "/touchscreen.sh"))
 hl.bind(mainMod .. " + SHIFT + U", hl.exec_cmd("pkill qs; qs -c noctalia-shell"))
+hl.bind(mainMod .. " + M", hl.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.exit()'"))
+
+hl.exec_cmd("notify-send test")
 
 -- Noctalia
 local ipc = "qs -c noctalia-shell ipc call"
@@ -207,24 +209,19 @@ hl.bind(mainMod .. " + SHIFT + J", hl.window.move({ direction = "down" }))
 hl.bind(mainMod .. " + SHIFT + K", hl.window.move({ direction = "up" }))
 hl.bind(mainMod .. " + SHIFT + L", hl.window.move({ direction = "right" }))
 
--- Workspaces: 1-3 pinned to left (HDMI-A-1), 4-6 pinned to right (DP-2)
 
 if not is_laptop then
     hl.workspace_rule({ workspace = "1", monitor = "HDMI-A-1" })
     hl.workspace_rule({ workspace = "2", monitor = "DP-2" })
-    hl.workspace_rule({ workspace = "3", monitor = "HDMI-A-1" })
-    hl.workspace_rule({ workspace = "4", monitor = "DP-2" })
-    hl.workspace_rule({ workspace = "5", monitor = "DP-2" })
-    hl.workspace_rule({ workspace = "6", monitor = "DP-2" })
 end
 
-for i = 1, 9 do
-    hl.bind(mainMod .. " + " .. i, hl.workspace(i))
-    hl.bind(mainMod .. " + SHIFT + " .. i, hl.window.move({ workspace = tostring(i) }))
+for i = 1, 10 do
+    local bi = i % 10
+    hl.bind(mainMod .. " + " .. bi, hl.workspace(i))
+    hl.bind(mainMod .. " + SHIFT + " .. bi, hl.window.move({ workspace = tostring(i) }))
 end
 
-hl.bind(mainMod .. " + 0", hl.workspace(10))
-hl.bind(mainMod .. " + SHIFT + 0", hl.window.move({ workspace = tostring(10) }))
+
 -- Scroll through workspaces on current monitor
 hl.bind(mainMod .. " + Prior", hl.workspace("r+1"))
 hl.bind(mainMod .. " + Next", hl.workspace("r-1"))
@@ -263,13 +260,10 @@ hl.bind(mainMod .. " + mouse:272", hl.window.drag(), { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.window.resize(), { mouse = true })
 
 -- Media & function keys
-hl.bind("XF86AudioRaiseVolume", hl.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"),
-    { locked = true, repeating = true })
-hl.bind("XF86AudioLowerVolume", hl.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),
-    { locked = true, repeating = true })
+hl.bind("XF86AudioRaiseVolume", hl.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
+hl.bind("XF86AudioLowerVolume", hl.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { locked = true, repeating = true })
 hl.bind("XF86AudioMute", hl.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true, repeating = true })
-hl.bind("XF86AudioMicMute", hl.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),
-    { locked = true, repeating = true })
+hl.bind("XF86AudioMicMute", hl.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"), { locked = true, repeating = true })
 hl.bind("XF86MonBrightnessUp", hl.exec_cmd("brightnessctl -e4 -n2 set 5%+"), { locked = true, repeating = true })
 hl.bind("XF86MonBrightnessDown", hl.exec_cmd("brightnessctl -e4 -n2 set 5%-"), { locked = true, repeating = true })
 hl.bind("XF86AudioNext", hl.exec_cmd("playerctl next"), { locked = true })

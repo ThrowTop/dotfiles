@@ -13,7 +13,7 @@ vim.opt.smartindent = true -- add indent after {, remove after }, etc.
 vim.opt.number = true
 vim.opt.relativenumber = false
 vim.opt.cursorline = true
-vim.opt.wrap = true
+vim.opt.wrap = false
 
 -- Searching
 vim.opt.ignorecase = true

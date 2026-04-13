@@ -57,6 +57,11 @@ return {
             },
             diagnostics = { globals = { "vim", "hl" } },
             telemetry = { enable = false },
+            format = {
+              defaultConfig = {
+                max_line_length = "unset",
+              },
+            },
           },
         },
       })
