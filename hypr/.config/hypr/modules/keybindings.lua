@@ -16,9 +16,7 @@ hl.bind("Print", screenshot)
 hl.bind(mod .. " + Print", hl.exec_cmd("hyprpicker | wl-copy"))
 hl.bind(mod .. " + T", hl.exec_cmd(s.hscripts .. "/touchscreen.sh"))
 hl.bind(mod .. " + SHIFT + U", hl.exec_cmd("pkill qs; qs -c noctalia-shell"))
-hl.bind(mod .. " + M", hl.exec_cmd(
-    "command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.exit()'"
-))
+hl.bind(mod .. " + M", hl.exec_cmd("hyprctl dispatch 'hl.exit()'"))
 
 -- Noctalia shell
 hl.bind("XF86Launch1", hl.exec_cmd(ipc .. " settings open"))
