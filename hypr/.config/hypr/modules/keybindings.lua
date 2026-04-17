@@ -1,8 +1,9 @@
-local s          = require("settings")
+local s = require("settings")
+
 local screenshot = require("helpers/screenshot")
 
-local mod        = s.mainMod
-local ipc        = "qs -c noctalia-shell ipc call"
+local mod = s.mainMod
+local ipc = "qs -c noctalia-shell ipc call"
 
 -- -------------------------
 -- Applications
@@ -22,6 +23,12 @@ hl.bind(mod .. " + M", hl.exec_cmd("hyprctl dispatch 'hl.exit()'"))
 hl.bind("XF86Launch1", hl.exec_cmd(ipc .. " settings open"))
 hl.bind(mod .. " + F1", hl.exec_cmd(ipc .. " settings open"))
 
+local function yello()
+    print(1)
+    print("Yello")
+end
+
+yello()
 -- -------------------------
 -- Window management
 -- -------------------------
@@ -44,7 +51,6 @@ hl.bind(mod .. " + SHIFT + K", hl.window.move({ direction = "up" }))
 hl.bind(mod .. " + SHIFT + L", hl.window.move({ direction = "right" }))
 
 -- Mouse: drag / resize
-hl.bind(mod .. " + mouse:272", hl.window.drag(), { mouse = true })
 hl.bind(mod .. " + mouse:273", hl.window.resize(), { mouse = true })
 
 -- -------------------------
