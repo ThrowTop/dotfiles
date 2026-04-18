@@ -2,7 +2,7 @@
 package.path = os.getenv("HOME") .. "/.config/hypr/modules/?.lua;" .. package.path
 
 local s = require("settings")
-s.d("hyprland lua loaded")
+s.d("Hyprland Config Reloaded")
 
 require("monitors")
 require("environment")

@@ -23,12 +23,6 @@ hl.bind(mod .. " + M", hl.exec_cmd("hyprctl dispatch 'hl.exit()'"))
 hl.bind("XF86Launch1", hl.exec_cmd(ipc .. " settings open"))
 hl.bind(mod .. " + F1", hl.exec_cmd(ipc .. " settings open"))
 
-local function yello()
-    print(1)
-    print("Yello")
-end
-
-yello()
 -- -------------------------
 -- Window management
 -- -------------------------

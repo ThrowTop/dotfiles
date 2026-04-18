@@ -18,6 +18,6 @@ hl.permission("/usr/(lib|libexec|lib64)/xdg-desktop-portal-hyprland", "screencop
 hl.exec_once("vicinae server")
 hl.exec_once("qs -c noctalia-shell")
 hl.exec_once("foot --server")
-hl.exec_once("hyprpaper & waypaper --restore")
+hl.exec_once("awww-daemon & waypaper --restore")
 hl.exec_once("hypridle")
 hl.exec_once("gsettings set org.gnome.desktop.interface color-scheme prefer-dark")
