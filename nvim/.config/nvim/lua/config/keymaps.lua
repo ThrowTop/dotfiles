@@ -12,8 +12,6 @@ map("n", "dd", '"_dd', { silent = true })
 
 map("v", "<C-c>", '"+y', { silent = true })
 
-map("n", "<leader>q", "<C-w>q", { silent = true })
-
 map("n", "<C-Tab>", "<cmd>bnext<CR>", { silent = true })
 map("n", "<S-Tab>", "<cmd>bprevious<CR>", { silent = true })
 
@@ -61,6 +59,8 @@ map("v", "p", '"_dP', { silent = true })
 map("n", "<leader>s", [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]],
     { desc = "Substitute word under cursor" })
 
+map("n", "<leader>d", vim.diagnostic.open_float, { desc = "Show line diagnostics" })
+
 for _, click in ipairs({
     "<LeftMouse>", "<LeftDrag>", "<LeftRelease>",
     "<2-LeftMouse>", "<3-LeftMouse>", "<4-LeftMouse>",
@@ -68,6 +68,33 @@ for _, click in ipairs({
 }) do
     map({ "n", "i", "v" }, click, "<Nop>", { silent = true })
 end
+
+local toggle_pairs = {
+    { "true", "false" },
+    { "and",  "or" },
+    { "yes",  "no" },
+    { "on",   "off" },
+}
+local toggle_lut = {}
+for _, p in ipairs(toggle_pairs) do
+    toggle_lut[p[1]], toggle_lut[p[2]] = p[2], p[1]
+end
+
+map("n", "<leader>t", function()
+    local word = vim.fn.expand("<cword>")
+    local new = toggle_lut[word:lower()]
+    if not new then
+        vim.notify("no toggle for '" .. word .. "'")
+        return
+    end
+    if word == word:upper() then
+        new = new:upper()
+    elseif word:sub(1, 1) == word:sub(1, 1):upper() then
+        new = new:sub(1, 1):upper() .. new:sub(2)
+    end
+    local keys = vim.api.nvim_replace_termcodes('"_ciw' .. new .. '<Esc>', true, false, true)
+    vim.api.nvim_feedkeys(keys, "n", false)
+end, { desc = "Toggle boolean/keyword under cursor" })
 
 map("n", "<leader>w", function()
     vim.opt.wrap = not vim.opt.wrap:get()

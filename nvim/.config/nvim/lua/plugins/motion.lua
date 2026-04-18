@@ -9,8 +9,7 @@ return {
             },
         },
         keys = {
-            { "s", function() require("flash").jump() end,       mode = { "n", "x", "o" }, desc = "Flash jump" },
-            { "S", function() require("flash").treesitter() end, mode = { "n", "x", "o" }, desc = "Flash treesitter" },
+            { "s", function() require("flash").jump() end, mode = { "n", "x", "o" }, desc = "Flash jump" },
         },
     },
 
@@ -24,13 +23,21 @@ return {
                 n_lines = 500,
                 custom_textobjects = {
                     f = ai.gen_spec.treesitter({ a = "@function.outer",  i = "@function.inner" }),
-                    c = ai.gen_spec.treesitter({ a = "@class.outer",     i = "@class.inner" }),
                     a = ai.gen_spec.treesitter({ a = "@parameter.outer", i = "@parameter.inner" }),
-                    l = ai.gen_spec.treesitter({ a = "@loop.outer",      i = "@loop.inner" }),
-                    i = ai.gen_spec.treesitter({ a = "@conditional.outer", i = "@conditional.inner" }),
                 },
             })
         end,
+    },
+
+    {
+        "echasnovski/mini.indentscope",
+        version = "*",
+        event = { "BufReadPost", "BufNewFile" },
+        opts = {
+            symbol = "│",
+            options = { try_as_border = true },
+            draw = { animation = function() return 0 end },
+        },
     },
 
     {

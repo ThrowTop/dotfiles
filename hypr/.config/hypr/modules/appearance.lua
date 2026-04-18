@@ -1,47 +1,47 @@
 -- General & decoration
 hl.config({
-    general    = {
-        gaps_in          = 4,
-        gaps_out         = 8,
-        border_size      = 2,
-        col              = {
-            active_border   = { colors = { "rgb(B4BEFE)", "rgb(303030)", angle = 45 } },
+    general = {
+        gaps_in = 4,
+        gaps_out = 8,
+        border_size = 2,
+        col = {
+            active_border = { colors = { "rgb(B4BEFE)", "rgb(303030)", angle = 45 } },
             inactive_border = { colors = { "rgb(303030)", "rgb(B4BEFE)", angle = 35 } },
         },
-        layout           = "dwindle",
+        layout = "dwindle",
         resize_on_border = false,
-        resize_corner    = 3,
+        resize_corner = 3,
     },
     decoration = {
-        rounding              = 12,
-        rounding_power        = 2,
-        active_opacity        = 1.0,
-        inactive_opacity      = 0.9,
+        rounding = 12,
+        rounding_power = 2,
+        active_opacity = 1.0,
+        inactive_opacity = 0.9,
         border_part_of_window = true,
-        shadow                = {
-            enabled      = true,
-            range        = 4,
+        shadow = {
+            enabled = true,
+            range = 4,
             render_power = 3,
-            color        = 0xee1a1a1a,
+            color = 0xee1a1a1a,
         },
-        blur                  = {
-            enabled           = true,
-            size              = 16,
-            passes            = 2,
-            ignore_opacity    = true,
+        blur = {
+            enabled = true,
+            size = 16,
+            passes = 2,
+            ignore_opacity = true,
             new_optimizations = true,
-            xray              = false,
-            noise             = 0.0117,
-            contrast          = 0.8916,
-            brightness        = 0.8172,
-            vibrancy          = 0.1696,
-            popups            = false,
+            xray = false,
+            noise = 0.0117,
+            contrast = 0.8916,
+            brightness = 0.8172,
+            vibrancy = 0.1696,
+            popups = false,
         },
     },
     animations = { enabled = true },
-    dwindle    = { pseudotile = true, preserve_split = true },
-    master     = { new_status = "master" },
-    misc       = { force_default_wallpaper = 0, disable_hyprland_logo = true },
+    dwindle = { pseudotile = true, preserve_split = true },
+    master = { new_status = "master" },
+    misc = { force_default_wallpaper = 0, disable_hyprland_logo = true },
 })
 
 -- Bezier curves

@@ -10,6 +10,7 @@ o.smartindent = true
 o.number = true
 o.relativenumber = true
 o.cursorline = true
+o.cursorlineopt = "number"
 o.wrap = false
 o.signcolumn = "yes"
 o.scrolloff = 4
@@ -35,6 +36,16 @@ o.timeoutlen = 400
 o.shortmess:append("IWcC")
 
 o.completeopt = { "menu", "menuone", "noselect", "noinsert" }
+
+vim.diagnostic.config({
+    virtual_text = { prefix = "●", spacing = 2 },
+    severity_sort = true,
+    float = { border = "rounded", source = true },
+})
+
+vim.api.nvim_create_autocmd("TextYankPost", {
+    callback = function() vim.hl.on_yank({ timeout = 150 }) end,
+})
 
 vim.cmd("cnoreabbrev q q!")
 vim.cmd("cnoreabbrev wq wq!")

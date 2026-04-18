@@ -73,8 +73,8 @@ function M.switch(path)
     end
     vim.cmd("silent! %bd!")
     vim.cmd("cd " .. vim.fn.fnameescape(path))
-    vim.cmd("enew")
     vim.notify("projects: switched to " .. path, vim.log.levels.INFO)
+    vim.schedule(function() vim.cmd("Telescope find_files") end)
 end
 
 function M.pick()

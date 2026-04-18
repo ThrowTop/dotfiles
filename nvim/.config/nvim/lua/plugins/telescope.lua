@@ -30,6 +30,7 @@ return {
             "nvim-lua/plenary.nvim",
             "nvim-tree/nvim-web-devicons",
             "nvim-telescope/telescope-file-browser.nvim",
+            "nvim-telescope/telescope-ui-select.nvim",
         },
         config = function()
             local telescope = require("telescope")
@@ -62,9 +63,13 @@ return {
                         respect_gitignore = false,
                         display_stat = { date = true, size = true },
                     },
+                    ["ui-select"] = {
+                        require("telescope.themes").get_dropdown({}),
+                    },
                 },
             })
             telescope.load_extension("file_browser")
+            telescope.load_extension("ui-select")
         end,
     },
 }
