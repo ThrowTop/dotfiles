@@ -55,7 +55,7 @@ return {
         event = "VeryLazy",
         opts = {
             preset = "helix",
-            delay = 300,
+            delay = 0,
         },
     },
     {

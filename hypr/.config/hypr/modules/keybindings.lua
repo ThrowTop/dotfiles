@@ -4,7 +4,12 @@ local screenshot = require("helpers/screenshot")
 
 local mod = s.mainMod
 local ipc = "qs -c noctalia-shell ipc call"
+local function testing(wow)
+    print(wow)
+    print("test")
+end
 
+testing("kikes")
 -- -------------------------
 -- Applications
 -- -------------------------
@@ -44,9 +49,9 @@ hl.bind(mod .. " + SHIFT + J", hl.window.move({ direction = "down" }))
 hl.bind(mod .. " + SHIFT + K", hl.window.move({ direction = "up" }))
 hl.bind(mod .. " + SHIFT + L", hl.window.move({ direction = "right" }))
 
--- Mouse: drag / resize
+-- Move/resize windows with mainMod + LMB/RMB and dragging
+hl.bind(mod .. " + mouse:272", hl.window.drag(), { mouse = true })
 hl.bind(mod .. " + mouse:273", hl.window.resize(), { mouse = true })
-
 -- -------------------------
 -- Workspaces
 -- -------------------------
@@ -85,7 +90,7 @@ if not s.is_laptop then
             if mon.name == monitorName then
                 local ws = mon.active_workspace
                 if ws then
-                    hl.window.move({ workspace = tostring(ws.id) })()
+                    hl.window.move({})()
                 end
                 return
             end
@@ -109,3 +114,5 @@ hl.bind("XF86AudioNext", hl.exec_cmd("playerctl next"), { locked = true })
 hl.bind("XF86AudioPause", hl.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPlay", hl.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPrev", hl.exec_cmd("playerctl previous"), { locked = true })
+
+

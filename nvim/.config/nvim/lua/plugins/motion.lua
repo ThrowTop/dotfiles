@@ -1,17 +1,17 @@
 return {
-    {
-        "folke/flash.nvim",
-        event = "VeryLazy",
-        opts = {
-            modes = {
-                search = { enabled = false },
-                char = { enabled = false },
-            },
-        },
-        keys = {
-            { "s", function() require("flash").jump() end, mode = { "n", "x", "o" }, desc = "Flash jump" },
-        },
-    },
+    -- {
+    --     "folke/flash.nvim",
+    --     event = "VeryLazy",
+    --     opts = {
+    --         modes = {
+    --             search = { enabled = false },
+    --             char = { enabled = false },
+    --         },
+    --     },
+    --     keys = {
+    --         { "s", function() require("flash").jump() end, mode = { "n", "x", "o" }, desc = "Flash jump" },
+    --     },
+    -- },
 
     {
         "echasnovski/mini.ai",
@@ -22,7 +22,7 @@ return {
             ai.setup({
                 n_lines = 500,
                 custom_textobjects = {
-                    f = ai.gen_spec.treesitter({ a = "@function.outer",  i = "@function.inner" }),
+                    f = ai.gen_spec.treesitter({ a = "@function.outer", i = "@function.inner" }),
                     a = ai.gen_spec.treesitter({ a = "@parameter.outer", i = "@parameter.inner" }),
                 },
             })
@@ -55,10 +55,15 @@ return {
         init = function()
             local map = vim.keymap.set
             local pairs_to_bind = {
-                { '"', '"' }, { "'", "'" }, { "`", "`" },
-                { "(", ")" }, { ")", ")" },
-                { "[", "]" }, { "]", "]" },
-                { "{", "}" }, { "}", "}" },
+                { '"', '"' },
+                { "'", "'" },
+                { "`", "`" },
+                { "(", ")" },
+                { ")", ")" },
+                { "[", "]" },
+                { "]", "]" },
+                { "{", "}" },
+                { "}", "}" },
             }
             for _, p in ipairs(pairs_to_bind) do
                 map("x", p[1], "S" .. p[2], { remap = true, desc = "Surround with " .. p[2] })
@@ -75,3 +80,5 @@ return {
         },
     },
 }
+
+

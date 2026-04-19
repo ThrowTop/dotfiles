@@ -6,7 +6,6 @@ local M = {
     is_laptop = io.open("/sys/class/power_supply/BAT1") ~= nil,
     debug = true,
 }
-local test = true
 
 function M.d(str)
     if M.debug then
@@ -15,3 +14,5 @@ function M.d(str)
 end
 
 return M
+
+
