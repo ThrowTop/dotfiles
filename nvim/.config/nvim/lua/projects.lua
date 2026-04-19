@@ -4,12 +4,18 @@ local data_path = vim.fn.stdpath("data") .. "/projects.json"
 
 local function read_projects()
     local f = io.open(data_path, "r")
-    if not f then return {} end
+    if not f then
+        return {}
+    end
     local content = f:read("*a")
     f:close()
-    if content == "" then return {} end
+    if content == "" then
+        return {}
+    end
     local ok, decoded = pcall(vim.json.decode, content)
-    if not ok or type(decoded) ~= "table" then return {} end
+    if not ok or type(decoded) ~= "table" then
+        return {}
+    end
     return decoded
 end
 
@@ -53,14 +59,18 @@ function M.remove(path)
     local projects = read_projects()
     if not path or path == "" then
         vim.ui.select(projects, { prompt = "Remove project:" }, function(choice)
-            if choice then M.remove(choice) end
+            if choice then
+                M.remove(choice)
+            end
         end)
         return
     end
     path = expand(path)
     local kept = {}
     for _, p in ipairs(projects) do
-        if p ~= path then table.insert(kept, p) end
+        if p ~= path then
+            table.insert(kept, p)
+        end
     end
     write_projects(kept)
     vim.notify("projects: removed " .. path, vim.log.levels.INFO)
@@ -74,7 +84,9 @@ function M.switch(path)
     vim.cmd("silent! %bd!")
     vim.cmd("cd " .. vim.fn.fnameescape(path))
     vim.notify("projects: switched to " .. path, vim.log.levels.INFO)
-    vim.schedule(function() vim.cmd("Telescope find_files") end)
+    vim.schedule(function()
+        vim.cmd("Telescope find_files")
+    end)
 end
 
 function M.pick()
@@ -88,8 +100,14 @@ function M.pick()
     if not ok then
         vim.ui.select(projects, {
             prompt = "Switch project:",
-            format_item = function(p) return vim.fn.fnamemodify(p, ":t") .. "  " .. p end,
-        }, function(choice) if choice then M.switch(choice) end end)
+            format_item = function(p)
+                return vim.fn.fnamemodify(p, ":t") .. "  " .. p
+            end,
+        }, function(choice)
+            if choice then
+                M.switch(choice)
+            end
+        end)
         return
     end
 
@@ -98,30 +116,34 @@ function M.pick()
     local actions = require("telescope.actions")
     local action_state = require("telescope.actions.state")
 
-    pickers.new({}, {
-        prompt_title = "Projects",
-        finder = finders.new_table({
-            results = projects,
-            entry_maker = function(entry)
-                return {
-                    value = entry,
-                    display = vim.fn.fnamemodify(entry, ":t"),
-                    ordinal = vim.fn.fnamemodify(entry, ":t"),
-                    path = entry,
-                }
+    pickers
+        .new({}, {
+            prompt_title = "Projects",
+            finder = finders.new_table({
+                results = projects,
+                entry_maker = function(entry)
+                    return {
+                        value = entry,
+                        display = vim.fn.fnamemodify(entry, ":t"),
+                        ordinal = vim.fn.fnamemodify(entry, ":t"),
+                        path = entry,
+                    }
+                end,
+            }),
+            sorter = conf.generic_sorter({}),
+            previewer = conf.file_previewer({}),
+            attach_mappings = function(bufnr)
+                actions.select_default:replace(function()
+                    local selection = action_state.get_selected_entry()
+                    actions.close(bufnr)
+                    if selection then
+                        M.switch(selection.value)
+                    end
+                end)
+                return true
             end,
-        }),
-        sorter = conf.generic_sorter({}),
-        previewer = conf.file_previewer({}),
-        attach_mappings = function(bufnr)
-            actions.select_default:replace(function()
-                local selection = action_state.get_selected_entry()
-                actions.close(bufnr)
-                if selection then M.switch(selection.value) end
-            end)
-            return true
-        end,
-    }):find()
+        })
+        :find()
 end
 
 function M.setup()
@@ -146,3 +168,5 @@ function M.setup()
 end
 
 return M
+
+

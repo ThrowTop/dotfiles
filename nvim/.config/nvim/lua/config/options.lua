@@ -44,7 +44,9 @@ vim.diagnostic.config({
 })
 
 vim.api.nvim_create_autocmd("TextYankPost", {
-    callback = function() vim.hl.on_yank({ timeout = 150 }) end,
+    callback = function()
+        vim.hl.on_yank({ timeout = 150 })
+    end,
 })
 
 vim.cmd("cnoreabbrev q q!")
@@ -53,3 +55,5 @@ vim.cmd("cnoreabbrev W w")
 vim.cmd("cnoreabbrev Q q!")
 vim.cmd("cnoreabbrev Wq wq!")
 vim.cmd("cnoreabbrev WQ wq!")
+
+

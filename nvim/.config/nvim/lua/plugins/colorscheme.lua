@@ -22,6 +22,11 @@ return {
                 },
             })
             require("onedark").load()
+
+            vim.api.nvim_set_hl(0, "DiagnosticUnnecessary", {
+                undercurl = true,
+                sp = "#c678dd",
+            })
         end,
     },
 }

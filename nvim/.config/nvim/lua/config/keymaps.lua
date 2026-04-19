@@ -18,7 +18,7 @@ map("n", "<S-Tab>", "<cmd>bprevious<CR>", { silent = true })
 local function close_buffer()
     local listed = vim.fn.getbufinfo({ buflisted = 1 })
     if #listed > 1 then
-        vim.cmd("bprevious")
+        vim.cmd("bpreviouu")
         vim.cmd("bdelete! #")
     else
         vim.cmd("quit!")
@@ -56,24 +56,28 @@ map("v", ">", ">gv", { silent = true })
 
 map("v", "p", '"_dP', { silent = true })
 
-map("n", "<leader>s", [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]],
-    { desc = "Substitute word under cursor" })
+map("n", "<leader>s", [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]], { desc = "Substitute word under cursor" })
 
 map("n", "<leader>d", vim.diagnostic.open_float, { desc = "Show line diagnostics" })
 
 for _, click in ipairs({
-    "<LeftMouse>", "<LeftDrag>", "<LeftRelease>",
-    "<2-LeftMouse>", "<3-LeftMouse>", "<4-LeftMouse>",
-    "<RightMouse>", "<MiddleMouse>",
+    "<LeftMouse>",
+    "<LeftDrag>",
+    "<LeftRelease>",
+    "<2-LeftMouse>",
+    "<3-LeftMouse>",
+    "<4-LeftMouse>",
+    "<RightMouse>",
+    "<MiddleMouse>",
 }) do
     map({ "n", "i", "v" }, click, "<Nop>", { silent = true })
 end
 
 local toggle_pairs = {
     { "true", "false" },
-    { "and",  "or" },
-    { "yes",  "no" },
-    { "on",   "off" },
+    { "and", "or" },
+    { "yes", "no" },
+    { "on", "off" },
 }
 local toggle_lut = {}
 for _, p in ipairs(toggle_pairs) do
@@ -92,7 +96,7 @@ map("n", "<leader>t", function()
     elseif word:sub(1, 1) == word:sub(1, 1):upper() then
         new = new:sub(1, 1):upper() .. new:sub(2)
     end
-    local keys = vim.api.nvim_replace_termcodes('"_ciw' .. new .. '<Esc>', true, false, true)
+    local keys = vim.api.nvim_replace_termcodes('"_ciw' .. new .. "<Esc>", true, false, true)
     vim.api.nvim_feedkeys(keys, "n", false)
 end, { desc = "Toggle boolean/keyword under cursor" })
 
@@ -101,3 +105,5 @@ map("n", "<leader>w", function()
     vim.opt.linebreak = vim.opt.wrap:get()
     vim.notify("wrap: " .. tostring(vim.opt.wrap:get()))
 end, { desc = "Toggle line wrap" })
+
+

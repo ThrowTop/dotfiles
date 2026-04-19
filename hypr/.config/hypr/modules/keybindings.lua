@@ -4,12 +4,22 @@ local screenshot = require("helpers/screenshot")
 
 local mod = s.mainMod
 local ipc = "qs -c noctalia-shell ipc call"
+
 local function testing(wow)
     print(wow)
     print("test")
 end
 
-testing("kikes")
+local w = {}
+do
+    w.lal = "example"
+    w.fn = function(cool_argument)
+        print("")
+    end
+
+    w.fn("hello")
+end
+
 -- -------------------------
 -- Applications
 -- -------------------------
@@ -33,7 +43,7 @@ hl.bind(mod .. " + F1", hl.exec_cmd(ipc .. " settings open"))
 -- -------------------------
 hl.bind(mod .. " + Q", hl.window.close())
 hl.bind(mod .. " + C", hl.window.float({ action = "toggle" }))
-hl.bind(mod .. " + F", hl.window.fullscreen_state({ internal = 2, client = 0 }))
+hl.bind(mod .. " + F", hl.window.fullscreen_state({ internal = 2, client = 0, action = "toggle" }))
 hl.bind(mod .. " + SHIFT + F", hl.window.fullscreen())
 hl.bind(mod .. " + SHIFT + P", hl.window.pseudo())
 
@@ -97,8 +107,12 @@ if not s.is_laptop then
         end
     end
 
-    hl.bind("ALT + SHIFT + 1", function() moveWindowToMonitor("HDMI-A-1") end)
-    hl.bind("ALT + SHIFT + 2", function() moveWindowToMonitor("DP-2") end)
+    hl.bind("ALT + SHIFT + 1", function()
+        moveWindowToMonitor("HDMI-A-1")
+    end)
+    hl.bind("ALT + SHIFT + 2", function()
+        moveWindowToMonitor("DP-2")
+    end)
 end
 
 -- -------------------------
