@@ -3,7 +3,7 @@ hl.config({
         kb_layout = "us,se",
         kb_options = "grp:win_space_toggle",
         numlock_by_default = true,
-        mouse_refocus = false,
+        mouse_refocus = true,
         follow_mouse = 1,
         sensitivity = -0.3,
         accel_profile = "flat",
@@ -14,15 +14,20 @@ hl.config({
             natural_scroll = true,
             drag_lock = false,
             disable_while_typing = true,
-            scroll_factor = 0.5,
         },
     },
 })
 
 hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 
--- hl.device({
---     name                 = "znt0001:00-14e5:650e-touchpad",
---     sensitivity          = 0.3,
---     disable_while_typing = false,
--- })
+hl.device({
+    enabled = true,
+    name = "znt0001:00-14e5:650e-touchpad",
+    disable_while_typing = true,
+    sensitivity = -0.3,
+    accel_profile = "flat",
+    natural_scroll = true,
+    ["tap-to-click"] = false,
+})
+
+

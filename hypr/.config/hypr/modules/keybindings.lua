@@ -5,21 +5,6 @@ local screenshot = require("helpers/screenshot")
 local mod = s.mainMod
 local ipc = "qs -c noctalia-shell ipc call"
 
-local function testing(wow)
-    print(wow)
-    print("test")
-end
-
-local w = {}
-do
-    w.lal = "example"
-    w.fn = function(cool_argument)
-        print("")
-    end
-
-    w.fn("hello")
-end
-
 -- -------------------------
 -- Applications
 -- -------------------------
@@ -115,6 +100,14 @@ if not s.is_laptop then
     end)
 end
 
+-- XF86 keys currently bound:
+-- XF86AudioRaiseVolume, XF86AudioLowerVolume, XF86AudioMute
+-- XF86AudioMicMute, XF86AudioNext, XF86AudioPause, XF86AudioPlay
+-- XF86AudioPrev, XF86MonBrightnessUp, XF86MonBrightnessDown
+-- XF86Launch1 (Noctalia settings)
+--
+-- To find key codes: run `wev` or `libinput debug-events` in terminal
+--
 -- -------------------------
 -- Media & function keys
 -- -------------------------
