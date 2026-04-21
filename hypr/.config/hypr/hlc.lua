@@ -63,42 +63,43 @@ local M = {}
 ---@field zoomFactor?          HLC.AnimationSpec
 ---@field monitorAdded?        HLC.AnimationSpec
 
----@class HLC.AnimationProxy : HLC.AnimationSpecs
+---@class HLC.AnimationProxy
 ---@operator call(HLC.AnimationSpecs): nil
----@field global              HLC.AnimationLeafProxy
----@field windows             HLC.AnimationLeafProxy
----@field windowsIn           HLC.AnimationLeafProxy
----@field windowsOut          HLC.AnimationLeafProxy
----@field windowsMove         HLC.AnimationLeafProxy
----@field layers              HLC.AnimationLeafProxy
----@field layersIn            HLC.AnimationLeafProxy
----@field layersOut           HLC.AnimationLeafProxy
----@field fade                HLC.AnimationLeafProxy
----@field fadeIn              HLC.AnimationLeafProxy
----@field fadeOut             HLC.AnimationLeafProxy
----@field fadeSwitch          HLC.AnimationLeafProxy
----@field fadeShadow          HLC.AnimationLeafProxy
----@field fadeGlow            HLC.AnimationLeafProxy
----@field fadeDim             HLC.AnimationLeafProxy
----@field fadeLayers          HLC.AnimationLeafProxy
----@field fadeLayersIn        HLC.AnimationLeafProxy
----@field fadeLayersOut       HLC.AnimationLeafProxy
----@field fadePopups          HLC.AnimationLeafProxy
----@field fadePopupsIn        HLC.AnimationLeafProxy
----@field fadePopupsOut       HLC.AnimationLeafProxy
----@field fadeDpms            HLC.AnimationLeafProxy
----@field border              HLC.AnimationLeafProxy
----@field borderangle         HLC.AnimationLeafProxy
----@field workspaces          HLC.AnimationLeafProxy
----@field workspacesIn        HLC.AnimationLeafProxy
----@field workspacesOut       HLC.AnimationLeafProxy
----@field specialWorkspace    HLC.AnimationLeafProxy
----@field specialWorkspaceIn  HLC.AnimationLeafProxy
----@field specialWorkspaceOut HLC.AnimationLeafProxy
----@field zoomFactor          HLC.AnimationLeafProxy
----@field monitorAdded        HLC.AnimationLeafProxy
+---@field global?              HLC.AnimationLeafProxy
+---@field windows?             HLC.AnimationLeafProxy
+---@field windowsIn?           HLC.AnimationLeafProxy
+---@field windowsOut?          HLC.AnimationLeafProxy
+---@field windowsMove?         HLC.AnimationLeafProxy
+---@field layers?              HLC.AnimationLeafProxy
+---@field layersIn?            HLC.AnimationLeafProxy
+---@field layersOut?           HLC.AnimationLeafProxy
+---@field fade?                HLC.AnimationLeafProxy
+---@field fadeIn?              HLC.AnimationLeafProxy
+---@field fadeOut?             HLC.AnimationLeafProxy
+---@field fadeSwitch?          HLC.AnimationLeafProxy
+---@field fadeShadow?          HLC.AnimationLeafProxy
+---@field fadeGlow?            HLC.AnimationLeafProxy
+---@field fadeDim?             HLC.AnimationLeafProxy
+---@field fadeLayers?          HLC.AnimationLeafProxy
+---@field fadeLayersIn?        HLC.AnimationLeafProxy
+---@field fadeLayersOut?       HLC.AnimationLeafProxy
+---@field fadePopups?          HLC.AnimationLeafProxy
+---@field fadePopupsIn?        HLC.AnimationLeafProxy
+---@field fadePopupsOut?       HLC.AnimationLeafProxy
+---@field fadeDpms?            HLC.AnimationLeafProxy
+---@field border?              HLC.AnimationLeafProxy
+---@field borderangle?         HLC.AnimationLeafProxy
+---@field workspaces?          HLC.AnimationLeafProxy
+---@field workspacesIn?        HLC.AnimationLeafProxy
+---@field workspacesOut?       HLC.AnimationLeafProxy
+---@field specialWorkspace?    HLC.AnimationLeafProxy
+---@field specialWorkspaceIn?  HLC.AnimationLeafProxy
+---@field specialWorkspaceOut? HLC.AnimationLeafProxy
+---@field zoomFactor?          HLC.AnimationLeafProxy
+---@field monitorAdded?        HLC.AnimationLeafProxy
 
 ---@class HLC.ConfigProxy
+---@field [string] any
 ---@operator call(table): nil
 
 ---@class HLC.Module
@@ -106,6 +107,7 @@ local M = {}
 ---@field curve       fun(a: string|number, b: number, c: number, d: number, e?: number): HLC.Curve
 ---@field style       HLC.StyleFactory
 ---@field animation   HLC.AnimationProxy
+---@field anim        fun(speed: number, curve?: HLC.Curve|string, style?: HLC.Style|string): HLC.AnimationSpec
 ---@field gradient    fun(...): HLC.Gradient
 ---@field notify      fun(text: string, timeout?: integer): nil
 ---@field exec_once   fun(...: string): nil
@@ -134,7 +136,9 @@ local M = {}
 
 local function get_nested(t, path)
     for i = 1, #path do
-        if type(t) ~= "table" then return nil end
+        if type(t) ~= "table" then
+            return nil
+        end
         t = t[path[i]]
     end
     return t
@@ -143,7 +147,9 @@ end
 local function set_nested(t, path, value)
     for i = 1, #path - 1 do
         local k = path[i]
-        if type(t[k]) ~= "table" then t[k] = {} end
+        if type(t[k]) ~= "table" then
+            t[k] = {}
+        end
         t = t[k]
     end
     t[path[#path]] = value
@@ -175,7 +181,9 @@ local config_proxy_mt = {}
 config_proxy_mt.__index = function(proxy, key)
     local path = rawget(proxy, "_path")
     local new_path = {}
-    for _, v in ipairs(path) do new_path[#new_path + 1] = v end
+    for _, v in ipairs(path) do
+        new_path[#new_path + 1] = v
+    end
     new_path[#new_path + 1] = key
     local mirrored = get_nested(config_mirror, new_path)
     if mirrored ~= nil and type(mirrored) ~= "table" then
@@ -187,12 +195,16 @@ end
 config_proxy_mt.__newindex = function(proxy, key, value)
     local path = rawget(proxy, "_path")
     local full_path = {}
-    for _, v in ipairs(path) do full_path[#full_path + 1] = v end
+    for _, v in ipairs(path) do
+        full_path[#full_path + 1] = v
+    end
     full_path[#full_path + 1] = key
     if type(value) == "table" then
         local node = config_mirror
         for _, seg in ipairs(full_path) do
-            if type(node[seg]) ~= "table" then node[seg] = {} end
+            if type(node[seg]) ~= "table" then
+                node[seg] = {}
+            end
             node = node[seg]
         end
         deep_merge(node, value)
@@ -203,11 +215,15 @@ config_proxy_mt.__newindex = function(proxy, key, value)
 end
 
 config_proxy_mt.__call = function(proxy, tbl)
-    if type(tbl) ~= "table" then error("hlc.config: expected a table", 2) end
+    if type(tbl) ~= "table" then
+        error("hlc.config: expected a table", 2)
+    end
     local path = rawget(proxy, "_path")
     local node = config_mirror
     for _, seg in ipairs(path) do
-        if type(node[seg]) ~= "table" then node[seg] = {} end
+        if type(node[seg]) ~= "table" then
+            node[seg] = {}
+        end
         node = node[seg]
     end
     deep_merge(node, tbl)
@@ -225,8 +241,12 @@ M.config = setmetatable({ _path = {} }, config_proxy_mt)
 -- curve
 
 local curve_mt = {
-    __tostring = function(c) return rawget(c, "_name") end,
-    __newindex = function() error("hlc curve is read-only", 2) end,
+    __tostring = function(c)
+        return rawget(c, "_name")
+    end,
+    __newindex = function()
+        error("hlc curve is read-only", 2)
+    end,
 }
 
 local curve_counter = 0
@@ -265,15 +285,25 @@ function M.curve(name, x1, y1, x2, y2)
 end
 
 local function resolve_curve(c)
-    if c == nil then return "default" end
-    if type(c) == "string" then return c end
-    if getmetatable(c) == curve_mt then return rawget(c, "_name") end
+    if c == nil then
+        return "default"
+    end
+    if type(c) == "string" then
+        return c
+    end
+    if getmetatable(c) == curve_mt then
+        return rawget(c, "_name")
+    end
     error("hlc: curve must be an hlc.curve() object or a string", 3)
 end
 
 -- style
 
-local style_mt = { __tostring = function(s) return rawget(s, "_str") end }
+local style_mt = {
+    __tostring = function(s)
+        return rawget(s, "_str")
+    end,
+}
 
 local function make_style(str, kind, extra)
     return setmetatable({ _str = str, _kind = kind, _extra = extra }, style_mt)
@@ -288,27 +318,49 @@ end
 ---@type HLC.StyleFactory
 M.style = {
     popin = function(perc)
-        if perc == nil then return make_style("popin", "popin") end
+        if perc == nil then
+            return make_style("popin", "popin")
+        end
         require_percent("popin", perc)
         return make_style(string.format("popin %d%%", math.floor(perc)), "popin", perc)
     end,
     slide = function(perc)
-        if perc == nil then return make_style("slide", "slide") end
+        if perc == nil then
+            return make_style("slide", "slide")
+        end
         require_percent("slide", perc)
         return make_style(string.format("slide %d%%", math.floor(perc)), "slide", perc)
     end,
-    slidevert = function() return make_style("slidevert", "slidevert") end,
-    fade      = function() return make_style("fade",   "fade")   end,
-    gnome     = function() return make_style("gnome",  "gnome")  end,
-    gnomed    = function() return make_style("gnomed", "gnomed") end,
-    loop      = function() return make_style("loop",   "loop")   end,
-    once      = function() return make_style("once",   "once")   end,
+    slidevert = function()
+        return make_style("slidevert", "slidevert")
+    end,
+    fade = function()
+        return make_style("fade", "fade")
+    end,
+    gnome = function()
+        return make_style("gnome", "gnome")
+    end,
+    gnomed = function()
+        return make_style("gnomed", "gnomed")
+    end,
+    loop = function()
+        return make_style("loop", "loop")
+    end,
+    once = function()
+        return make_style("once", "once")
+    end,
 }
 
 local function resolve_style(s)
-    if s == nil then return nil end
-    if type(s) == "string" then return s end
-    if getmetatable(s) == style_mt then return rawget(s, "_str") end
+    if s == nil then
+        return nil
+    end
+    if type(s) == "string" then
+        return s
+    end
+    if getmetatable(s) == style_mt then
+        return rawget(s, "_str")
+    end
     error("hlc: style must be an hlc.style.* object or a string", 3)
 end
 
@@ -317,30 +369,55 @@ end
 local VALID_LEAVES = {}
 for _, leaf in ipairs({
     "global",
-    "windows", "windowsIn", "windowsOut", "windowsMove",
-    "layers",  "layersIn",  "layersOut",
-    "fade",    "fadeIn",    "fadeOut",    "fadeSwitch", "fadeShadow",
-    "fadeGlow","fadeDim",
-    "fadeLayers",  "fadeLayersIn",  "fadeLayersOut",
-    "fadePopups",  "fadePopupsIn",  "fadePopupsOut",  "fadeDpms",
-    "border",  "borderangle",
-    "workspaces",       "workspacesIn",       "workspacesOut",
-    "specialWorkspace", "specialWorkspaceIn", "specialWorkspaceOut",
-    "zoomFactor", "monitorAdded",
-}) do VALID_LEAVES[leaf] = true end
+    "windows",
+    "windowsIn",
+    "windowsOut",
+    "windowsMove",
+    "layers",
+    "layersIn",
+    "layersOut",
+    "fade",
+    "fadeIn",
+    "fadeOut",
+    "fadeSwitch",
+    "fadeShadow",
+    "fadeGlow",
+    "fadeDim",
+    "fadeLayers",
+    "fadeLayersIn",
+    "fadeLayersOut",
+    "fadePopups",
+    "fadePopupsIn",
+    "fadePopupsOut",
+    "fadeDpms",
+    "border",
+    "borderangle",
+    "workspaces",
+    "workspacesIn",
+    "workspacesOut",
+    "specialWorkspace",
+    "specialWorkspaceIn",
+    "specialWorkspaceOut",
+    "zoomFactor",
+    "monitorAdded",
+}) do
+    VALID_LEAVES[leaf] = true
+end
 
 local anim_state = {}
 
 local function apply_animation(leaf)
     local s = anim_state[leaf]
     local spec = {
-        leaf    = leaf,
+        leaf = leaf,
         enabled = s.enabled,
-        speed   = s.speed,
-        bezier  = resolve_curve(s.curve),
+        speed = s.speed,
+        bezier = resolve_curve(s.curve),
     }
     local str = resolve_style(s.style)
-    if str then spec.style = str end
+    if str then
+        spec.style = str
+    end
     hl.animation(spec)
 end
 
@@ -349,7 +426,9 @@ local function normalise_animation(leaf, spec)
         error(string.format("hlc.animation.%s: expected a table", leaf), 3)
     end
     local enabled = spec.enabled
-    if enabled == nil then enabled = true end
+    if enabled == nil then
+        enabled = true
+    end
     local speed = spec.speed or 1
     if enabled and (type(speed) ~= "number" or speed <= 0) then
         error(string.format("hlc.animation.%s: speed must be > 0 when enabled", leaf), 3)
@@ -380,7 +459,9 @@ leaf_mt.__tostring = function(proxy)
     local s = anim_state[leaf] or {}
     return string.format(
         "hlc.animation.%s{enabled=%s, speed=%s, curve=%s, style=%s}",
-        leaf, tostring(s.enabled), tostring(s.speed),
+        leaf,
+        tostring(s.enabled),
+        tostring(s.speed),
         s.curve and tostring(s.curve) or "nil",
         s.style and tostring(s.style) or "nil"
     )
@@ -415,11 +496,26 @@ local animation_proxy = setmetatable({}, {
         if type(specs) ~= "table" then
             error("hlc.animation(...): expected a table of {leaf = spec}", 2)
         end
-        for leaf, spec in pairs(specs) do self[leaf] = spec end
+        for leaf, spec in pairs(specs) do
+            self[leaf] = spec
+        end
     end,
 })
 
 M.animation = animation_proxy
+
+-- anim
+
+---@param  speed number
+---@param  curve? HLC.Curve|string
+---@param  style? HLC.Style|string
+---@return HLC.AnimationSpec
+function M.anim(speed, curve, style)
+    local t = { speed = speed }
+    if curve then t.curve = curve end
+    if style then t.style = style end
+    return t
+end
 
 -- gradient
 
@@ -432,7 +528,9 @@ function M.gradient(...)
         angle = table.remove(args)
     end
     local t = { colors = args }
-    if angle then t.angle = angle end
+    if angle then
+        t.angle = angle
+    end
     return t
 end
 
@@ -456,17 +554,37 @@ end
 -- export
 
 local CONFIG_SECTIONS = {
-    animations=true, binds=true, cursor=true, debug=true, decoration=true,
-    dwindle=true, ecosystem=true, experimental=true, general=true, gestures=true,
-    group=true, input=true, layout=true, master=true, misc=true, opengl=true,
-    quirks=true, render=true, scrolling=true, xwayland=true,
+    animations = true,
+    binds = true,
+    cursor = true,
+    debug = true,
+    decoration = true,
+    dwindle = true,
+    ecosystem = true,
+    experimental = true,
+    general = true,
+    gestures = true,
+    group = true,
+    input = true,
+    layout = true,
+    master = true,
+    misc = true,
+    opengl = true,
+    quirks = true,
+    render = true,
+    scrolling = true,
+    xwayland = true,
 }
 
 ---@type HLC.Module
-return setmetatable({}, {
+local _export = setmetatable({}, {
     __index = function(_, k)
-        if M[k] ~= nil then return M[k] end
-        if CONFIG_SECTIONS[k] then return M.config[k] end
+        if M[k] ~= nil then
+            return M[k]
+        end
+        if CONFIG_SECTIONS[k] then
+            return M.config[k]
+        end
     end,
     __newindex = function(_, k, v)
         if k == "animation" then
@@ -484,3 +602,6 @@ return setmetatable({}, {
         error(string.format("hlc: cannot assign to hlc.%s", tostring(k)), 2)
     end,
 })
+return _export
+
+

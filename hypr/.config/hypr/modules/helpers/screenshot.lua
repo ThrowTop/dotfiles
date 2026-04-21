@@ -10,11 +10,17 @@ local function screenshot()
         end
     end
 
-    if not monitor_name then return end
+    if not monitor_name then
+        return
+    end
 
-    hl.exec_cmd(string.format(
-        "bash -c 'grim -o %s -t ppm - | satty --filename - --fullscreen --initial-tool crop --copy-command wl-copy --early-exit --actions-on-enter save-to-clipboard'",
-        monitor_name
-    ))()
+    hl.dsp.exec_cmd(
+        string.format(
+            "bash -c 'grim -o %s -t ppm - | satty --filename - --fullscreen --initial-tool crop --copy-command wl-copy --early-exit --actions-on-enter save-to-clipboard'",
+            monitor_name
+        )
+    )()
 end
 return screenshot
+
+

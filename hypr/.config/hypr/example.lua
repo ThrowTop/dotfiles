@@ -27,6 +27,7 @@ hlc.decoration = {
 
 -- capture a sub-proxy to write a section without repeating the path
 local tp = hlc.config.input.touchpad
+
 tp.natural_scroll = true
 tp.disable_while_typing = true
 
