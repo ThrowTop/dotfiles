@@ -9,7 +9,7 @@ local M = {
 
 function M.d(str)
     if M.debug then
-        hl.exec_cmd(string.format("notify-send %q", str))()
+        -- hl.dsp.exec_cmd(string.format("notify-send %q", str))()
     end
 end
 

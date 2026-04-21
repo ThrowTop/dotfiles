@@ -1,4 +1,6 @@
-hl.config({
+local hlc = require("hlc")
+
+hlc.config({
     input = {
         kb_layout = "us,se",
         kb_options = "grp:win_space_toggle",
@@ -25,7 +27,7 @@ hl.device({
     name = "znt0001:00-14e5:650e-touchpad",
     disable_while_typing = true,
     sensitivity = -0.3,
-    accel_profile = "flat",
+    -- accel_profile = "flat",
     natural_scroll = true,
     ["tap-to-click"] = false,
 })

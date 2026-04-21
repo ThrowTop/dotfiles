@@ -4,7 +4,11 @@ local servers = {
     lua_ls = {
         settings = {
             Lua = {
-                workspace = { checkThirdParty = false },
+                workspace = {
+                    checkThirdParty = false,
+                    -- Hyprland stubs: teaches LSP about hl.* and all HL.* types
+                    library = { "/home/throw/custom/repos/Hyprland/meta" },
+                },
                 telemetry = { enable = false },
                 diagnostics = { globals = { "vim", "hl" } },
             },

@@ -1,21 +1,136 @@
--- hlc — Hyprland Lua config wrapper.
---
--- Provides:
---   hlc.config    — readable/writable mirror proxy for hl.config()
---   hlc.curve     — named bezier curve definitions
---   hlc.style     — animation style value objects
---   hlc.animation — per-leaf animation proxy with live state mirror
---
--- Usage:
---   hlc.config.general.gaps_in = 4
---   local gen = hlc.config.general
---   gen.gaps_out = 8
---   hlc.config.input.touchpad["tap-to-click"] = true   -- hyphenated keys
---   hlc.config({ general = { gaps_in = 4 } })           -- bulk apply
+-- hlc — readable wrappers around the Hyprland Lua API.
 
 local M = {}
 
--- ─── internal utilities ──────────────────────────────────────────────────────
+-- types
+
+---@class HLC.Curve
+---@class HLC.Style
+
+---@class HLC.Gradient
+---@field colors string[]
+---@field angle?  number
+
+---@class HLC.StyleFactory
+---@field popin     fun(perc?: number): HLC.Style
+---@field slide     fun(perc?: number): HLC.Style
+---@field slidevert fun(): HLC.Style
+---@field fade      fun(): HLC.Style
+---@field gnome     fun(): HLC.Style
+---@field gnomed    fun(): HLC.Style
+---@field loop      fun(): HLC.Style
+---@field once      fun(): HLC.Style
+
+---@class HLC.AnimationSpec
+---@field enabled? boolean
+---@field speed?   number
+---@field curve?   HLC.Curve|string
+---@field style?   HLC.Style|string
+
+---@class HLC.AnimationLeafProxy : HLC.AnimationSpec
+
+---@class HLC.AnimationSpecs
+---@field global?              HLC.AnimationSpec
+---@field windows?             HLC.AnimationSpec
+---@field windowsIn?           HLC.AnimationSpec
+---@field windowsOut?          HLC.AnimationSpec
+---@field windowsMove?         HLC.AnimationSpec
+---@field layers?              HLC.AnimationSpec
+---@field layersIn?            HLC.AnimationSpec
+---@field layersOut?           HLC.AnimationSpec
+---@field fade?                HLC.AnimationSpec
+---@field fadeIn?              HLC.AnimationSpec
+---@field fadeOut?             HLC.AnimationSpec
+---@field fadeSwitch?          HLC.AnimationSpec
+---@field fadeShadow?          HLC.AnimationSpec
+---@field fadeGlow?            HLC.AnimationSpec
+---@field fadeDim?             HLC.AnimationSpec
+---@field fadeLayers?          HLC.AnimationSpec
+---@field fadeLayersIn?        HLC.AnimationSpec
+---@field fadeLayersOut?       HLC.AnimationSpec
+---@field fadePopups?          HLC.AnimationSpec
+---@field fadePopupsIn?        HLC.AnimationSpec
+---@field fadePopupsOut?       HLC.AnimationSpec
+---@field fadeDpms?            HLC.AnimationSpec
+---@field border?              HLC.AnimationSpec
+---@field borderangle?         HLC.AnimationSpec
+---@field workspaces?          HLC.AnimationSpec
+---@field workspacesIn?        HLC.AnimationSpec
+---@field workspacesOut?       HLC.AnimationSpec
+---@field specialWorkspace?    HLC.AnimationSpec
+---@field specialWorkspaceIn?  HLC.AnimationSpec
+---@field specialWorkspaceOut? HLC.AnimationSpec
+---@field zoomFactor?          HLC.AnimationSpec
+---@field monitorAdded?        HLC.AnimationSpec
+
+---@class HLC.AnimationProxy : HLC.AnimationSpecs
+---@operator call(HLC.AnimationSpecs): nil
+---@field global              HLC.AnimationLeafProxy
+---@field windows             HLC.AnimationLeafProxy
+---@field windowsIn           HLC.AnimationLeafProxy
+---@field windowsOut          HLC.AnimationLeafProxy
+---@field windowsMove         HLC.AnimationLeafProxy
+---@field layers              HLC.AnimationLeafProxy
+---@field layersIn            HLC.AnimationLeafProxy
+---@field layersOut           HLC.AnimationLeafProxy
+---@field fade                HLC.AnimationLeafProxy
+---@field fadeIn              HLC.AnimationLeafProxy
+---@field fadeOut             HLC.AnimationLeafProxy
+---@field fadeSwitch          HLC.AnimationLeafProxy
+---@field fadeShadow          HLC.AnimationLeafProxy
+---@field fadeGlow            HLC.AnimationLeafProxy
+---@field fadeDim             HLC.AnimationLeafProxy
+---@field fadeLayers          HLC.AnimationLeafProxy
+---@field fadeLayersIn        HLC.AnimationLeafProxy
+---@field fadeLayersOut       HLC.AnimationLeafProxy
+---@field fadePopups          HLC.AnimationLeafProxy
+---@field fadePopupsIn        HLC.AnimationLeafProxy
+---@field fadePopupsOut       HLC.AnimationLeafProxy
+---@field fadeDpms            HLC.AnimationLeafProxy
+---@field border              HLC.AnimationLeafProxy
+---@field borderangle         HLC.AnimationLeafProxy
+---@field workspaces          HLC.AnimationLeafProxy
+---@field workspacesIn        HLC.AnimationLeafProxy
+---@field workspacesOut       HLC.AnimationLeafProxy
+---@field specialWorkspace    HLC.AnimationLeafProxy
+---@field specialWorkspaceIn  HLC.AnimationLeafProxy
+---@field specialWorkspaceOut HLC.AnimationLeafProxy
+---@field zoomFactor          HLC.AnimationLeafProxy
+---@field monitorAdded        HLC.AnimationLeafProxy
+
+---@class HLC.ConfigProxy
+---@operator call(table): nil
+
+---@class HLC.Module
+---@field config      HLC.ConfigProxy
+---@field curve       fun(a: string|number, b: number, c: number, d: number, e?: number): HLC.Curve
+---@field style       HLC.StyleFactory
+---@field animation   HLC.AnimationProxy
+---@field gradient    fun(...): HLC.Gradient
+---@field notify      fun(text: string, timeout?: integer): nil
+---@field exec_once   fun(...: string): nil
+---@field general     HLC.ConfigProxy
+---@field decoration  HLC.ConfigProxy
+---@field input       HLC.ConfigProxy
+---@field animations  HLC.ConfigProxy
+---@field misc        HLC.ConfigProxy
+---@field binds       HLC.ConfigProxy
+---@field cursor      HLC.ConfigProxy
+---@field gestures    HLC.ConfigProxy
+---@field group       HLC.ConfigProxy
+---@field dwindle     HLC.ConfigProxy
+---@field master      HLC.ConfigProxy
+---@field layout      HLC.ConfigProxy
+---@field opengl      HLC.ConfigProxy
+---@field render      HLC.ConfigProxy
+---@field scrolling   HLC.ConfigProxy
+---@field xwayland    HLC.ConfigProxy
+---@field ecosystem   HLC.ConfigProxy
+---@field experimental HLC.ConfigProxy
+---@field debug       HLC.ConfigProxy
+---@field quirks      HLC.ConfigProxy
+
+-- util
 
 local function get_nested(t, path)
     for i = 1, #path do
@@ -44,9 +159,6 @@ local function deep_merge(dst, src)
     end
 end
 
--- Wraps `value` in nested single-key tables according to `path`.
--- wrap_path({"a","b"}, v) → { a = { b = v } }
--- wrap_path({}, v)        → v  (no-op for root)
 local function wrap_path(path, value)
     local t = value
     for i = #path, 1, -1 do
@@ -55,24 +167,9 @@ local function wrap_path(path, value)
     return t
 end
 
--- ─── config mirror ───────────────────────────────────────────────────────────
---
--- hlc.config mirrors every value set through it in a plain Lua table so that
--- values are readable back as ordinary Lua. Writes call hl.config() immediately.
---
--- Supported keys are the full set from meta/hl.meta.lua (HL.ConfigKey union).
--- Keys that contain hyphens (e.g. input.touchpad.tap-to-click) are accessed
--- with bracket notation: hlc.config.input.touchpad["tap-to-click"] = true
---
--- HL.ConfigKey sections:
---   animations, binds, cursor, debug, decoration(.blur, .glow, .shadow),
---   dwindle, ecosystem, experimental, general(.col, .snap), gestures,
---   group(.col, .groupbar(.col)), input(.tablet, .touchdevice, .touchpad,
---   .virtualkeyboard), layout, master, misc(.col), opengl, quirks, render,
---   scrolling, xwayland
+-- config mirror
 
 local config_mirror = {}
-
 local config_proxy_mt = {}
 
 config_proxy_mt.__index = function(proxy, key)
@@ -81,9 +178,6 @@ config_proxy_mt.__index = function(proxy, key)
     for _, v in ipairs(path) do new_path[#new_path + 1] = v end
     new_path[#new_path + 1] = key
     local mirrored = get_nested(config_mirror, new_path)
-    -- Return the value directly for scalar leaves that were previously set.
-    -- For tables (namespaces) or unset paths, return a sub-proxy so the chain
-    -- can continue and assignments at any depth work correctly.
     if mirrored ~= nil and type(mirrored) ~= "table" then
         return mirrored
     end
@@ -95,18 +189,22 @@ config_proxy_mt.__newindex = function(proxy, key, value)
     local full_path = {}
     for _, v in ipairs(path) do full_path[#full_path + 1] = v end
     full_path[#full_path + 1] = key
-    set_nested(config_mirror, full_path, value)
+    if type(value) == "table" then
+        local node = config_mirror
+        for _, seg in ipairs(full_path) do
+            if type(node[seg]) ~= "table" then node[seg] = {} end
+            node = node[seg]
+        end
+        deep_merge(node, value)
+    else
+        set_nested(config_mirror, full_path, value)
+    end
     hl.config(wrap_path(full_path, value))
 end
 
--- hlc.config({ ... }) or hlc.config.section({ ... }) — bulk apply.
--- Merges into the mirror and calls hl.config() once.
 config_proxy_mt.__call = function(proxy, tbl)
-    if type(tbl) ~= "table" then
-        error("hlc.config: expected a table", 2)
-    end
+    if type(tbl) ~= "table" then error("hlc.config: expected a table", 2) end
     local path = rawget(proxy, "_path")
-    -- Navigate/create the mirror sub-tree for this proxy's prefix.
     local node = config_mirror
     for _, seg in ipairs(path) do
         if type(node[seg]) ~= "table" then node[seg] = {} end
@@ -121,9 +219,10 @@ config_proxy_mt.__tostring = function(proxy)
     return "hlc.config[" .. (#path > 0 and table.concat(path, ".") or "root") .. "]"
 end
 
+---@type HLC.ConfigProxy
 M.config = setmetatable({ _path = {} }, config_proxy_mt)
 
--- ─── curve ───────────────────────────────────────────────────────────────────
+-- curve
 
 local curve_mt = {
     __tostring = function(c) return rawget(c, "_name") end,
@@ -132,45 +231,47 @@ local curve_mt = {
 
 local curve_counter = 0
 
-local function validate_point(p, label)
-    if type(p) ~= "table" or type(p[1]) ~= "number" or type(p[2]) ~= "number" then
-        error("hlc.curve: " .. label .. " must be {x, y}", 3)
+local function validate_coord(label, v)
+    if type(v) ~= "number" then
+        error("hlc.curve: " .. label .. " must be a number", 3)
     end
-    for _, v in ipairs({ p[1], p[2] }) do
-        if v < -1 or v > 2 then
-            error("hlc.curve: " .. label .. " coordinates must be in [-1, 2]", 3)
-        end
+    if v < -1 or v > 2 then
+        error("hlc.curve: " .. label .. " must be in [-1, 2]", 3)
     end
 end
 
---- hlc.curve({{x1,y1},{x2,y2}})          — anonymous (auto-named)
---- hlc.curve("name", {{x1,y1},{x2,y2}})  — explicit name
-function M.curve(a, b)
-    local name, points
+---@overload fun(x1: number, y1: number, x2: number, y2: number): HLC.Curve
+---@param  name string
+---@param  x1   number
+---@param  y1   number
+---@param  x2   number
+---@param  y2   number
+---@return HLC.Curve
+function M.curve(name, x1, y1, x2, y2)
+    local a, b, c, d, e = name, x1, y1, x2, y2
     if type(a) == "string" then
-        name, points = a, b
+        name, x1, y1, x2, y2 = a, b, c, d, e
     else
         curve_counter = curve_counter + 1
         name = string.format("hlc_curve_%d", curve_counter)
-        points = a
+        x1, y1, x2, y2 = a, b, c, d
     end
-    if type(points) ~= "table" or #points ~= 2 then
-        error("hlc.curve: expected exactly two control points", 2)
-    end
-    validate_point(points[1], "point 1")
-    validate_point(points[2], "point 2")
-    hl.curve(name, { type = "bezier", points = points })
-    return setmetatable({ _name = name, _points = points }, curve_mt)
+    validate_coord("x1", x1)
+    validate_coord("y1", y1)
+    validate_coord("x2", x2)
+    validate_coord("y2", y2)
+    hl.curve(name, { type = "bezier", points = { { x1, y1 }, { x2, y2 } } })
+    return setmetatable({ _name = name }, curve_mt)
 end
 
 local function resolve_curve(c)
     if c == nil then return "default" end
     if type(c) == "string" then return c end
     if getmetatable(c) == curve_mt then return rawget(c, "_name") end
-    error("hlc: curve must be an hlc.curve() object or a bezier name string", 3)
+    error("hlc: curve must be an hlc.curve() object or a string", 3)
 end
 
--- ─── style ───────────────────────────────────────────────────────────────────
+-- style
 
 local style_mt = { __tostring = function(s) return rawget(s, "_str") end }
 
@@ -180,10 +281,11 @@ end
 
 local function require_percent(fn, perc)
     if type(perc) ~= "number" or perc < 0 or perc > 100 then
-        error("hlc.style." .. fn .. ": percentage must be a number in [0, 100]", 3)
+        error("hlc.style." .. fn .. ": percentage must be in [0, 100]", 3)
     end
 end
 
+---@type HLC.StyleFactory
 M.style = {
     popin = function(perc)
         if perc == nil then return make_style("popin", "popin") end
@@ -196,11 +298,11 @@ M.style = {
         return make_style(string.format("slide %d%%", math.floor(perc)), "slide", perc)
     end,
     slidevert = function() return make_style("slidevert", "slidevert") end,
-    fade      = function() return make_style("fade",      "fade")      end,
-    gnome     = function() return make_style("gnome",     "gnome")     end,
-    gnomed    = function() return make_style("gnomed",    "gnomed")    end,
-    loop      = function() return make_style("loop",      "loop")      end,
-    once      = function() return make_style("once",      "once")      end,
+    fade      = function() return make_style("fade",   "fade")   end,
+    gnome     = function() return make_style("gnome",  "gnome")  end,
+    gnomed    = function() return make_style("gnomed", "gnomed") end,
+    loop      = function() return make_style("loop",   "loop")   end,
+    once      = function() return make_style("once",   "once")   end,
 }
 
 local function resolve_style(s)
@@ -210,7 +312,7 @@ local function resolve_style(s)
     error("hlc: style must be an hlc.style.* object or a string", 3)
 end
 
--- ─── animation ───────────────────────────────────────────────────────────────
+-- animation
 
 local VALID_LEAVES = {}
 for _, leaf in ipairs({
@@ -222,8 +324,8 @@ for _, leaf in ipairs({
     "fadeLayers",  "fadeLayersIn",  "fadeLayersOut",
     "fadePopups",  "fadePopupsIn",  "fadePopupsOut",  "fadeDpms",
     "border",  "borderangle",
-    "workspaces",      "workspacesIn",      "workspacesOut",
-    "specialWorkspace","specialWorkspaceIn","specialWorkspaceOut",
+    "workspaces",       "workspacesIn",       "workspacesOut",
+    "specialWorkspace", "specialWorkspaceIn", "specialWorkspaceOut",
     "zoomFactor", "monitorAdded",
 }) do VALID_LEAVES[leaf] = true end
 
@@ -278,9 +380,7 @@ leaf_mt.__tostring = function(proxy)
     local s = anim_state[leaf] or {}
     return string.format(
         "hlc.animation.%s{enabled=%s, speed=%s, curve=%s, style=%s}",
-        leaf,
-        tostring(s.enabled),
-        tostring(s.speed),
+        leaf, tostring(s.enabled), tostring(s.speed),
         s.curve and tostring(s.curve) or "nil",
         s.style and tostring(s.style) or "nil"
     )
@@ -296,6 +396,7 @@ local function leaf_proxy(leaf)
     return p
 end
 
+---@type HLC.AnimationProxy
 local animation_proxy = setmetatable({}, {
     __index = function(_, leaf)
         if not VALID_LEAVES[leaf] then
@@ -310,7 +411,6 @@ local animation_proxy = setmetatable({}, {
         anim_state[leaf] = normalise_animation(leaf, spec)
         apply_animation(leaf)
     end,
-    -- hlc.animation{ global = {...}, windows = {...} }
     __call = function(self, specs)
         if type(specs) ~= "table" then
             error("hlc.animation(...): expected a table of {leaf = spec}", 2)
@@ -321,13 +421,64 @@ local animation_proxy = setmetatable({}, {
 
 M.animation = animation_proxy
 
--- ─── module export ───────────────────────────────────────────────────────────
+-- gradient
 
+---@param  ... string|number  color strings followed by an optional angle
+---@return HLC.Gradient
+function M.gradient(...)
+    local args = { ... }
+    local angle
+    if type(args[#args]) == "number" then
+        angle = table.remove(args)
+    end
+    local t = { colors = args }
+    if angle then t.angle = angle end
+    return t
+end
+
+-- notify
+
+---@param text    string
+---@param timeout? integer  milliseconds, default 2000
+function M.notify(text, timeout)
+    hl.notification.create({ text = tostring(text), timeout = timeout or 2000 })
+end
+
+-- exec_once
+
+---@param ... string
+function M.exec_once(...)
+    for _, cmd in ipairs({ ... }) do
+        hl.exec_once(cmd)
+    end
+end
+
+-- export
+
+local CONFIG_SECTIONS = {
+    animations=true, binds=true, cursor=true, debug=true, decoration=true,
+    dwindle=true, ecosystem=true, experimental=true, general=true, gestures=true,
+    group=true, input=true, layout=true, master=true, misc=true, opengl=true,
+    quirks=true, render=true, scrolling=true, xwayland=true,
+}
+
+---@type HLC.Module
 return setmetatable({}, {
-    __index = M,
+    __index = function(_, k)
+        if M[k] ~= nil then return M[k] end
+        if CONFIG_SECTIONS[k] then return M.config[k] end
+    end,
     __newindex = function(_, k, v)
         if k == "animation" then
             animation_proxy(v)
+            return
+        end
+        if k == "config" then
+            config_proxy_mt.__call(M.config, v)
+            return
+        end
+        if CONFIG_SECTIONS[k] then
+            config_proxy_mt.__call(M.config[k], v)
             return
         end
         error(string.format("hlc: cannot assign to hlc.%s", tostring(k)), 2)
