@@ -52,19 +52,22 @@ local fade = hlc.style.fade()
 hlc.animation = {
     global = { speed = 8 },
     windows = { speed = 4, curve = ease },
-    windowsIn = { speed = 3.5, curve = ease, style = pop },
+    -- hlc.anim(speed, curve?, style?) is shorthand for the same table
+    windowsIn = hlc.anim(3.5, ease, pop),
     windowsOut = { speed = 2, curve = linear, style = pop },
-    workspaces = { speed = 3, curve = ease, style = slide },
+    workspaces = hlc.anim(3, ease, slide),
     layers = { speed = 3, curve = ease },
     layersIn = { speed = 3, curve = ease, style = fade },
     layersOut = { speed = 1.5, curve = linear, style = fade },
 }
 
--- individual leaf writes also re-apply to hyprland immediately
+-- leaves can also be set individually outside the table
+hlc.animation.fade = { speed = 3, curve = ease }
+
+-- individual field writes work too
 hlc.animation.windows.speed = 6
 local spd = hlc.animation.windows.speed -- returns 6
 -- same as hl.exec_once but accepts multiple strings
-hlc.exec_once("waybar", "hyprpaper", "hypridle")
 
 -- hlc.notify wraps hl.notification.create, timeout defaults to 2000ms
 hlc.notify("hello")

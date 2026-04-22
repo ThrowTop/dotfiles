@@ -1,11 +1,16 @@
 -- hlc — readable wrappers around the Hyprland Lua API.
-
 local M = {}
 
 -- types
 
 ---@class HLC.Curve
 ---@class HLC.Style
+
+---@class HLC.NotifyOptions
+---@field timeout?   integer
+---@field icon?      string|integer
+---@field color?     string|integer
+---@field font_size? number
 
 ---@class HLC.Gradient
 ---@field colors string[]
@@ -65,38 +70,38 @@ local M = {}
 
 ---@class HLC.AnimationProxy
 ---@operator call(HLC.AnimationSpecs): nil
----@field global?              HLC.AnimationLeafProxy
----@field windows?             HLC.AnimationLeafProxy
----@field windowsIn?           HLC.AnimationLeafProxy
----@field windowsOut?          HLC.AnimationLeafProxy
----@field windowsMove?         HLC.AnimationLeafProxy
----@field layers?              HLC.AnimationLeafProxy
----@field layersIn?            HLC.AnimationLeafProxy
----@field layersOut?           HLC.AnimationLeafProxy
----@field fade?                HLC.AnimationLeafProxy
----@field fadeIn?              HLC.AnimationLeafProxy
----@field fadeOut?             HLC.AnimationLeafProxy
----@field fadeSwitch?          HLC.AnimationLeafProxy
----@field fadeShadow?          HLC.AnimationLeafProxy
----@field fadeGlow?            HLC.AnimationLeafProxy
----@field fadeDim?             HLC.AnimationLeafProxy
----@field fadeLayers?          HLC.AnimationLeafProxy
----@field fadeLayersIn?        HLC.AnimationLeafProxy
----@field fadeLayersOut?       HLC.AnimationLeafProxy
----@field fadePopups?          HLC.AnimationLeafProxy
----@field fadePopupsIn?        HLC.AnimationLeafProxy
----@field fadePopupsOut?       HLC.AnimationLeafProxy
----@field fadeDpms?            HLC.AnimationLeafProxy
----@field border?              HLC.AnimationLeafProxy
----@field borderangle?         HLC.AnimationLeafProxy
----@field workspaces?          HLC.AnimationLeafProxy
----@field workspacesIn?        HLC.AnimationLeafProxy
----@field workspacesOut?       HLC.AnimationLeafProxy
----@field specialWorkspace?    HLC.AnimationLeafProxy
----@field specialWorkspaceIn?  HLC.AnimationLeafProxy
----@field specialWorkspaceOut? HLC.AnimationLeafProxy
----@field zoomFactor?          HLC.AnimationLeafProxy
----@field monitorAdded?        HLC.AnimationLeafProxy
+---@field global?              HLC.AnimationSpec
+---@field windows?             HLC.AnimationSpec
+---@field windowsIn?           HLC.AnimationSpec
+---@field windowsOut?          HLC.AnimationSpec
+---@field windowsMove?         HLC.AnimationSpec
+---@field layers?              HLC.AnimationSpec
+---@field layersIn?            HLC.AnimationSpec
+---@field layersOut?           HLC.AnimationSpec
+---@field fade?                HLC.AnimationSpec
+---@field fadeIn?              HLC.AnimationSpec
+---@field fadeOut?             HLC.AnimationSpec
+---@field fadeSwitch?          HLC.AnimationSpec
+---@field fadeShadow?          HLC.AnimationSpec
+---@field fadeGlow?            HLC.AnimationSpec
+---@field fadeDim?             HLC.AnimationSpec
+---@field fadeLayers?          HLC.AnimationSpec
+---@field fadeLayersIn?        HLC.AnimationSpec
+---@field fadeLayersOut?       HLC.AnimationSpec
+---@field fadePopups?          HLC.AnimationSpec
+---@field fadePopupsIn?        HLC.AnimationSpec
+---@field fadePopupsOut?       HLC.AnimationSpec
+---@field fadeDpms?            HLC.AnimationSpec
+---@field border?              HLC.AnimationSpec
+---@field borderangle?         HLC.AnimationSpec
+---@field workspaces?          HLC.AnimationSpec
+---@field workspacesIn?        HLC.AnimationSpec
+---@field workspacesOut?       HLC.AnimationSpec
+---@field specialWorkspace?    HLC.AnimationSpec
+---@field specialWorkspaceIn?  HLC.AnimationSpec
+---@field specialWorkspaceOut? HLC.AnimationSpec
+---@field zoomFactor?          HLC.AnimationSpec
+---@field monitorAdded?        HLC.AnimationSpec
 
 ---@class HLC.ConfigProxy
 ---@field [string] any
@@ -109,7 +114,7 @@ local M = {}
 ---@field animation   HLC.AnimationProxy
 ---@field anim        fun(speed: number, curve?: HLC.Curve|string, style?: HLC.Style|string): HLC.AnimationSpec
 ---@field gradient    fun(...): HLC.Gradient
----@field notify      fun(text: string, timeout?: integer): nil
+---@field notify      fun(text: string, opts?: integer|HLC.NotifyOptions): nil
 ---@field exec_once   fun(...: string): nil
 ---@field general     HLC.ConfigProxy
 ---@field decoration  HLC.ConfigProxy
@@ -512,8 +517,12 @@ M.animation = animation_proxy
 ---@return HLC.AnimationSpec
 function M.anim(speed, curve, style)
     local t = { speed = speed }
-    if curve then t.curve = curve end
-    if style then t.style = style end
+    if curve then
+        t.curve = curve
+    end
+    if style then
+        t.style = style
+    end
     return t
 end
 
@@ -536,19 +545,21 @@ end
 
 -- notify
 
----@param text    string
----@param timeout? integer  milliseconds, default 2000
-function M.notify(text, timeout)
-    hl.notification.create({ text = tostring(text), timeout = timeout or 2000 })
-end
-
--- exec_once
-
----@param ... string
-function M.exec_once(...)
-    for _, cmd in ipairs({ ... }) do
-        hl.exec_once(cmd)
+---@param text string
+---@param opts? integer|HLC.NotifyOptions  timeout in ms, or options table. default 2000ms
+function M.notify(text, opts)
+    local t = { text = tostring(text) }
+    if type(opts) == "number" then
+        t.timeout = opts
+    elseif type(opts) == "table" then
+        t.timeout = opts.timeout
+        t.icon = opts.icon
+        t.color = opts.color
+        t.font_size = opts.font_size
     end
+    t.timeout = t.timeout or 2000
+    t.icon = t.icon or "ok"
+    hl.notification.create(t)
 end
 
 -- export

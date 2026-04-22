@@ -1,4 +1,5 @@
 local s = require("settings")
+local hlc = require("hlc")
 
 local screenshot = require("helpers/screenshot")
 
@@ -121,5 +122,27 @@ hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), { locked = true })
 hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
+
+hl.bind(mod .. " + SHIFT + A", function()
+    hlc.animations.enabled = not hlc.animations.enabled
+    hlc.notify("animations: " .. (hlc.animations.enabled and "on" or "off"), 1500)
+end)
+
+hl.bind(mod .. " + SHIFT + R", function()
+    local cur = hlc.decoration.rounding
+    hlc.decoration.rounding = cur == 0 and 8 or 0
+    hlc.notify("rounding: " .. hlc.decoration.rounding, 1500)
+end)
+
+hl.bind(mod .. " + SHIFT + B", function()
+    hlc.decoration.blur.enabled = not hlc.decoration.blur.enabled
+    hlc.notify("blur: " .. (hlc.decoration.blur.enabled and "on" or "off"), 1500)
+end)
+
+hl.bind(mod .. " + SHIFT + D", function()
+    local on = hlc.decoration.inactive_opacity < 1.0
+    hlc.decoration.inactive_opacity = on and 1.0 or 0.8
+    hlc.notify("dim: " .. (on and "off" or "on"), 1500)
+end)
 
 

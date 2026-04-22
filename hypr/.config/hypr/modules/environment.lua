@@ -14,13 +14,19 @@ hl.env("ADW_DISABLE_PORTAL", "1")
 hl.permission("/usr/(bin|local/bin)/grim", "screencopy", "allow")
 hl.permission("/usr/(lib|libexec|lib64)/xdg-desktop-portal-hyprland", "screencopy", "allow")
 
-hlc.exec_once(
-    "vicinae server",
-    "qs -c noctalia-shell",
-    "foot --server",
-    "awww-daemon & waypaper --restore",
-    "hypridle",
-    "gsettings set org.gnome.desktop.interface color-scheme prefer-dark"
-)
+hl.on("hyprland.start", function()
+    hl.dsp.exec_cmd("vicinae server")()
+    hl.dsp.exec_cmd("qs -c noctalia-shell")()
+    hl.dsp.exec_cmd("foot --server")()
+    hl.dsp.exec_cmd("awww-daemon & waypaper --restore")()
+    hl.dsp.exec_cmd("hypridle")()
+    hl.dsp.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme prefer-dark")()
+end)
+-- hl.dsp.exec_cmd("vicinae server")
+-- hl.dsp.exec_cmd("qs -c noctalia-shell")
+-- hl.dsp.exec_cmd("foot --server")
+-- hl.dsp.exec_cmd("awww-daemon & waypaper --restore")
+-- hl.dsp.exec_cmd("hypridle")
+-- hl.dsp.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme prefer-dark")
 
 
