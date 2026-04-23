@@ -115,7 +115,6 @@ local M = {}
 ---@field anim        fun(speed: number, curve?: HLC.Curve|string, style?: HLC.Style|string): HLC.AnimationSpec
 ---@field gradient    fun(...): HLC.Gradient
 ---@field notify      fun(text: string, opts?: integer|HLC.NotifyOptions): nil
----@field exec_once   fun(...: string): nil
 ---@field general     HLC.ConfigProxy
 ---@field decoration  HLC.ConfigProxy
 ---@field input       HLC.ConfigProxy
@@ -613,6 +612,8 @@ local _export = setmetatable({}, {
         error(string.format("hlc: cannot assign to hlc.%s", tostring(k)), 2)
     end,
 })
+
+-- apparently lsp and autocomplete doesnt work if i return the metatable directly.
 return _export
 
 

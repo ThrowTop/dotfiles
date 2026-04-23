@@ -286,7 +286,6 @@ Adjacent built-ins:
 | `<` / `>` in visual | Indent, stays in visual (repeat with `>>>`) |
 | `p` in visual | Paste without clobbering register |
 | `;` | Enters command mode (same as `:`) |
-| `F19` | Escape (CapsLock → F19 via keyd, then F19 → Esc here) |
 | `<C-s>` | Save (works in n/i) |
 | `<C-BS>` | Delete word backward (insert mode) |
 | `<C-c>` in visual | Copy to system clipboard |

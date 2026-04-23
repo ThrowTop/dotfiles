@@ -1,7 +1,5 @@
 local map = vim.keymap.set
 
-map({ "i", "v", "c" }, "<F19>", "<Esc>", { silent = true })
-
 map("i", "<C-BS>", "<C-w>", { silent = true })
 
 map("n", "<C-s>", "<cmd>w<CR>", { silent = true })
