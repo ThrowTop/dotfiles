@@ -3,6 +3,7 @@ local hlc = require("hlc")
 
 local screenshot = require("helpers/screenshot")
 local tilt_mode = require("helpers/tilt_mode")
+local touchscreen = require("helpers/touchscreen")
 
 local mod = s.mainMod
 local ipc = "qs -c noctalia-shell ipc call"
@@ -17,7 +18,8 @@ hl.bind("ALT + Space", hl.dsp.exec_cmd("vicinae toggle"))
 hl.bind(mod .. " + V", hl.dsp.exec_cmd("vicinae vicinae://launch/clipboard/history"))
 hl.bind("Print", screenshot)
 hl.bind(mod .. " + Print", hl.dsp.exec_cmd("hyprpicker | wl-copy"))
-hl.bind(mod .. " + T", hl.dsp.exec_cmd(s.hscripts .. "/touchscreen.sh"))
+hl.bind(mod .. " + F5", touchscreen)
+hl.bind("CTRL + SUPER + XF86TouchpadToggle", touchscreen)
 hl.bind(mod .. " + SHIFT + U", hl.dsp.exec_cmd("pkill qs; qs -c noctalia-shell"))
 hl.bind(mod .. " + M", hl.dsp.exec_cmd("hyprctl dispatch 'hl.exit()'"))
 
@@ -58,32 +60,32 @@ hl.on("keybinds.submap", function(name)
     end
     if name ~= "" then
         submap_notif = hl.notification.create({
-            text     = "mode: " .. name,
-            timeout  = 999999,
-            icon     = "hint",
+            text = "mode: " .. name,
+            timeout = 999999,
+            icon = "hint",
         })
     end
 end)
 
 -- Resize submap (SUPER+R → hjkl to resize, Escape to exit)
 hl.define_submap("resize", function()
-    local left  = hl.dsp.window.resize({ x = -30, y = 0,   relative = true })
-    local down  = hl.dsp.window.resize({ x = 0,   y = 30,  relative = true })
-    local up    = hl.dsp.window.resize({ x = 0,   y = -30, relative = true })
-    local right = hl.dsp.window.resize({ x = 30,  y = 0,   relative = true })
+    local left = hl.dsp.window.resize({ x = -30, y = 0, relative = true })
+    local down = hl.dsp.window.resize({ x = 0, y = 30, relative = true })
+    local up = hl.dsp.window.resize({ x = 0, y = -30, relative = true })
+    local right = hl.dsp.window.resize({ x = 30, y = 0, relative = true })
 
-    hl.bind("H",      left,  { repeating = true })
-    hl.bind("J",      down,  { repeating = true })
-    hl.bind("K",      up,    { repeating = true })
-    hl.bind("L",      right, { repeating = true })
-    hl.bind("left",   left,  { repeating = true })
-    hl.bind("down",   down,  { repeating = true })
-    hl.bind("up",     up,    { repeating = true })
-    hl.bind("right",  right, { repeating = true })
+    hl.bind("H", left, { repeating = true })
+    hl.bind("J", down, { repeating = true })
+    hl.bind("K", up, { repeating = true })
+    hl.bind("L", right, { repeating = true })
+    hl.bind("left", left, { repeating = true })
+    hl.bind("down", down, { repeating = true })
+    hl.bind("up", up, { repeating = true })
+    hl.bind("right", right, { repeating = true })
 
-    hl.bind("Escape",      hl.dsp.submap("reset"))
+    hl.bind("Escape", hl.dsp.submap("reset"))
     hl.bind(mod .. " + R", hl.dsp.submap("reset"))
-    hl.bind("catchall",    hl.dsp.submap("reset"))
+    hl.bind("catchall", hl.dsp.submap("reset"))
 end)
 hl.bind(mod .. " + R", hl.dsp.submap("resize"))
 -- -------------------------
@@ -184,5 +186,7 @@ hl.bind(mod .. " + SHIFT + D", function()
 end)
 
 hl.bind(mod .. " + SHIFT + T", tilt_mode)
+
+hl.bind("ALT+TAB", hl.dsp.window.cycle_next())
 
 
