@@ -21,10 +21,3 @@ hl.on("hyprland.start", function()
     hl.dsp.exec_cmd("hypridle")()
     hl.dsp.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme prefer-dark")()
 end)
--- hl.dsp.exec_cmd("vicinae server")
--- hl.dsp.exec_cmd("qs -c noctalia-shell")
--- hl.dsp.exec_cmd("awww-daemon & waypaper --restore")
--- hl.dsp.exec_cmd("hypridle")
--- hl.dsp.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme prefer-dark")
-
-

@@ -2,6 +2,7 @@ local s = require("settings")
 local hlc = require("hlc")
 
 local screenshot = require("helpers/screenshot")
+local tilt_mode = require("helpers/tilt_mode")
 
 local mod = s.mainMod
 local ipc = "qs -c noctalia-shell ipc call"
@@ -48,6 +49,43 @@ hl.bind(mod .. " + SHIFT + L", hl.dsp.window.move({ direction = "right" }))
 -- Move/resize windows with mainMod + LMB/RMB and dragging
 hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
+
+-- Notify on submap change
+local submap_notif = nil
+hl.on("keybinds.submap", function(name)
+    if submap_notif and submap_notif:is_alive() then
+        submap_notif:dismiss()
+    end
+    if name ~= "" then
+        submap_notif = hl.notification.create({
+            text     = "mode: " .. name,
+            timeout  = 999999,
+            icon     = "hint",
+        })
+    end
+end)
+
+-- Resize submap (SUPER+R → hjkl to resize, Escape to exit)
+hl.define_submap("resize", function()
+    local left  = hl.dsp.window.resize({ x = -30, y = 0,   relative = true })
+    local down  = hl.dsp.window.resize({ x = 0,   y = 30,  relative = true })
+    local up    = hl.dsp.window.resize({ x = 0,   y = -30, relative = true })
+    local right = hl.dsp.window.resize({ x = 30,  y = 0,   relative = true })
+
+    hl.bind("H",      left,  { repeating = true })
+    hl.bind("J",      down,  { repeating = true })
+    hl.bind("K",      up,    { repeating = true })
+    hl.bind("L",      right, { repeating = true })
+    hl.bind("left",   left,  { repeating = true })
+    hl.bind("down",   down,  { repeating = true })
+    hl.bind("up",     up,    { repeating = true })
+    hl.bind("right",  right, { repeating = true })
+
+    hl.bind("Escape",      hl.dsp.submap("reset"))
+    hl.bind(mod .. " + R", hl.dsp.submap("reset"))
+    hl.bind("catchall",    hl.dsp.submap("reset"))
+end)
+hl.bind(mod .. " + R", hl.dsp.submap("resize"))
 -- -------------------------
 -- Workspaces
 -- -------------------------
@@ -144,5 +182,7 @@ hl.bind(mod .. " + SHIFT + D", function()
     hlc.decoration.inactive_opacity = on and 1.0 or 0.8
     hlc.notify("dim: " .. (on and "off" or "on"), 1500)
 end)
+
+hl.bind(mod .. " + SHIFT + T", tilt_mode)
 
 
