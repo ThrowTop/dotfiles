@@ -2,6 +2,15 @@ local hlc = require("hlc")
 
 hlc.config({
     input = {
+        touchpad = {
+            tap_to_click = false,
+            tap_and_drag = false,
+        },
+    },
+})
+
+hlc.config({
+    input = {
         kb_layout = "us,se",
         kb_options = "grp:win_space_toggle",
         numlock_by_default = true,
@@ -29,7 +38,7 @@ hl.device({
     sensitivity = -0.3,
     -- accel_profile = "flat",
     natural_scroll = true,
-    ["tap-to-click"] = false,
+    -- ["tap-to-click"] = true,
 })
 
 

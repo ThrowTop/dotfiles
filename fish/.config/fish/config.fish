@@ -84,4 +84,5 @@ end
 bind \co 'nvim .; commandline -f repaint'
 bind \ce 'thunar . >/dev/null 2>&1 &; disown; commandline -f repaint'
 bind \CO 'sudo -E nvim .; commandline -f repaint'
-bind \ct 'tmux new-session -A -s main; commandline -f repaint'
+bind \ct 'history | head -1 | tr -d "\n" | wl-copy; commandline -f repaint'
+bind \cy 'set -l __out (eval (history | head -1) 2>&1); string join \n $__out | wl-copy; commandline -f repaint'

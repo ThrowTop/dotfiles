@@ -3,7 +3,7 @@ return {
         "nvim-telescope/telescope.nvim",
         cmd = "Telescope",
         keys = {
-            { "<leader>f", "<cmd>Telescope find_files<CR>", desc = "Find files" },
+            { "<C-p>", "<cmd>Telescope find_files<CR>", desc = "Find files" },
             {
                 "<leader>e",
                 function()
@@ -19,6 +19,7 @@ return {
                 function() require("projects").pick() end,
                 desc = "Switch project",
             },
+            { "<C-f>", "<cmd>Telescope current_buffer_fuzzy_find<CR>", desc = "Search in buffer" },
             { "<leader>/", "<cmd>Telescope current_buffer_fuzzy_find<CR>", desc = "Search in buffer" },
             { "<leader>g", "<cmd>Telescope live_grep<CR>", desc = "Live grep" },
             { "<leader>b", "<cmd>Telescope buffers<CR>", desc = "Buffers" },
