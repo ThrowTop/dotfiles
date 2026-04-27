@@ -16,7 +16,7 @@ map("n", "<S-Tab>", "<cmd>bprevious<CR>", { silent = true })
 local function close_buffer()
     local listed = vim.fn.getbufinfo({ buflisted = 1 })
     if #listed > 1 then
-        vim.cmd("bpreviouu")
+        vim.cmd("bprevious")
         vim.cmd("bdelete! #")
     else
         vim.cmd("quit!")
@@ -32,6 +32,13 @@ for i = 1, 9 do
         end
     end, { silent = true })
 end
+
+map("n", "<C-h>", "<C-w>h", { silent = true })
+map("n", "<C-j>", "<C-w>j", { silent = true })
+map("n", "<C-k>", "<C-w>k", { silent = true })
+map("n", "<C-l>", "<C-w>l", { silent = true })
+
+map("n", "<leader>q", "<cmd>cclose<CR>", { silent = true, desc = "Close quickfix" })
 
 map("n", "<Esc>", "<cmd>nohlsearch<CR>", { silent = true })
 

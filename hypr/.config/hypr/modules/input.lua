@@ -32,13 +32,10 @@ hlc.config({
 hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 
 hl.device({
-    enabled = true,
+    -- enabled = true,
     name = "znt0001:00-14e5:650e-touchpad",
     disable_while_typing = true,
     sensitivity = -0.3,
-    -- accel_profile = "flat",
-    natural_scroll = true,
-    -- ["tap-to-click"] = true,
 })
 
 

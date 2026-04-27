@@ -4,7 +4,7 @@ local hlc = require("hlc")
 local screenshot = require("helpers/screenshot")
 local tilt_mode = require("helpers/tilt_mode")
 local touchscreen = require("helpers/touchscreen")
-
+local bitwarden = require("helpers/bitwarden")
 local mod = s.mainMod
 local ipc = "qs -c noctalia-shell ipc call"
 
@@ -22,6 +22,8 @@ hl.bind(mod .. " + F5", touchscreen)
 hl.bind("CTRL + SUPER + XF86TouchpadToggle", touchscreen)
 hl.bind(mod .. " + SHIFT + U", hl.dsp.exec_cmd("pkill qs; qs -c noctalia-shell"))
 hl.bind(mod .. " + M", hl.dsp.exit())
+
+hl.bind(mod .. " + P", bitwarden)
 
 -- Noctalia shell
 hl.bind("XF86Launch1", hl.dsp.exec_cmd(ipc .. " settings open"))
@@ -193,8 +195,8 @@ hl.bind("ALT+TAB", hl.dsp.window.cycle_next())
 -- hlc.input.touchpad.tap_and_drag = false
 
 hl.bind(mod .. "+ x", function()
-    local tcc = hlc.input.touchpad.tap_to_click
     hlc.input.touchpad.tap_to_click = not hlc.input.touchpad.tap_to_click
+    local tcc = hlc.input.touchpad.tap_to_click
     hlc.notify("TTC = " .. tostring(tcc))
 end)
 

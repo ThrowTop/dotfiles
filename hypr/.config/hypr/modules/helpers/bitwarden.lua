@@ -1,0 +1,41 @@
+local w, h = 600, 600
+local x_gap = 20 -- gap from right edge
+local y_top = 70 -- offset from top to clear the Noctalia bar
+
+hl.window_rule({
+    name = "bitwarden-float",
+    match = { class = "^(Bitwarden)$" },
+    float = true,
+    size = w .. " " .. h,
+    move = "100%-" .. (w + x_gap) .. " " .. y_top,
+    animation = "slide right",
+})
+
+return function()
+    local wins = hl.get_windows({ class = "Bitwarden" })
+    if #wins == 0 then
+        hl.dsp.exec_cmd("bitwarden-desktop")()
+        return
+    end
+    local win = wins[1]
+    local addr = "address:" .. win.address
+    if win.pinned then
+        hl.dsp.window.pin({ action = "disable", window = addr })()
+        hl.dsp.window.move({ workspace = "special:bitwarden", follow = false, window = addr })()
+    else
+        local ws = hl.get_active_workspace()
+        if not ws then
+            return
+        end
+        local mon = ws.monitor
+        hl.dsp.window.move({ workspace = ws.id, follow = false, window = addr })()
+        hl.dsp.window.resize({ x = w, y = h, window = addr })()
+        if mon then
+            hl.dsp.window.move({ x = mon.width - w - x_gap, y = y_top, window = addr })()
+        end
+        hl.dsp.window.pin({ action = "enable", window = addr })()
+        hl.dsp.focus({ window = addr })()
+    end
+end
+
+

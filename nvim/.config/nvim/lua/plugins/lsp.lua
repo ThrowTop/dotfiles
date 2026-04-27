@@ -18,6 +18,16 @@ local servers = {
 }
 
 return {
+    {
+        "folke/lazydev.nvim",
+        ft = "lua",
+        opts = {
+            library = {
+                { path = "${3rd}/luv/library", words = { "vim%.uv" } },
+            },
+        },
+    },
+
     { "williamboman/mason.nvim", cmd = "Mason", build = ":MasonUpdate", opts = {} },
 
     {
@@ -57,16 +67,18 @@ return {
 
             vim.api.nvim_create_autocmd("LspAttach", {
                 callback = function(ev)
-                    local opts = { buffer = ev.buf, silent = true }
-                    vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
-                    vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts)
-                    vim.keymap.set("n", "gr", vim.lsp.buf.references, opts)
-                    vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts)
-                    vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
-                    vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
-                    vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts)
-                    vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, opts)
-                    vim.keymap.set("n", "]d", vim.diagnostic.goto_next, opts)
+                    local buf = ev.buf
+                    local o = { buffer = buf, silent = true }
+                    local ow = { buffer = buf, silent = true, nowait = true }
+                    vim.keymap.set("n", "gd", vim.lsp.buf.definition, o)
+                    vim.keymap.set("n", "gD", vim.lsp.buf.declaration, o)
+                    vim.keymap.set("n", "gr", vim.lsp.buf.references, ow)
+                    vim.keymap.set("n", "gi", vim.lsp.buf.implementation, o)
+                    vim.keymap.set("n", "K", vim.lsp.buf.hover, o)
+                    vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, o)
+                    vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, ow)
+                    vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, o)
+                    vim.keymap.set("n", "]d", vim.diagnostic.goto_next, o)
                 end,
             })
 

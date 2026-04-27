@@ -76,6 +76,8 @@ function M.remove(path)
     vim.notify("projects: removed " .. path, vim.log.levels.INFO)
 end
 
+local cwd_file = vim.fn.stdpath("state") .. "/nvim_project_cwd"
+
 function M.switch(path)
     if vim.fn.isdirectory(path) ~= 1 then
         vim.notify("projects: missing directory: " .. path, vim.log.levels.ERROR)
@@ -83,6 +85,8 @@ function M.switch(path)
     end
     vim.cmd("silent! %bd!")
     vim.cmd("cd " .. vim.fn.fnameescape(path))
+    local f = io.open(cwd_file, "w")
+    if f then f:write(path) f:close() end
     vim.notify("projects: switched to " .. path, vim.log.levels.INFO)
     vim.schedule(function()
         vim.cmd("Telescope find_files")

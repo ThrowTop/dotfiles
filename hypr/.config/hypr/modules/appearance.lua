@@ -1,7 +1,7 @@
 local hlc = require("hlc")
 local mod = require("settings").mainMod
 
-hlc.config = {
+hlc.config({
     general = {
         gaps_in = 4,
         gaps_out = 8,
@@ -43,7 +43,7 @@ hlc.config = {
     animations = { enabled = true },
     master = { new_status = "master" },
     misc = { force_default_wallpaper = 0, disable_hyprland_logo = true },
-}
+})
 
 local curves = {
     easeOutQuint = hlc.curve(0.23, 1, 0.32, 1),
