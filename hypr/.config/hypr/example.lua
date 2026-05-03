@@ -39,7 +39,7 @@ local ease = hlc.curve(0.23, 1, 0.32, 1)
 local linear = hlc.curve(0, 0, 1, 1)
 local snappy = hlc.curve(0.15, 0, 0.1, 1)
 
--- named curve, registers it under that name in hyprland
+-- named curve, reanimationgisters it under that name in hyprland
 local myease = hlc.curve("myease", 0.23, 1, 0.32, 1)
 
 -- hlc.style returns a style value passed to hlc.animation
@@ -66,14 +66,14 @@ hlc.animation.fade = { speed = 3, curve = ease }
 
 -- individual field writes work too
 hlc.animation.windows.speed = 6
-local spd = hlc.animation.windows.speed -- returns 6
+local spd = hlc.config.animation.windows.speed -- returns 6
 
 -- hlc.notify wraps hl.notification.create, timeout defaults to 2000ms
 hlc.notify("hello")
 hlc.notify("Short Hello", 1000)
 
 -- hlc.decoration is shorthand for hlc.config.decoration (same proxy)
-local rounding = hlc.decoration.rounding -- returns 10
+local rounding = hlc.decoration.rounding           -- returns 10
 local blur_on = hlc.config.decoration.blur.enabled -- returns true
 
 -- call syntax does a partial write — only the given keys are touched
@@ -103,5 +103,3 @@ hl.bind(mod .. " + SHIFT + D", function()
     hlc.decoration.inactive_opacity = on and 1.0 or 0.8
     hlc.notify("dim: " .. (on and "off" or "on"), 1500)
 end)
-
-

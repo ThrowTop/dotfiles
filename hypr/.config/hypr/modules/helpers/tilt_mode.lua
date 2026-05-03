@@ -1,3 +1,5 @@
+local hlc = require("hlc")
+
 local BACKLIGHT = "/sys/class/leds/samsung-galaxybook::kbd_backlight/brightness"
 local STOPFILE = "/tmp/tilt-stop"
 
@@ -17,7 +19,7 @@ local function refresh_start()
         f:close()
     end
     io.open(STOPFILE, "w"):close() -- ensure clean state
-    hl.dsp.exec_cmd(string.format("bash -c 'rm -f %s; while [ ! -f %s ]; do echo %s > %s 2>/dev/null; sleep 1.5; done'", STOPFILE, STOPFILE, level, BACKLIGHT))()
+    hlc.d.exec_cmd(string.format("bash -c 'rm -f %s; while [ ! -f %s ]; do echo %s > %s 2>/dev/null; sleep 1.5; done'", STOPFILE, STOPFILE, level, BACKLIGHT))
 end
 
 local function hid_loaded()
@@ -32,13 +34,13 @@ end
 
 return function()
     if hid_loaded() then
-        hl.dsp.exec_cmd("sudo modprobe -r intel_hid")()
+        hlc.d.exec_cmd("sudo modprobe -r intel_hid")
         refresh_stop()
         refresh_start()
         hl.notification.create({ text = "Tilt mode ON", timeout = 3000, icon = "ok" })
     else
         refresh_stop()
-        hl.dsp.exec_cmd("sudo modprobe intel_hid")()
+        hlc.d.exec_cmd("sudo modprobe intel_hid")
         hl.notification.create({ text = "Tilt mode OFF", timeout = 3000, icon = "ok" })
     end
 end

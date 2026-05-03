@@ -1,5 +1,3 @@
--- Entry point — load all modules in order.
-
 package.path = os.getenv("HOME") .. "/.config/hypr/modules/?.lua;" .. package.path
 
 local s = require("settings")
@@ -8,6 +6,7 @@ hlc.notify("Hyprland Config Reloaded")
 
 require("keybindings")
 
+require("test")
 -- require("example")
 require("monitors")
 require("environment")

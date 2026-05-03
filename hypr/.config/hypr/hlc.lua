@@ -4,6 +4,9 @@ local M = {}
 -- types
 
 ---@class HLC.Curve
+---@field _name string
+---@field _type "bezier"|"spring"
+
 ---@class HLC.Style
 
 ---@class HLC.NotifyOptions
@@ -26,10 +29,16 @@ local M = {}
 ---@field loop      fun(): HLC.Style
 ---@field once      fun(): HLC.Style
 
+---@class HLC.ExecResult
+---@field stdout string|nil
+---@field code   integer
+
 ---@class HLC.AnimationSpec
 ---@field enabled? boolean
 ---@field speed?   number
 ---@field curve?   HLC.Curve|string
+---@field bezier?  string
+---@field spring?  string
 ---@field style?   HLC.Style|string
 
 ---@class HLC.AnimationLeafProxy : HLC.AnimationSpec
@@ -109,12 +118,17 @@ local M = {}
 
 ---@class HLC.Module
 ---@field config      HLC.ConfigProxy
----@field curve       fun(a: string|number, b: number, c: number, d: number, e?: number): HLC.Curve
+---@field d           table
+---@field bezier      fun(x1: number, y1: number, x2: number, y2: number, name?: string): HLC.Curve
+---@field spring      fun(mass: number, stiffness: number, dampening: number, name?: string): HLC.Curve
+---@field curve       fun(x1: number, y1: number, x2: number, y2: number, name?: string): HLC.Curve
 ---@field style       HLC.StyleFactory
 ---@field animation   HLC.AnimationProxy
 ---@field anim        fun(speed: number, curve?: HLC.Curve|string, style?: HLC.Style|string): HLC.AnimationSpec
 ---@field gradient    fun(...): HLC.Gradient
 ---@field notify      fun(text: string, opts?: integer|HLC.NotifyOptions): nil
+---@field exec_async  fun(cmd: string, callback: fun(result: HLC.ExecResult), opts?: { interval?: integer }): nil
+---@field exec_sync   fun(cmd: string): string|nil
 ---@field general     HLC.ConfigProxy
 ---@field decoration  HLC.ConfigProxy
 ---@field input       HLC.ConfigProxy
@@ -257,36 +271,56 @@ local curve_counter = 0
 
 local function validate_coord(label, v)
     if type(v) ~= "number" then
-        error("hlc.curve: " .. label .. " must be a number", 3)
+        error("hlc.bezier: " .. label .. " must be a number", 3)
     end
     if v < -1 or v > 2 then
-        error("hlc.curve: " .. label .. " must be in [-1, 2]", 3)
+        error("hlc.bezier: " .. label .. " must be in [-1, 2]", 3)
     end
 end
 
----@overload fun(x1: number, y1: number, x2: number, y2: number): HLC.Curve
----@param  name string
+local function validate_spring(label, v)
+    if type(v) ~= "number" or v <= 0 then
+        error("hlc.spring: " .. label .. " must be a positive number", 3)
+    end
+end
+
 ---@param  x1   number
 ---@param  y1   number
 ---@param  x2   number
 ---@param  y2   number
+---@param  name? string
 ---@return HLC.Curve
-function M.curve(name, x1, y1, x2, y2)
-    local a, b, c, d, e = name, x1, y1, x2, y2
-    if type(a) == "string" then
-        name, x1, y1, x2, y2 = a, b, c, d, e
-    else
+function M.bezier(x1, y1, x2, y2, name)
+    if name == nil then
         curve_counter = curve_counter + 1
         name = string.format("hlc_curve_%d", curve_counter)
-        x1, y1, x2, y2 = a, b, c, d
     end
     validate_coord("x1", x1)
     validate_coord("y1", y1)
     validate_coord("x2", x2)
     validate_coord("y2", y2)
     hl.curve(name, { type = "bezier", points = { { x1, y1 }, { x2, y2 } } })
-    return setmetatable({ _name = name }, curve_mt)
+    return setmetatable({ _name = name, _type = "bezier" }, curve_mt)
 end
+
+---@param  mass      number
+---@param  stiffness number
+---@param  dampening number
+---@param  name?     string
+---@return HLC.Curve
+function M.spring(mass, stiffness, dampening, name)
+    if name == nil then
+        curve_counter = curve_counter + 1
+        name = string.format("hlc_curve_%d", curve_counter)
+    end
+    validate_spring("mass", mass)
+    validate_spring("stiffness", stiffness)
+    validate_spring("dampening", dampening)
+    hl.curve(name, { type = "spring", mass = mass, stiffness = stiffness, dampening = dampening })
+    return setmetatable({ _name = name, _type = "spring" }, curve_mt)
+end
+
+M.curve = M.bezier
 
 local function resolve_curve(c)
     if c == nil then
@@ -410,14 +444,29 @@ end
 
 local anim_state = {}
 
+local function curve_key(c)
+    if getmetatable(c) == curve_mt and rawget(c, "_type") == "spring" then
+        return "spring"
+    end
+    return "bezier"
+end
+
 local function apply_animation(leaf)
     local s = anim_state[leaf]
     local spec = {
         leaf = leaf,
         enabled = s.enabled,
         speed = s.speed,
-        bezier = resolve_curve(s.curve),
     }
+    if s.curve ~= nil then
+        spec[curve_key(s.curve)] = resolve_curve(s.curve)
+    elseif s.spring ~= nil then
+        spec.spring = s.spring
+    elseif s.bezier ~= nil then
+        spec.bezier = s.bezier
+    else
+        spec.bezier = "default"
+    end
     local str = resolve_style(s.style)
     if str then
         spec.style = str
@@ -437,7 +486,7 @@ local function normalise_animation(leaf, spec)
     if enabled and (type(speed) ~= "number" or speed <= 0) then
         error(string.format("hlc.animation.%s: speed must be > 0 when enabled", leaf), 3)
     end
-    return { enabled = enabled, speed = speed, curve = spec.curve, style = spec.style }
+    return { enabled = enabled, speed = speed, curve = spec.curve, bezier = spec.bezier, spring = spec.spring, style = spec.style }
 end
 
 local leaf_mt = {}
@@ -560,6 +609,84 @@ function M.notify(text, opts)
     t.icon = t.icon or "ok"
     hl.notification.create(t)
 end
+
+-- exec
+
+local _exec_id = 0
+
+---@param cmd      string
+---@param callback fun(result: HLC.ExecResult): nil
+---@param opts?    { interval?: integer }
+function M.exec_async(cmd, callback, opts)
+    _exec_id = _exec_id + 1
+    local id       = string.format("%d_%d", os.time(), _exec_id)
+    local sh_file  = string.format("/tmp/hlc_%s.sh",   id)
+    local out_file = string.format("/tmp/hlc_%s.out",  id)
+    local don_file = string.format("/tmp/hlc_%s.done", id)
+    local interval = (opts and opts.interval) or 100
+
+    local f = io.open(sh_file, "w")
+    if not f then
+        callback({ stdout = nil, code = -1 })
+        return
+    end
+    f:write(string.format("#!/bin/sh\n%s > %s 2>&1\necho $? > %s\n", cmd, out_file, don_file))
+    f:close()
+
+    hl.exec_cmd("sh " .. sh_file)
+
+    local timer
+    timer = hl.timer(function()
+        local df = io.open(don_file, "r")
+        if not df then return end
+        local code_str = df:read("*l")
+        df:close()
+
+        timer:set_enabled(false)
+
+        local stdout
+        local of = io.open(out_file, "r")
+        if of then
+            local s = of:read("*a"):gsub("%s+$", "")
+            of:close()
+            stdout = s ~= "" and s or nil
+        end
+
+        os.remove(sh_file)
+        os.remove(out_file)
+        os.remove(don_file)
+
+        callback({ stdout = stdout, code = tonumber(code_str) or -1 })
+    end, { timeout = interval, type = "repeat" })
+end
+
+---@param  cmd string
+---@return string|nil
+function M.exec_sync(cmd)
+    local f = io.popen(cmd)
+    if not f then return nil end
+    local s = f:read("*a"):gsub("%s+$", "")
+    f:close()
+    return s ~= "" and s or nil
+end
+
+-- dispatch
+
+local function wrap_dsp(dsp)
+    local t = {}
+    for k, v in pairs(dsp) do
+        if type(v) == "function" then
+            t[k] = function(...)
+                hl.dispatch(v(...))
+            end
+        elseif type(v) == "table" then
+            t[k] = wrap_dsp(v)
+        end
+    end
+    return t
+end
+
+M.d = wrap_dsp(hl.dsp)
 
 -- export
 

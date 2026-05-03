@@ -18,8 +18,6 @@ abbr -a hx helix
 abbr -a cls clear
 abbr -a co 'codium .'
 abbr -a please sudo
-abbr -a apt 'man pacman'
-abbr -a apt-get 'man pacman'
 abbr -a tb 'nc termbin.com 9999'
 
 # Navigation
@@ -44,7 +42,6 @@ abbr -a rip       "expac --timefmt='%Y-%m-%d %T' '%l\t%n %v' | sort | tail -200 
 # System / inspection
 abbr -a jctl    'journalctl -p 3 -xb'
 abbr -a hw      'hwinfo --short'
-abbr -a grubup  'sudo grub-mkconfig -o /boot/grub/grub.cfg'
 abbr -a psmem   'ps auxf | sort -nr -k 4'
 abbr -a psmem10 'ps auxf | sort -nr -k 4 | head -10'
 
@@ -86,3 +83,5 @@ bind \ce 'thunar . >/dev/null 2>&1 &; disown; commandline -f repaint'
 bind \CO 'sudo -E nvim .; commandline -f repaint'
 bind \ct 'history | head -1 | tr -d "\n" | wl-copy; commandline -f repaint'
 bind \cy 'set -l __out (eval (history | head -1) 2>&1); string join \n $__out | wl-copy; commandline -f repaint'
+
+

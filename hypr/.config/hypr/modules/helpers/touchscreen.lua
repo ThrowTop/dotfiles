@@ -1,3 +1,5 @@
+local hlc = require("hlc")
+
 local DEVICE = "i2c-GXTP7936:00"
 local DRIVER = "/sys/bus/i2c/drivers/i2c_hid_acpi"
 
@@ -6,12 +8,12 @@ local function is_enabled()
 end
 
 local function enable()
-    hl.dsp.exec_cmd("bash -c 'echo " .. DEVICE .. " | sudo tee " .. DRIVER .. "/bind > /dev/null'")()
+    hlc.d.exec_cmd("bash -c 'echo " .. DEVICE .. " | sudo tee " .. DRIVER .. "/bind > /dev/null'")
     hl.notification.create({ text = "Touchscreen on", timeout = 1500, icon = "ok" })
 end
 
 local function disable()
-    hl.dsp.exec_cmd("bash -c 'echo " .. DEVICE .. " | sudo tee " .. DRIVER .. "/unbind > /dev/null'")()
+    hlc.d.exec_cmd("bash -c 'echo " .. DEVICE .. " | sudo tee " .. DRIVER .. "/unbind > /dev/null'")
     hl.notification.create({ text = "Touchscreen off", timeout = 1500, icon = "ok" })
 end
 

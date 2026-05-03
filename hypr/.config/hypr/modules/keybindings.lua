@@ -128,7 +128,7 @@ if not s.is_laptop then
             if mon.name == monitorName then
                 local ws = mon.active_workspace
                 if ws then
-                    hl.dsp.window.move({})()
+                    hlc.d.window.move({})
                 end
                 return
             end
@@ -154,6 +154,8 @@ end
 -- -------------------------
 -- Media & function keys
 -- -------------------------
+hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd("loginctl lock-session"), { locked = true })
+
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
 hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { locked = true, repeating = true })
 hl.bind("XF86AudioMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true, repeating = true })

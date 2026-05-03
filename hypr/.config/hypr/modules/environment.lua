@@ -11,13 +11,15 @@ hl.env("QT_QPA_PLATFORMTHEME", "")
 -- from gsettings (set to prefer-dark via exec_once below)
 hl.env("ADW_DISABLE_PORTAL", "1")
 
-hl.permission("/usr/(bin|local/bin)/grim", "screencopy", "allow")
-hl.permission("/usr/(lib|libexec|lib65)/xdg-desktop-portal-hyprland", "screencopy", "allow")
+hl.permission({ binary = "/usr/(bin|local/bin)/grim", type = "screencopy", mode = "allow" })
+hl.permission({ binary = "/usr/(lib|libexec|lib65)/xdg-desktop-portal-hyprland", type = "screencopy", mode = "allow" })
 
 hl.on("hyprland.start", function()
-    hl.dsp.exec_cmd("vicinae server")()
-    hl.dsp.exec_cmd("qs -c noctalia-shell")()
-    hl.dsp.exec_cmd("awww-daemon & waypaper --restore")()
-    hl.dsp.exec_cmd("hypridle")()
-    hl.dsp.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme prefer-dark")()
+    hlc.d.exec_cmd("hyprlock")
+    hlc.d.exec_cmd("vicinae server")
+    hlc.d.exec_cmd("qs -c noctalia-shell")
+    hlc.d.exec_cmd("awww-daemon & waypaper --restore")
+    hlc.d.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme prefer-dark")
 end)
+
+
