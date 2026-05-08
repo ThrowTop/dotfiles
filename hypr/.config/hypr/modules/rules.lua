@@ -1,17 +1,31 @@
 -- -------------------------
 -- Layer rules
 -- -------------------------
+
+-- xray=0 globally so layers don't bleed through each other
 hl.layer_rule({
-    name = "vicinae-blur",
-    match = { namespace = "vicinae" },
-    blur = true,
-    ignore_alpha = 0,
+    name = "xray-all",
+    match = { namespace = ".*" },
+    xray = false,
 })
 
+-- Main bar (PanelWindow with namespace "hyprv-quickshell")
 hl.layer_rule({
-    name = "vicinae-no-animation",
-    match = { namespace = "vicinae" },
-    no_anim = true,
+    name = "quickshell-bar",
+    match = { namespace = "hyprv-quickshell" },
+    blur = true,
+    blur_popups = true,
+    ignore_alpha = 0.15,
+})
+
+-- All popup/overlay panels (shell:hyprv-tray-menu, shell:hyprv-battery-info, etc.)
+-- Dark surfaces render at 0.07-0.11 alpha so threshold must be below that
+hl.layer_rule({
+    name = "quickshell-shell-popups",
+    match = { namespace = "shell:.*" },
+    blur = true,
+    blur_popups = true,
+    ignore_alpha = 0.05,
 })
 
 -- -------------------------

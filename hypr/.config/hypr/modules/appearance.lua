@@ -5,7 +5,7 @@ hlc.config({
     general = {
         gaps_in = 4,
         gaps_out = 8,
-        border_size = 2,
+        border_size = 1,
         col = {
             active_border = { colors = { "rgb(B4BEFE)", "rgb(303030)", angle = 45 } },
             inactive_border = { colors = { "rgb(303030)", "rgb(B4BEFE)", angle = 35 } },
@@ -15,7 +15,7 @@ hlc.config({
         resize_corner = 3,
     },
     decoration = {
-        rounding = 12,
+        rounding = 16,
         rounding_power = 2,
         active_opacity = 1.0,
         inactive_opacity = 0.9,
@@ -46,42 +46,46 @@ hlc.config({
 })
 
 local curves = {
-    easeOutQuint = hlc.bezier(0.23, 1, 0.32, 1),
-    easeInOutCubic = hlc.bezier(0.65, 0.05, 0.36, 1),
-    linear = hlc.bezier(0, 0, 1, 1),
-    almostLinear = hlc.bezier(0.5, 0.5, 0.75, 1),
+    spring = hlc.spring(1, 40, 7), -- smooth, slightly faster than before
+    fluid = hlc.spring(1, 25, 5), -- softer spring for workspace slides
+    ease = hlc.bezier(0.23, 1, 0.32, 1), -- easeOutQuint for exits/fades
     quick = hlc.bezier(0.15, 0, 0.1, 1),
-    -- spring: snappy with slight natural overshoot, good for windows
-    snap = hlc.spring(1, 20, 4),
-    fluid = hlc.spring(4, 40, 12),
+    linear = hlc.bezier(0, 0, 1, 1),
 }
 
 local popin87 = hlc.style.popin(87)
 local slide = hlc.style.slide()
 local fade = hlc.style.fade()
+local gnomed = hlc.style.gnomed()
 
--- hlc.anim(speed, curve?, style?) is just a table factory, identical to writing
--- { speed = ..., curve = ..., style = ... } by hand. use whichever reads better.
--- curve can also be a raw string referencing a curve by its Hyprland name,
--- e.g. curve = "linear" or curve = "myease" for a curve registered elsewhere.
 hlc.animation = {
     global = { speed = 10 },
-    border = { speed = 5.39, curve = curves.easeOutQuint },
-    windows    = hlc.anim(4.79, curves.snap),
-    windowsIn  = hlc.anim(4.1,  curves.snap,   popin87),
-    windowsOut = { speed = 1.49, curve = "linear", style = popin87 },
-    fadeIn  = { speed = 1.73, curve = curves.almostLinear },
-    fadeOut = { speed = 1.46, curve = curves.almostLinear },
-    fade    = { speed = 3.03, curve = curves.quick },
-    layers    = hlc.anim(3.81, curves.snap),
-    layersIn  = hlc.anim(4,    curves.snap,   fade),
-    layersOut = hlc.anim(1.5,  curves.linear, fade),
-    fadeLayersIn  = { speed = 1.79, curve = curves.almostLinear },
-    fadeLayersOut = { speed = 1.39, curve = curves.almostLinear },
-    workspaces    = hlc.anim(3.5, curves.fluid, slide),
-    workspacesIn  = hlc.anim(3.5, curves.fluid, slide),
+    border = { speed = 5, curve = curves.ease },
+
+    -- windows (valid styles: slide, popin, gnomed)
+    windows = hlc.anim(4.5, curves.spring),
+    windowsIn = hlc.anim(4.5, curves.spring, popin87),
+    windowsOut = hlc.anim(1.5, curves.ease, gnomed),
+    windowsMove = hlc.anim(4.5, curves.spring),
+
+    -- layers (bars, overlays) — match window feel
+    layers = hlc.anim(4.5, curves.spring, slide),
+    layersIn = hlc.anim(4.5, curves.spring, fade),
+    layersOut = hlc.anim(1.5, curves.ease, fade),
+    fadeLayersIn = { speed = 2, curve = curves.ease },
+    fadeLayersOut = { speed = 1.5, curve = curves.ease },
+
+    -- workspaces — fluid spring slide
+    workspaces = hlc.anim(3.5, curves.fluid, slide),
+    workspacesIn = hlc.anim(3.5, curves.fluid, slide),
     workspacesOut = hlc.anim(3.0, curves.fluid, slide),
-    zoomFactor = { speed = 7, curve = curves.quick },
+
+    -- fades
+    fade = { speed = 3, curve = curves.quick },
+    fadeIn = { speed = 2, curve = curves.ease },
+    fadeOut = { speed = 1.5, curve = curves.ease },
+
+    zoomFactor = { speed = 6, curve = curves.spring },
 }
 
 

@@ -6,8 +6,7 @@ hlc.notify("Hyprland Config Reloaded")
 
 require("keybindings")
 
-require("test")
--- require("example")
+-- require("test")
 require("monitors")
 require("environment")
 require("appearance")

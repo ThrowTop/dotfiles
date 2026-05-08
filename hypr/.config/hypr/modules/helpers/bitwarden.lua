@@ -2,7 +2,7 @@ local hlc = require("hlc")
 
 local w, h = 600, 600
 local x_gap = 20 -- gap from right edge
-local y_top = 70 -- offset from top to clear the Noctalia bar
+local y_top = 68 -- offset from top to clear the quickshell bar (58px) + gap
 
 hl.window_rule({
     name = "bitwarden-float",

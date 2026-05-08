@@ -20,14 +20,15 @@ local M = {}
 ---@field angle?  number
 
 ---@class HLC.StyleFactory
----@field popin     fun(perc?: number): HLC.Style
----@field slide     fun(perc?: number): HLC.Style
----@field slidevert fun(): HLC.Style
----@field fade      fun(): HLC.Style
----@field gnome     fun(): HLC.Style
----@field gnomed    fun(): HLC.Style
----@field loop      fun(): HLC.Style
----@field once      fun(): HLC.Style
+---@field popin        fun(perc?: number): HLC.Style
+---@field slide        fun(perc?: number): HLC.Style
+---@field slidevert    fun(): HLC.Style
+---@field fade         fun(): HLC.Style
+---@field gnomed       fun(): HLC.Style
+---@field slidefade    fun(): HLC.Style
+---@field slidefadevert fun(): HLC.Style
+---@field loop         fun(): HLC.Style
+---@field once         fun(): HLC.Style
 
 ---@class HLC.ExecResult
 ---@field stdout string|nil
@@ -57,7 +58,6 @@ local M = {}
 ---@field fadeOut?             HLC.AnimationSpec
 ---@field fadeSwitch?          HLC.AnimationSpec
 ---@field fadeShadow?          HLC.AnimationSpec
----@field fadeGlow?            HLC.AnimationSpec
 ---@field fadeDim?             HLC.AnimationSpec
 ---@field fadeLayers?          HLC.AnimationSpec
 ---@field fadeLayersIn?        HLC.AnimationSpec
@@ -92,7 +92,6 @@ local M = {}
 ---@field fadeOut?             HLC.AnimationSpec
 ---@field fadeSwitch?          HLC.AnimationSpec
 ---@field fadeShadow?          HLC.AnimationSpec
----@field fadeGlow?            HLC.AnimationSpec
 ---@field fadeDim?             HLC.AnimationSpec
 ---@field fadeLayers?          HLC.AnimationSpec
 ---@field fadeLayersIn?        HLC.AnimationSpec
@@ -375,11 +374,14 @@ M.style = {
     fade = function()
         return make_style("fade", "fade")
     end,
-    gnome = function()
-        return make_style("gnome", "gnome")
-    end,
     gnomed = function()
         return make_style("gnomed", "gnomed")
+    end,
+    slidefade = function()
+        return make_style("slidefade", "slidefade")
+    end,
+    slidefadevert = function()
+        return make_style("slidefadevert", "slidefadevert")
     end,
     loop = function()
         return make_style("loop", "loop")
@@ -419,7 +421,6 @@ for _, leaf in ipairs({
     "fadeOut",
     "fadeSwitch",
     "fadeShadow",
-    "fadeGlow",
     "fadeDim",
     "fadeLayers",
     "fadeLayersIn",

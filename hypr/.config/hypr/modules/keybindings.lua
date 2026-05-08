@@ -6,7 +6,7 @@ local tilt_mode = require("helpers/tilt_mode")
 local touchscreen = require("helpers/touchscreen")
 local bitwarden = require("helpers/bitwarden")
 local mod = s.mainMod
-local ipc = "qs -c noctalia-shell ipc call"
+local qs_scripts = os.getenv("HOME") .. "/.config/HyprV/quickshell/scripts"
 
 -- -------------------------
 -- Applications
@@ -20,14 +20,10 @@ hl.bind("Print", screenshot)
 hl.bind(mod .. " + Print", hl.dsp.exec_cmd("hyprpicker | wl-copy"))
 hl.bind(mod .. " + F5", touchscreen)
 hl.bind("CTRL + SUPER + XF86TouchpadToggle", touchscreen)
-hl.bind(mod .. " + SHIFT + U", hl.dsp.exec_cmd("pkill qs; qs -c noctalia-shell"))
+hl.bind(mod .. " + SHIFT + U", hl.dsp.exec_cmd("pkill quickshell; bash " .. qs_scripts .. "/launch.sh"))
 hl.bind(mod .. " + M", hl.dsp.exit())
 
 hl.bind(mod .. " + P", bitwarden)
-
--- Noctalia shell
-hl.bind("XF86Launch1", hl.dsp.exec_cmd(ipc .. " settings open"))
-hl.bind(mod .. " + F1", hl.dsp.exec_cmd(ipc .. " settings open"))
 
 -- -------------------------
 -- Window management
@@ -147,7 +143,6 @@ end
 -- XF86AudioRaiseVolume, XF86AudioLowerVolume, XF86AudioMute
 -- XF86AudioMicMute, XF86AudioNext, XF86AudioPause, XF86AudioPlay
 -- XF86AudioPrev, XF86MonBrightnessUp, XF86MonBrightnessDown
--- XF86Launch1 (Noctalia settings)
 --
 -- To find key codes: run `wev` or `libinput debug-events` in terminal
 --
@@ -156,12 +151,12 @@ end
 -- -------------------------
 hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd("loginctl lock-session"), { locked = true })
 
-hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
 hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { locked = true, repeating = true })
 hl.bind("XF86AudioMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true, repeating = true })
 hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"), { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"), { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"), { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("brightnessctl set 5%+"), { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl set 5%-"), { locked = true, repeating = true })
 hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), { locked = true })
 hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
