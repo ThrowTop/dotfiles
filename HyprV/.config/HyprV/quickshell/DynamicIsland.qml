@@ -52,7 +52,7 @@ Item {
     property bool osdActive: false
     property string osdType: ""
     property int osdValue: 0
-    readonly property real osdExpandedWidth: (osdType === "charger" || osdType === "lowbattery") ? 280 : 220
+    readonly property real osdExpandedWidth: (osdType === "volume" || osdType === "brightness") ? 220 : 280
     readonly property real osdExpandedHeight: collapsedHeight
     readonly property bool agentExpanded: !osdActive && agentActive && hoverTarget === "agent" && islandHover.hovered
     readonly property bool musicExpanded: !osdActive && musicActive && hoverTarget === "music" && islandHover.hovered

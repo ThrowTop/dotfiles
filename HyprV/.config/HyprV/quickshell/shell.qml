@@ -1,4 +1,4 @@
-//@ pragma UseQApplicationsh
+//@ pragma UseQApplication
 
 import QtQuick
 import QtQuick.Effects
