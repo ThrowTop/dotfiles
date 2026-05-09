@@ -154,7 +154,6 @@ Item {
         }
         if (shellRoot) {
             shellRoot.runDetached(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", (nextValue / 100).toFixed(2)]);
-            shellRoot.scheduleAudioRefresh();
         }
     }
 
@@ -165,7 +164,6 @@ Item {
         shellRoot.audioAvailable = true;
         shellRoot.audioMuted = !shellRoot.audioMuted;
         shellRoot.runDetached(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"]);
-        shellRoot.scheduleAudioRefresh();
     }
 
     function toggleWifiEnabled() {

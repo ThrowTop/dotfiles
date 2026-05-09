@@ -1,7 +1,19 @@
 -- -------------------------
 -- Layer rules
 -- -------------------------
+hl.layer_rule({
+    name = "vicinae-blur",
+    match = { namespace = "vicinae" },
+    blur = true,
+    ignore_alpha = 0,
+})
 
+-- disable animation for vicinae only
+hl.layer_rule({
+    name = "vicinae-no-animation",
+    match = { namespace = "vicinae" },
+    no_anim = true,
+})
 -- xray=0 globally so layers don't bleed through each other
 hl.layer_rule({
     name = "xray-all",
@@ -52,7 +64,7 @@ hl.window_rule({
 
 hl.window_rule({
     name = "satty-instant",
-    match = { class = "^(satty|com%.gabm%.satty)$" },
+    match = { class = "^(satty|com\\.gabm\\.satty)$" },
     float = true,
     no_anim = true,
     no_blur = true,

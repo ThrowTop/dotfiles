@@ -16,7 +16,7 @@ ShellRoot {
     readonly property string homeDir: Quickshell.env("HOME") || ""
     readonly property string configDir: homeDir + "/.config/HyprV"
 
-    property bool darkMode: false
+    property bool darkMode: true
     property date now: new Date()
     property real cpuUsage: 0
     property real memoryUsage: 0
@@ -90,6 +90,11 @@ ShellRoot {
     property var primaryBarWindow: null
     property var quickAdjustAnchorItem: null
     property var wifiPanelController: null
+    property string islandOsdType: ""
+    property int islandOsdValue: 0
+    property bool islandOsdTrigger: false
+    property bool _osdReady: false
+    property bool _brightnessFromPoll: false
 
     property real _previousCpuTotal: -1
     property real _previousCpuIdle: -1
@@ -281,31 +286,42 @@ ShellRoot {
     onBluetoothDeviceObjectsChanged: syncBluetoothStatusFromModel()
 
     Component.onCompleted: syncBluetoothStatusFromModel()
-    function resetAudioState() {
-        root.audioAvailable = false;
-        root.audioMuted = false;
-        root.audioVolumePercent = 0;
+
+    onAudioVolumePercentChanged: {
+        if (!root._osdReady) return;
+        root.islandOsdType = "volume";
+        root.islandOsdValue = root.audioMuted ? 0 : root.audioVolumePercent;
+        root.islandOsdTrigger = !root.islandOsdTrigger;
     }
-    function updateAudioState(output) {
-        let available = false;
-        let muted = false;
-        let volume = 0;
-        const lines = (output || "").split("\n");
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (line.startsWith("available=")) {
-                available = line.slice(10).trim() === "true";
-            } else if (line.startsWith("muted=")) {
-                muted = line.slice(6).trim() === "true";
-            } else if (line.startsWith("volume=")) {
-                const parsed = Number(line.slice(7).trim());
-                volume = isFinite(parsed) ? parsed : 0;
-            }
+    onAudioMutedChanged: {
+        if (!root._osdReady) return;
+        root.islandOsdType = "volume";
+        root.islandOsdValue = root.audioMuted ? 0 : root.audioVolumePercent;
+        root.islandOsdTrigger = !root.islandOsdTrigger;
+    }
+    onBrightnessPercentChanged: {
+        if (!root._osdReady || root._brightnessFromPoll) return;
+        root.islandOsdType = "brightness";
+        root.islandOsdValue = root.brightnessPercent;
+        root.islandOsdTrigger = !root.islandOsdTrigger;
+    }
+    onBatteryPluggedChanged: {
+        if (!root._osdReady) return;
+        if (root.batteryPlugged) {
+            root.islandOsdType = "charger";
+            root.islandOsdValue = Math.round(root.batteryPercent);
+            root.islandOsdTrigger = !root.islandOsdTrigger;
         }
-        root.audioAvailable = available;
-        root.audioMuted = muted;
-        root.audioVolumePercent = Math.max(0, Math.round(volume));
     }
+    onBatteryCriticalChanged: {
+        if (!root._osdReady) return;
+        if (root.batteryCritical) {
+            root.islandOsdType = "lowbattery";
+            root.islandOsdValue = Math.round(root.batteryPercent);
+            root.islandOsdTrigger = !root.islandOsdTrigger;
+        }
+    }
+
     function resetMediaState() {
         root.mediaAvailable = false;
         root.mediaPlaying = false;
@@ -1546,7 +1562,9 @@ ShellRoot {
             } else if (line.startsWith("brightness=")) {
                 const parsed = Number(line.slice(11).trim());
                 if (isFinite(parsed)) {
+                    root._brightnessFromPoll = true;
                     root.brightnessPercent = Math.max(0, Math.min(100, Math.round(parsed)));
+                    root._brightnessFromPoll = false;
                 }
             } else if (line.startsWith("dnd=")) {
                 root.dndEnabled = line.slice(4).trim() === "true";
@@ -2626,7 +2644,6 @@ ShellRoot {
 
     function previewBrightnessDelta(delta) {
         const nextValue = updateBrightnessPercentLocally(brightnessPercent + delta);
-        quickAdjustPopup.show("brightness");
         return nextValue;
     }
 
@@ -2639,14 +2656,6 @@ ShellRoot {
             return;
         }
         quickAdjustBrightnessProbe.running = true;
-    }
-
-    function refreshAudioStatus() {
-        audioStatusPoll.refresh();
-    }
-
-    function scheduleAudioRefresh() {
-        audioFollowupRefresh.restart();
     }
 
     function refreshMediaStatus() {
@@ -2803,12 +2812,11 @@ ShellRoot {
         onExited: function(exitCode) {
             const parsed = Number((quickAdjustBrightnessProbeStdout.text || "").trim());
             if (exitCode === 0 && isFinite(parsed)) {
+                root._brightnessFromPoll = true;
                 root.brightnessPercent = root.snapBrightnessPercent(parsed);
+                root._brightnessFromPoll = false;
             }
-            if (root._showQuickAdjustAfterBrightnessProbe) {
-                root._showQuickAdjustAfterBrightnessProbe = false;
-                quickAdjustPopup.show("brightness");
-            }
+            root._showQuickAdjustAfterBrightnessProbe = false;
             root.refreshControlPanelStatus();
             if (root._brightnessProbeQueued) {
                 root._brightnessProbeQueued = false;
@@ -2872,19 +2880,18 @@ ShellRoot {
     }
 
     Timer {
-        id: audioFollowupRefresh
-
-        interval: 150
-        repeat: false
-        onTriggered: audioStatusPoll.refresh()
-    }
-
-    Timer {
         id: mediaFollowupRefresh
 
         interval: 180
         repeat: false
         onTriggered: mediaStatusPoll.refresh()
+    }
+
+    Timer {
+        interval: 2500
+        running: true
+        repeat: false
+        onTriggered: root._osdReady = true
     }
 
     Timer {
@@ -3083,17 +3090,28 @@ ShellRoot {
         }
     }
 
-    PollCommand {
-        id: audioStatusPoll
+    Process {
+        id: volumeMonitor
+        command: [root.configDir + "/quickshell/scripts/volume-monitor"]
+        running: true
 
-        interval: 750
-        command: ["sh", root.configDir + "/quickshell/scripts/audio-status.sh"]
-        onUpdated: function(output, exitCode) {
-            if (exitCode === 0) {
-                root.updateAudioState(output);
-            } else {
-                root.resetAudioState();
+        stdout: SplitParser {
+            onRead: function(line) {
+                const text = line.trim();
+                if (text.length === 0) return;
+                const m = text.match(/Volume:\s*([0-9.]+)/i);
+                if (m) {
+                    root.audioAvailable = true;
+                    root.audioMuted = /\[MUTED\]/i.test(text);
+                    root.audioVolumePercent = Math.max(0, Math.min(100, Math.round(parseFloat(m[1]) * 100)));
+                } else {
+                    root.audioAvailable = false;
+                }
             }
+        }
+
+        onExited: function() {
+            Qt.callLater(function() { volumeMonitor.running = true; });
         }
     }
 
@@ -3216,13 +3234,11 @@ ShellRoot {
             quickAdjustPopup.show("brightness");
         }
 
-        function showBrightnessLevel(level) {
+        function showBrightnessLevel(level: real) {
             const parsed = Number(level);
             if (isFinite(parsed)) {
                 root.updateBrightnessPercentLocally(parsed);
             }
-            quickAdjustPopup.show("brightness");
-            root.refreshControlPanelStatus();
         }
 
         function showBrightnessIncrease() {
@@ -3235,7 +3251,6 @@ ShellRoot {
 
         function showVolume() {
             quickAdjustPopup.show("volume");
-            root.refreshAudioStatus();
         }
     }
 
@@ -3340,7 +3355,7 @@ ShellRoot {
             anchors.right: true
 
             implicitHeight: 500
-            exclusiveZone: 58
+            exclusiveZone: 48
             color: "transparent"
             surfaceFormat.opaque: false
             margins.bottom: 10
@@ -3439,7 +3454,7 @@ ShellRoot {
                             paddingLeft: 12
                             paddingRight: 4
                             onLeftClicked: systemStatsPopup.toggleFor(cpuTrigger, barWindow)
-                            onRightClicked: root.runDetached(["alacritty", "-t", "btop", "-o", "window.startup_mode=Fullscreen", "-e", "btop"])
+                            onRightClicked: root.runDetached(["kitty", "-t", "btop", "-o", "window.startup_mode=Fullscreen", "-e", "btop"])
                         }
 
                         TextModule {
@@ -3450,7 +3465,7 @@ ShellRoot {
                             paddingLeft: 6
                             paddingRight: 4
                             onLeftClicked: systemStatsPopup.toggleFor(memoryTrigger, barWindow)
-                            onRightClicked: root.runDetached(["alacritty", "-t", "btop", "-o", "window.startup_mode=Fullscreen", "-e", "btop"])
+                            onRightClicked: root.runDetached(["kitty", "-t", "btop", "-o", "window.startup_mode=Fullscreen", "-e", "btop"])
                         }
 
                         TextModule {
@@ -3667,7 +3682,6 @@ ShellRoot {
                                 onClicked: function(mouse) {
                                     if (mouse.button === Qt.LeftButton) {
                                         root.runDetached([root.configDir + "/quickshell/scripts/volume", "--toggle"]);
-                                        audioFollowupRefresh.restart();
                                     } else {
                                         root.runDetached(["pavucontrol"]);
                                     }
@@ -3681,7 +3695,6 @@ ShellRoot {
                                     } else {
                                         root.runDetached([root.configDir + "/quickshell/scripts/volume", "--inc"]);
                                     }
-                                    audioFollowupRefresh.restart();
                                 }
                             }
                         }

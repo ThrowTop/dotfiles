@@ -49,10 +49,15 @@ Item {
     readonly property bool musicActive: hasMusicContent && !mediaManuallyHidden
     readonly property bool musicPrimaryActive: musicActive && !agentActive
     readonly property bool dualIslandActive: agentActive && musicActive
-    readonly property bool agentExpanded: agentActive && hoverTarget === "agent" && islandHover.hovered
-    readonly property bool musicExpanded: musicActive && hoverTarget === "music" && islandHover.hovered
-    readonly property bool idleExpanded: !agentActive && !musicActive && islandHover.hovered
-    readonly property bool expanded: agentExpanded || musicExpanded || idleExpanded
+    property bool osdActive: false
+    property string osdType: ""
+    property int osdValue: 0
+    readonly property real osdExpandedWidth: (osdType === "charger" || osdType === "lowbattery") ? 280 : 220
+    readonly property real osdExpandedHeight: collapsedHeight
+    readonly property bool agentExpanded: !osdActive && agentActive && hoverTarget === "agent" && islandHover.hovered
+    readonly property bool musicExpanded: !osdActive && musicActive && hoverTarget === "music" && islandHover.hovered
+    readonly property bool idleExpanded: !osdActive && !agentActive && !musicActive && islandHover.hovered
+    readonly property bool expanded: osdActive || agentExpanded || musicExpanded || idleExpanded
     readonly property real idleExpandedWidth: 220
     readonly property real idleExpandedHeight: 80
     readonly property bool primaryFrameCollapsedForMusic: dualIslandActive && keepPrimaryCollapsedForMusic
@@ -111,10 +116,14 @@ Item {
         agentExpandedTopReserve + agentSessionListHeight
     )
     readonly property real hoverBridgeMargin: 10
-    readonly property real targetWidth: agentActive
-        ? (agentExpanded ? agentExpandedWidth : (musicExpanded ? expandedWidth : agentCompactWidth))
-        : (musicExpanded ? expandedWidth : (musicPrimaryActive ? compactWidth : (idleExpanded ? idleExpandedWidth : idleRow.implicitWidth)))
-    readonly property real targetHeight: agentExpanded ? agentExpandedHeight : (musicExpanded ? expandedHeight : (idleExpanded ? idleExpandedHeight : collapsedHeight))
+    readonly property real targetWidth: osdActive
+        ? osdExpandedWidth
+        : (agentActive
+            ? (agentExpanded ? agentExpandedWidth : (musicExpanded ? expandedWidth : agentCompactWidth))
+            : (musicExpanded ? expandedWidth : (musicPrimaryActive ? compactWidth : (idleExpanded ? idleExpandedWidth : idleRow.implicitWidth))))
+    readonly property real targetHeight: osdActive
+        ? osdExpandedHeight
+        : (agentExpanded ? agentExpandedHeight : (musicExpanded ? expandedHeight : (idleExpanded ? idleExpandedHeight : collapsedHeight)))
     property real attachedCenterOffset: agentActive
         ? (expanded
             ? 0
@@ -874,7 +883,7 @@ Item {
         id: idleContent
 
         anchors.fill: islandFrame
-        opacity: island.musicPrimaryActive || island.agentActive ? 0 : 1
+        opacity: island.musicPrimaryActive || island.agentActive || island.osdActive ? 0 : 1
         visible: opacity > 0.01
 
         Behavior on opacity {
@@ -945,6 +954,166 @@ Item {
                     renderType: Text.NativeRendering
                 }
             }
+        }
+    }
+
+    Timer {
+        id: osdDismissTimer
+
+        interval: 1500
+        repeat: false
+        onTriggered: island.osdActive = false
+    }
+
+    Connections {
+        target: island.shellRoot
+        enabled: island.shellRoot !== null
+
+        function onIslandOsdTriggerChanged() {
+            island.osdType = island.shellRoot.islandOsdType;
+            island.osdValue = island.shellRoot.islandOsdValue;
+            island.osdActive = true;
+            osdDismissTimer.interval = (island.osdType === "charger" || island.osdType === "lowbattery") ? 2500 : 1500;
+            osdDismissTimer.restart();
+        }
+    }
+
+    // Reusable layout: left label (white) | centered clock | right value + icon (accent color)
+    component SideTextOsd: Item {
+        property string osdTypeName: ""
+        property string leftLabel: ""
+        property string rightValue: ""
+        property color accentColor: "#ffffff"
+        property string iconGlyph: ""
+
+        anchors.centerIn: parent
+        width: island.osdExpandedWidth
+        height: parent.height
+        visible: island.osdType === osdTypeName
+
+        Text {
+            anchors.left: parent.left
+            anchors.leftMargin: 14
+            anchors.verticalCenter: parent.verticalCenter
+            text: leftLabel
+            color: island.textColor
+            font.family: island.shellRoot ? island.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+            font.pixelSize: 13
+            font.bold: true
+            renderType: Text.NativeRendering
+        }
+
+        Text {
+            anchors.centerIn: parent
+            text: Qt.formatTime(island.now, "hh:mm")
+            color: island.textColor
+            font.family: island.shellRoot ? island.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+            font.pixelSize: 16
+            font.bold: true
+            renderType: Text.NativeRendering
+        }
+
+        Row {
+            anchors.right: parent.right
+            anchors.rightMargin: 14
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 4
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: rightValue
+                color: accentColor
+                font.family: island.shellRoot ? island.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                font.pixelSize: 13
+                font.bold: true
+                renderType: Text.NativeRendering
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: iconGlyph
+                color: accentColor
+                font.family: island.shellRoot ? island.shellRoot.iconFont : "JetBrainsMono Nerd Font"
+                font.pixelSize: 15
+                renderType: Text.NativeRendering
+            }
+        }
+    }
+
+    Item {
+        id: osdContent
+
+        anchors.fill: islandFrame
+        opacity: island.osdActive ? 1 : 0
+        visible: opacity > 0.01
+        z: 50
+
+        // Volume / brightness bar OSD
+        Item {
+            anchors.fill: parent
+            visible: island.osdType === "volume" || island.osdType === "brightness"
+
+            Text {
+                anchors.left: parent.left
+                anchors.leftMargin: 14
+                anchors.verticalCenter: parent.verticalCenter
+                text: island.osdType === "brightness" ? "󰃟" : (island.shellRoot ? island.shellRoot.volumeIcon : "")
+                color: island.osdType === "brightness"
+                    ? (island.shellRoot ? island.shellRoot.brightnessColor : "#f3b35c")
+                    : island.accentColor
+                font.family: island.shellRoot ? island.shellRoot.iconFont : "JetBrainsMono Nerd Font"
+                font.pixelSize: 16
+                renderType: Text.NativeRendering
+            }
+
+            Rectangle {
+                readonly property color barColor: island.osdType === "brightness"
+                    ? (island.shellRoot ? island.shellRoot.brightnessColor : "#f3b35c")
+                    : island.accentColor
+                anchors.centerIn: parent
+                width: 120
+                height: 4
+                radius: 2
+                color: island.shellRoot ? island.shellRoot.withAlpha(island.shellRoot.primaryText, 0.12) : "#30303060"
+
+                Rectangle {
+                    width: parent.width * Math.max(0, Math.min(1, island.osdValue / 100))
+                    height: parent.height
+                    radius: parent.radius
+                    color: parent.barColor
+
+                    Behavior on width {
+                        NumberAnimation { duration: 100; easing.type: Easing.OutCubic }
+                    }
+                }
+            }
+
+            Text {
+                anchors.right: parent.right
+                anchors.rightMargin: 14
+                anchors.verticalCenter: parent.verticalCenter
+                text: island.osdValue + "%"
+                color: island.mutedTextColor
+                font.family: island.shellRoot ? island.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                font.pixelSize: 13
+                renderType: Text.NativeRendering
+            }
+        }
+
+        SideTextOsd {
+            osdTypeName: "charger"
+            leftLabel: "Charging"
+            rightValue: island.osdValue + "%"
+            accentColor: "#30c85e"
+            iconGlyph: "󰂄"
+        }
+
+        SideTextOsd {
+            osdTypeName: "lowbattery"
+            leftLabel: "Low Charge"
+            rightValue: island.osdValue + "%"
+            accentColor: "#f38ba8"
+            iconGlyph: "󱃍"
         }
     }
 

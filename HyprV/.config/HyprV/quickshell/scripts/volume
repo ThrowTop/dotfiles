@@ -6,7 +6,7 @@ iDIR="$HOME/.config/HyprV/mako/icons"
 NOTIFY_HINT="string:x-canonical-private-synchronous:sys-notify"
 VOL_STEP="${VOL_STEP:-5}"
 MIC_STEP="${MIC_STEP:-5}"
-QS_CONFIG_DIR="$HOME/.config/HyprV/quickshell"
+QS_CONFIG_DIR="$(readlink -f "$HOME/.config/HyprV/quickshell")"
 
 get_volume() {
     pamixer --get-volume

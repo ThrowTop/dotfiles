@@ -20,7 +20,9 @@ Item {
     readonly property color frameStroke: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, shellRoot.darkMode ? 0.12 : 0.08) : "#454545"
     readonly property color textColor: shellRoot ? shellRoot.primaryText : "#cdd6f4"
     readonly property color trackBg: shellRoot ? shellRoot.withAlpha(shellRoot.darkMode ? "#ffffff" : "#ffffff", shellRoot.darkMode ? 0.08 : 0.34) : "#2a2a2a"
-    readonly property real clampedValue: Math.max(0, Math.min(100, value))
+    property real _localValue: value
+    onValueChanged: { if (!trackArea.pressed) _localValue = value; }
+    readonly property real clampedValue: Math.max(0, Math.min(100, _localValue))
     readonly property string valueText: Math.round(clampedValue) + "%"
     readonly property real frameRadius: 19
     readonly property real outerPadding: 9
@@ -196,11 +198,15 @@ Item {
                 }
 
                 onPressed: function(mouse) {
-                    slider.valueChangeRequested(computeValue(mouse.x));
+                    const v = computeValue(mouse.x);
+                    slider._localValue = v;
+                    slider.valueChangeRequested(v);
                 }
                 onPositionChanged: function(mouse) {
                     if (pressed) {
-                        slider.valueChangeRequested(computeValue(mouse.x));
+                        const v = computeValue(mouse.x);
+                        slider._localValue = v;
+                        slider.valueChangeRequested(v);
                     }
                 }
             }

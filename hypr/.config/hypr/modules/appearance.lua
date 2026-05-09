@@ -1,10 +1,9 @@
 local hlc = require("hlc")
-local mod = require("settings").mainMod
 
 hlc.config({
     general = {
-        gaps_in = 4,
-        gaps_out = 8,
+        gaps_in = 5,
+        gaps_out = 10,
         border_size = 1,
         col = {
             active_border = { colors = { "rgb(B4BEFE)", "rgb(303030)", angle = 45 } },
