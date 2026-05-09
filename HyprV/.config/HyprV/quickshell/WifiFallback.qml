@@ -22,8 +22,8 @@ WifiIndicator {
     readonly property real wifiStrength: shellRoot ? shellRoot.wifiSignalStrength : 0
     readonly property var liveNetworks: shellRoot ? shellRoot.wifiNetworks : []
     readonly property var networks: displayedNetworks
-    readonly property color glassFill: shellRoot ? shellRoot.withAlpha(shellRoot.darkMode ? "#101214" : "#ffffff", shellRoot.darkMode ? 0.42 : 0.28) : "#202020"
-    readonly property color glassStroke: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, shellRoot.darkMode ? 0.14 : 0.1) : "#3a3a3a"
+    readonly property color glassFill: shellRoot ? shellRoot.glassFill : "#202020"
+    readonly property color glassStroke: shellRoot ? shellRoot.glassStroke : "#3a3a3a"
     readonly property color cardFill: shellRoot ? shellRoot.withAlpha(shellRoot.darkMode ? "#ffffff" : "#ffffff", shellRoot.darkMode ? 0.07 : 0.22) : "#2a2a2a"
     readonly property color cardStrongFill: shellRoot ? shellRoot.withAlpha(shellRoot.darkMode ? "#ffffff" : "#ffffff", shellRoot.darkMode ? 0.11 : 0.3) : "#303030"
     readonly property color cardStroke: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, shellRoot.darkMode ? 0.12 : 0.08) : "#454545"

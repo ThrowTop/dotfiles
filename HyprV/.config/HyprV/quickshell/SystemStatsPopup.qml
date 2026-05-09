@@ -15,8 +15,8 @@ Item {
     readonly property int popupScreenMargin: 10
     readonly property int popupWidth: 548
     readonly property int popupPadding: 16
-    readonly property color glassFill: shellRoot ? shellRoot.withAlpha(shellRoot.darkMode ? "#101214" : "#ffffff", shellRoot.darkMode ? 0.42 : 0.28) : Qt.rgba(0.06, 0.07, 0.08, 0.42)
-    readonly property color glassStroke: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, shellRoot.darkMode ? 0.14 : 0.10) : Qt.rgba(0.8, 0.8, 0.8, 0.12)
+    readonly property color glassFill: shellRoot ? shellRoot.glassFill : Qt.rgba(0.06, 0.07, 0.08, 0.42)
+    readonly property color glassStroke: shellRoot ? shellRoot.glassStroke : Qt.rgba(0.8, 0.8, 0.8, 0.12)
     readonly property color mutedTextColor: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, shellRoot.darkMode ? 0.72 : 0.68) : Qt.rgba(0.8, 0.8, 0.8, 0.7)
     readonly property color panelShadowColor: shellRoot ? (shellRoot.darkMode ? shellRoot.withAlpha("#000000", 0.45) : shellRoot.withAlpha("#111111", 0.18)) : Qt.rgba(0, 0, 0, 0.35)
     readonly property color metricTextColor: shellRoot ? (shellRoot.darkMode ? shellRoot.primaryText : "#000000") : "#000000"

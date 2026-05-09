@@ -39,8 +39,8 @@ Item {
     signal openAnimationFinished()
     signal closeAnimationFinished()
 
-    implicitHeight: fullPanelHeight
-    height: fullPanelHeight
+    implicitHeight: revealHeight
+    height: revealHeight
 
     function resetAnimationState() {
         revealHeight = fullPanelHeight;

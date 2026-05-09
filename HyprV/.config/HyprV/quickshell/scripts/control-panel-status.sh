@@ -16,7 +16,7 @@ printf 'wifi_enabled=%s\n' "$wifi_enabled"
 
 # Screen brightness
 brightness=50
-brightness_script="${HOME}/.config/HyprV/hypr/scripts/brightness"
+brightness_script="$(readlink -f "${HOME}/.config/HyprV/quickshell")/scripts/brightness"
 if [[ -x "$brightness_script" ]]; then
     pct="$(run_quick "$brightness_script" --get-level)"
     if [[ -n "$pct" && "$pct" =~ ^[0-9]+$ ]]; then
@@ -30,14 +30,6 @@ elif command -v brightnessctl >/dev/null 2>&1; then
 fi
 printf 'brightness=%s\n' "$brightness"
 
-# DND (Do Not Disturb) state — only emit if swaync-client is present
-if command -v swaync-client >/dev/null 2>&1; then
-    dnd=false
-    dnd_state="$(run_quick swaync-client -D)"
-    [[ "$dnd_state" == "true" ]] && dnd=true
-    printf 'dnd=%s\n' "$dnd"
-fi
-
 # Screen recording detection
 recording=false
 if pgrep -x 'wf-recorder' >/dev/null 2>&1 || \
@@ -46,14 +38,6 @@ if pgrep -x 'wf-recorder' >/dev/null 2>&1 || \
     recording=true
 fi
 printf 'recording=%s\n' "$recording"
-
-# Power profile
-power_profile="balanced"
-if command -v powerprofilesctl >/dev/null 2>&1; then
-    power_profile="$(run_quick powerprofilesctl get)"
-    [[ -z "$power_profile" ]] && power_profile="balanced"
-fi
-printf 'power_profile=%s\n' "$power_profile"
 
 # Prevent sleep state
 prevent_sleep=false

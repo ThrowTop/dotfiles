@@ -6,15 +6,15 @@ hlc.config({
         gaps_out = 10,
         border_size = 1,
         col = {
-            active_border = { colors = { "rgb(B4BEFE)", "rgb(303030)", angle = 45 } },
-            inactive_border = { colors = { "rgb(303030)", "rgb(B4BEFE)", angle = 35 } },
+            active_border = { colors = { "rgb(8e90cb)", angle = 45 } },
+            inactive_border = { colors = { "rgb(303030)", "rgb(8e90cb)", angle = 35 } },
         },
         layout = "dwindle",
         resize_on_border = false,
         resize_corner = 3,
     },
     decoration = {
-        rounding = 16,
+        rounding = 19,
         rounding_power = 2,
         active_opacity = 1.0,
         inactive_opacity = 0.9,

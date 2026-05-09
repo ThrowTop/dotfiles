@@ -1,4 +1,4 @@
-//@ pragma UseQApplication
+//@ pragma UseQApplicationsh
 
 import QtQuick
 import QtQuick.Effects
@@ -21,6 +21,7 @@ ShellRoot {
     property real cpuUsage: 0
     property real memoryUsage: 0
     property real temperatureC: 0
+    property string keyboardLayout: "ENG"
     property string defaultInterface: ""
     property real networkRxRate: 0
     property real networkTxRate: 0
@@ -52,7 +53,6 @@ ShellRoot {
     property bool _bluetoothStatusInitialized: false
     property string notificationAlt: "none"
     property string notificationTooltip: ""
-    property string powerProfileText: "⚖️"
     property string fluentLightIconDir: ""
     property string fluentDarkIconDir: ""
     property string fluentBaseIconDir: ""
@@ -82,17 +82,17 @@ ShellRoot {
     property real mediaLengthSeconds: 0
     property bool audioSpectrumCavaAvailable: false
     property var audioSpectrumValues: []
-    property bool agentIslandActive: false
-    property int agentIslandCount: 0
-    property int agentIslandPendingCount: 0
-    property var agentIslandSessions: []
-    property var agentIslandPending: null
     property var primaryBarWindow: null
     property var quickAdjustAnchorItem: null
     property var wifiPanelController: null
     property string islandOsdType: ""
     property int islandOsdValue: 0
     property bool islandOsdTrigger: false
+    property string islandOsdLabel: ""
+    property string islandOsdRightText: ""
+    property color  islandOsdAccent: "#ffffff"
+    property string islandOsdIcon: ""
+    property int    islandOsdDuration: 1500
     property bool _osdReady: false
     property bool _brightnessFromPoll: false
 
@@ -118,26 +118,34 @@ ShellRoot {
     readonly property bool wiredConnectionActive: activeNetworkType === "wired"
     readonly property bool otherConnectionActive: activeNetworkType === "other"
 
-    readonly property real pillOpacity: 0.8
-    readonly property color moduleBackground: withAlpha(darkMode ? "#1e1e2e" : "#e7e7ec", pillOpacity)
-    readonly property color primaryText: darkMode ? "#cdd6f4" : "#2b2b2c"
-    readonly property color mutedWorkspaceText: darkMode ? "#575b6a" : "#859ABF"
-    readonly property color activeWorkspaceText: darkMode ? "#0c0d14" : "#1b1b1b"
-    readonly property color activeWorkspaceBackground: darkMode ? Qt.darker("#8e90cb", 1.05) : "#8EB6EC"
-    readonly property color urgentWorkspaceText: "#11111b"
-    readonly property color urgentWorkspaceBackground: "#a6e3a1"
-    readonly property color launchColor: darkMode ? "#89b4fa" : "#407cdd"
-    readonly property color batteryColor: darkMode ? "#a6e3a1" : "#1d7715"
-    readonly property color microphoneColor: darkMode ? "#cba6f7" : "#ad6bfd"
-    readonly property color criticalColor: "#e92d4d"
-    readonly property color usageLowColor: darkMode ? "#7ad48b" : "#2f9e44"
-    readonly property color usageMediumColor: darkMode ? "#f2d36b" : "#c99700"
-    readonly property color brightnessColor: darkMode ? "#f3b35c" : "#d47b1f"
-    readonly property color mediaInactiveColor: darkMode ? "#6c7086" : "#808080"
-    readonly property color workspaceHoverBackground: withAlpha(darkMode ? "#ffffff" : "#000000", darkMode ? 0.08 : 0.07)
-    readonly property color systemChartAccent: darkMode ? "#d7a26a" : "#b9782f"
-    readonly property int screenCornerShadeSize: 27
-    readonly property color screenCornerShadeColor: "#000000"
+    Colors { id: colors }
+
+    readonly property real pillOpacity: 0.25
+    readonly property color moduleBackground: withAlpha(colors.base, pillOpacity)
+    readonly property color primaryText: colors.text
+    readonly property int   pillRadius:  19
+    readonly property int   barHeight:   38
+    readonly property color pillBorder:  withAlpha(primaryText, darkMode ? 0.13 : 0.10)
+    readonly property color glassFill:   withAlpha(colors.glass, darkMode ? 0.42 : 0.28)
+    readonly property color glassStroke: withAlpha(primaryText, darkMode ? 0.14 : 0.10)
+    readonly property color subtext: colors.subtext
+    readonly property color mutedWorkspaceText: "#575b6a"
+    readonly property color activeWorkspaceText: "#0c0d14"
+    readonly property color activeWorkspaceBackground: Qt.darker(colors.workspaceActive, 1.05)
+    readonly property color urgentWorkspaceText: colors.crust
+    readonly property color urgentWorkspaceBackground: colors.green
+    readonly property color launchColor: colors.blue
+    readonly property color batteryColor: colors.green
+    readonly property color microphoneColor: colors.purple
+    readonly property color criticalColor: colors.red
+    readonly property color usageLowColor: colors.green
+    readonly property color usageMediumColor: colors.yellow
+    readonly property color brightnessColor: colors.orange
+    readonly property color mediaInactiveColor: colors.overlay
+    readonly property color workspaceHoverBackground: withAlpha(colors.white, 0.08)
+    readonly property color systemChartAccent: "#d7a26a"
+    readonly property int screenCornerShadeSize: 29
+    readonly property color screenCornerShadeColor: colors.black
     readonly property string baseFont: "JetBrainsMono Nerd Font"
     readonly property string iconFont: "JetBrainsMono Nerd Font"
     readonly property int trayMenuTextPixelSize: 14
@@ -201,6 +209,7 @@ ShellRoot {
         energyNowWh: 0,
         energyFullWh: 0
     })
+    property int chargeLimit: 80
     readonly property string batteryPopupTitle: batteryText.length > 0 ? batteryText : "Power"
     readonly property string batteryStatusText: {
         const mode = batteryInfo?.mode || "";
@@ -232,25 +241,27 @@ ShellRoot {
     readonly property string batteryAveragePowerDetailText: batteryInfo?.available ? formatPower(Number(batteryInfo?.averagePowerW || 0), true) : "--"
     readonly property string batteryEstimateTitle: {
         const mode = batteryInfo?.mode || "";
-        if (mode === "charging" || mode === "full" || mode === "plugged") {
-            return "Est. time to full";
-        }
-        return "Est. time remaining";
+        if (mode === "charging") return root.chargeLimit < 100 ? "Time to limit" : "Time to full";
+        if (mode === "full" || mode === "plugged") return "Time to full";
+        return "Time remaining";
     }
     readonly property string batteryEstimateText: {
         const mode = batteryInfo?.mode || "";
-        if (mode === "full") {
-            return "Full";
+        if (mode === "full") return "Full";
+        if (mode === "plugged") return "Plugged in";
+        const rawSeconds = Number(batteryInfo?.estimateSeconds);
+        if (!isFinite(rawSeconds) || rawSeconds < 0) return "Calculating";
+        if (mode === "charging" && root.chargeLimit < 100) {
+            const energyFull = Number(batteryInfo?.energyFullWh || 0);
+            const energyNow = Number(batteryInfo?.energyNowWh || 0);
+            const energyToFull = energyFull - energyNow;
+            const energyToLimit = energyFull * (root.chargeLimit / 100) - energyNow;
+            if (energyToFull > 0) {
+                if (energyToLimit <= 0) return "At limit";
+                return formatDuration(rawSeconds * energyToLimit / energyToFull);
+            }
         }
-        if (mode === "plugged") {
-            return "Plugged in, not charging";
-        }
-        const seconds = Number(batteryInfo?.estimateSeconds);
-        if (!isFinite(seconds) || seconds < 0) {
-            return "Calculating";
-        }
-        const basis = batteryInfo?.estimateBasis === "current" ? "at current rate" : "at avg rate";
-        return formatDuration(seconds) + " (" + basis + ")";
+        return formatDuration(rawSeconds);
     }
     readonly property string batterySampleWindowText: {
         if (!batteryInfo?.available) {
@@ -306,20 +317,42 @@ ShellRoot {
         root.islandOsdTrigger = !root.islandOsdTrigger;
     }
     onBatteryPluggedChanged: {
-        if (!root._osdReady) return;
-        if (root.batteryPlugged) {
-            root.islandOsdType = "charger";
-            root.islandOsdValue = Math.round(root.batteryPercent);
-            root.islandOsdTrigger = !root.islandOsdTrigger;
-        }
+        if (!root._osdReady || !root.batteryPlugged) return;
+        root.islandOsdLabel     = "Charging";
+        root.islandOsdRightText = Math.round(root.batteryPercent) + "%";
+        root.islandOsdAccent    = colors.green;
+        root.islandOsdIcon      = String.fromCodePoint(0xF0084);
+        root.islandOsdDuration  = 2500;
+        root.islandOsdType      = "sidetext";
+        root.islandOsdTrigger   = !root.islandOsdTrigger;
     }
     onBatteryCriticalChanged: {
+        if (!root._osdReady || !root.batteryCritical) return;
+        root.islandOsdLabel     = "Low Charge";
+        root.islandOsdRightText = Math.round(root.batteryPercent) + "%";
+        root.islandOsdAccent    = colors.red;
+        root.islandOsdIcon      = String.fromCodePoint(0xF10CD);
+        root.islandOsdDuration  = 2500;
+        root.islandOsdType      = "sidetext";
+        root.islandOsdTrigger   = !root.islandOsdTrigger;
+    }
+    onPowerProfileChanged: {
         if (!root._osdReady) return;
-        if (root.batteryCritical) {
-            root.islandOsdType = "lowbattery";
-            root.islandOsdValue = Math.round(root.batteryPercent);
-            root.islandOsdTrigger = !root.islandOsdTrigger;
-        }
+        root.islandOsdLabel     = "Power";
+        root.islandOsdRightText = root.powerProfile === "performance" ? "Perf"
+                                : root.powerProfile === "power-saver"  ? "Saver"
+                                : "Bal";
+        root.islandOsdAccent    = root.powerProfile === "performance" ? colors.red
+                                : root.powerProfile === "power-saver"  ? colors.green
+                                : colors.purple;
+        root.islandOsdIcon      = String.fromCodePoint(
+            root.powerProfile === "performance" ? 0xF0425
+            : root.powerProfile === "power-saver" ? 0xF007B
+            : 0xF0725
+        );
+        root.islandOsdDuration  = 1500;
+        root.islandOsdType      = "sidetext";
+        root.islandOsdTrigger   = !root.islandOsdTrigger;
     }
 
     function resetMediaState() {
@@ -386,29 +419,6 @@ ShellRoot {
         root.mediaArtUrl = artUrl;
         root.mediaPositionSeconds = Math.max(0, positionSeconds);
         root.mediaLengthSeconds = Math.max(0, lengthSeconds);
-    }
-    function resetAgentIslandState() {
-        root.agentIslandActive = false;
-        root.agentIslandCount = 0;
-        root.agentIslandPendingCount = 0;
-        root.agentIslandSessions = [];
-        root.agentIslandPending = null;
-    }
-    function updateAgentIslandState(raw) {
-        if (!raw) {
-            resetAgentIslandState();
-            return;
-        }
-        try {
-            const data = JSON.parse(raw);
-            root.agentIslandActive = !!data.active;
-            root.agentIslandCount = Number(data.count) || 0;
-            root.agentIslandPendingCount = Number(data.pending_count) || 0;
-            root.agentIslandSessions = Array.isArray(data.sessions) ? data.sessions : [];
-            root.agentIslandPending = data.pending || null;
-        } catch (_) {
-            resetAgentIslandState();
-        }
     }
     function isWifiInterfaceName(name) {
         const iface = (name || "").toLowerCase();
@@ -492,7 +502,7 @@ ShellRoot {
         Rectangle {
             anchors.fill: parent
             anchors.margins: module.highlightInset
-            radius: 19
+            radius: root.pillRadius
             color: highlighted ? module.highlightColor : root.workspaceHoverBackground
             visible: highlighted || (module.hoverable && mouseArea.containsMouse)
         }
@@ -557,8 +567,8 @@ ShellRoot {
         readonly property int menuPadding: 9
         readonly property int menuWidth: 300
         readonly property int menuMaxHeight: 420
-        readonly property color glassFill: withAlpha(root.darkMode ? "#101214" : "#ffffff", root.darkMode ? 0.42 : 0.28)
-        readonly property color glassStroke: withAlpha(root.primaryText, root.darkMode ? 0.14 : 0.10)
+        readonly property color glassFill: root.glassFill
+        readonly property color glassStroke: root.glassStroke
         readonly property color hoverFill: withAlpha(root.primaryText, root.darkMode ? 0.10 : 0.12)
         readonly property var rootMenuEntry: menuHandle?.menu || null
         property bool menuVisible: false
@@ -872,7 +882,7 @@ ShellRoot {
 
                 width: trayMenuPopupRoot.menuWidth
                 fullPanelHeight: Math.min(trayMenuPopupRoot.menuMaxHeight, menuContent.implicitHeight + trayMenuPopupRoot.menuPadding * 2)
-                radius: 19
+                radius: root.pillRadius
                 fillColor: trayMenuPopupRoot.glassFill
                 strokeColor: trayMenuPopupRoot.glassStroke
                 shadowColor: root.darkMode ? withAlpha("#000000", 0.45) : withAlpha("#111111", 0.18)
@@ -947,7 +957,7 @@ ShellRoot {
                         Rectangle {
                             width: parent.width
                             height: trayMenuPopupRoot.rowHeight
-                            radius: 11
+                            radius: 10
                             visible: entryStack.count > 0
                             color: backArea.containsMouse ? trayMenuPopupRoot.hoverFill : "transparent"
 
@@ -1088,8 +1098,8 @@ ShellRoot {
         readonly property int rowCount: Math.max(1, Math.ceil(trayItems.length / columnCount))
         readonly property int popupWidth: popupPadding * 2 + columnCount * root.trayButtonWidth + Math.max(0, columnCount - 1) * root.trayButtonSpacing
         readonly property int popupHeight: popupPadding * 2 + rowCount * root.trayButtonHeight
-        readonly property color glassFill: withAlpha(root.darkMode ? "#101214" : "#ffffff", root.darkMode ? 0.42 : 0.28)
-        readonly property color glassStroke: withAlpha(root.primaryText, root.darkMode ? 0.14 : 0.10)
+        readonly property color glassFill: root.glassFill
+        readonly property color glassStroke: root.glassStroke
 
         function openFor(source, window, items) {
             const nextItems = Array.isArray(items) ? items : [];
@@ -1213,7 +1223,7 @@ ShellRoot {
 
                 width: overflowPopupRoot.popupWidth
                 height: overflowPopupRoot.popupHeight
-                radius: 18
+                radius: root.pillRadius
                 color: overflowPopupRoot.glassFill
                 border.width: 1
                 border.color: overflowPopupRoot.glassStroke
@@ -1251,12 +1261,13 @@ ShellRoot {
         readonly property bool openVisible: popupRequested
         readonly property int popupWidth: 324
         readonly property int popupPadding: 12
-        readonly property color glassFill: withAlpha(root.darkMode ? "#101214" : "#ffffff", root.darkMode ? 0.42 : 0.28)
-        readonly property color glassStroke: withAlpha(root.primaryText, root.darkMode ? 0.14 : 0.10)
+        readonly property color glassFill: root.glassFill
+        readonly property color glassStroke: root.glassStroke
         readonly property color mutedTextColor: withAlpha(root.primaryText, root.darkMode ? 0.72 : 0.68)
         property bool popupRequested: false
         property bool animatingClose: false
         property bool openAnimationPending: false
+        property int chargeLimitIndex: 0
 
         function openFor(source, window) {
             if (!source || !window) {
@@ -1267,6 +1278,7 @@ ShellRoot {
             popupRequested = true;
             animatingClose = false;
             batteryInfoPoll.refresh();
+            chargeLimitPoll.refresh();
             positionTimer.restart();
             if (popupWindow.visible) {
                 popupCard.prepareOpenAnimation();
@@ -1325,6 +1337,22 @@ ShellRoot {
                 batteryPopupRoot.openAnimationPending = false;
                 popupWindow.updatePopupPosition();
                 popupCard.playOpenAnimation();
+            }
+        }
+
+        PollCommand {
+            id: chargeLimitPoll
+
+            command: ["cat", "/sys/class/power_supply/BAT1/charge_control_end_threshold"]
+            interval: 300000
+            onOutputChanged: {
+                const val = parseInt(output.trim());
+                if (!isNaN(val)) {
+                    if (val >= 100) batteryPopupRoot.chargeLimitIndex = 2;
+                    else if (val >= 90) batteryPopupRoot.chargeLimitIndex = 1;
+                    else batteryPopupRoot.chargeLimitIndex = 0;
+                    root.chargeLimit = val;
+                }
             }
         }
 
@@ -1488,23 +1516,128 @@ ShellRoot {
                         }
                     }
 
-                    Text {
-                        text: root.batteryPopupTitle
-                        color: root.batteryDetailAccentColor
-                        font.family: root.baseFont
-                        font.pixelSize: 15
-                        font.weight: Font.Bold
-                        renderType: Text.NativeRendering
-                    }
+                    Item {
+                        width: parent.width
+                        height: Math.max(headerLeft.implicitHeight, headerRight.implicitHeight)
 
-                    Text {
-                        text: root.batteryStatusText
-                        color: batteryPopupRoot.mutedTextColor
-                        font.family: root.baseFont
-                        font.pixelSize: 12
-                        font.weight: Font.DemiBold
-                        renderType: Text.NativeRendering
-                        wrapMode: Text.WordWrap
+                        Column {
+                            id: headerLeft
+
+                            anchors.left: parent.left
+                            anchors.right: headerRight.left
+                            anchors.rightMargin: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 2
+
+                            Text {
+                                text: root.batteryPopupTitle
+                                color: root.batteryDetailAccentColor
+                                font.family: root.baseFont
+                                font.pixelSize: 15
+                                font.weight: Font.Bold
+                                renderType: Text.NativeRendering
+                            }
+
+                            Text {
+                                width: headerLeft.width
+                                text: root.batteryStatusText
+                                color: batteryPopupRoot.mutedTextColor
+                                font.family: root.baseFont
+                                font.pixelSize: 12
+                                font.weight: Font.DemiBold
+                                renderType: Text.NativeRendering
+                                wrapMode: Text.WordWrap
+                            }
+                        }
+
+                        Column {
+                            id: headerRight
+
+                            anchors.left: parent.horizontalCenter
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 4
+
+                            Item {
+                                id: chargeLimitSelector
+
+                                readonly property var options: ["80%", "90%", "100%"]
+                                readonly property var values: [80, 90, 100]
+                                readonly property real segWidth: width / 3
+
+                                width: parent.width
+                                height: 28
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: 8
+                                    color: withAlpha(root.primaryText, 0.07)
+                                    border.width: 1
+                                    border.color: batteryPopupRoot.glassStroke
+                                }
+
+                                Rectangle {
+                                    id: limitThumb
+
+                                    x: batteryPopupRoot.chargeLimitIndex * chargeLimitSelector.segWidth + 2
+                                    y: 2
+                                    width: chargeLimitSelector.segWidth - 4
+                                    height: parent.height - 4
+                                    radius: 6
+                                    color: root.batteryColor
+
+                                    Behavior on x {
+                                        NumberAnimation { duration: 180; easing.type: Easing.InOutCubic }
+                                    }
+                                }
+
+                                Repeater {
+                                    model: chargeLimitSelector.options
+
+                                    Item {
+                                        x: index * chargeLimitSelector.segWidth
+                                        width: chargeLimitSelector.segWidth
+                                        height: chargeLimitSelector.height
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: modelData
+                                            color: index === batteryPopupRoot.chargeLimitIndex
+                                                ? (root.darkMode ? "#1e1e2e" : "#ffffff")
+                                                : root.primaryText
+                                            font.family: root.baseFont
+                                            font.pixelSize: 11
+                                            font.weight: Font.Bold
+                                            renderType: Text.NativeRendering
+
+                                            Behavior on color {
+                                                ColorAnimation { duration: 120 }
+                                            }
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                batteryPopupRoot.chargeLimitIndex = index;
+                                                root.chargeLimit = chargeLimitSelector.values[index];
+                                                root.runDetached([root.configDir + "/quickshell/scripts/bat-limit", String(chargeLimitSelector.values[index])]);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Text {
+                                anchors.right: parent.right
+                                text: "Limit"
+                                color: batteryPopupRoot.mutedTextColor
+                                font.family: root.baseFont
+                                font.pixelSize: 12
+                                font.weight: Font.DemiBold
+                                renderType: Text.NativeRendering
+                            }
+                        }
                     }
 
                     Rectangle {
@@ -1525,7 +1658,7 @@ ShellRoot {
                     BatteryInfoLine {
                         shellRoot: root
                         width: parent.width
-                        title: "30 min avg power"
+                        title: "Avg power"
                         value: root.batteryAveragePowerDetailText
                     }
 
@@ -1534,19 +1667,6 @@ ShellRoot {
                         width: parent.width
                         title: root.batteryEstimateTitle
                         value: root.batteryEstimateText
-                    }
-
-                    Text {
-                        width: parent.width
-                        text: root.batterySampleWindowText
-                        visible: text.length > 0
-                        color: batteryPopupRoot.mutedTextColor
-                        font.family: root.baseFont
-                        font.pixelSize: 11
-                        font.weight: Font.Medium
-                        horizontalAlignment: Text.AlignRight
-                        renderType: Text.NativeRendering
-                        wrapMode: Text.WordWrap
                     }
                 }
             }
@@ -1566,15 +1686,8 @@ ShellRoot {
                     root.brightnessPercent = Math.max(0, Math.min(100, Math.round(parsed)));
                     root._brightnessFromPoll = false;
                 }
-            } else if (line.startsWith("dnd=")) {
-                root.dndEnabled = line.slice(4).trim() === "true";
             } else if (line.startsWith("recording=")) {
                 root.screenRecording = line.slice(10).trim() === "true";
-            } else if (line.startsWith("power_profile=")) {
-                const profile = line.slice(14).trim();
-                if (profile.length > 0) {
-                    root.powerProfile = profile;
-                }
             } else if (line.startsWith("prevent_sleep=")) {
                 root.preventSleepEnabled = line.slice(14).trim() === "true";
             }
@@ -2436,7 +2549,7 @@ ShellRoot {
     }
 
     function openWifiManager() {
-        runDetached(["sh", "-lc", "if command -v nm-connection-editor >/dev/null 2>&1; then exec nm-connection-editor; elif command -v iwgtk >/dev/null 2>&1; then exec iwgtk; else exec alacritty -t nmtui -e nmtui; fi"]);
+        runDetached(["sh", "-lc", "if command -v nm-connection-editor >/dev/null 2>&1; then exec nm-connection-editor; elif command -v iwgtk >/dev/null 2>&1; then exec iwgtk; else exec kitty --title nmtui -e nmtui; fi"]);
     }
 
     function openWifiPanel() {
@@ -2450,7 +2563,7 @@ ShellRoot {
     }
 
     function openBluetoothManager() {
-        runDetached(["sh", "-lc", "if command -v blueman-manager >/dev/null 2>&1; then exec blueman-manager; elif command -v blueberry >/dev/null 2>&1; then exec blueberry; else exec alacritty -t bluetoothctl -e bluetoothctl; fi"]);
+        runDetached(["sh", "-lc", "if command -v blueman-manager >/dev/null 2>&1; then exec blueman-manager; elif command -v blueberry >/dev/null 2>&1; then exec blueberry; else exec kitty --title bluetoothctl -e bluetoothctl; fi"]);
     }
 
     function refreshBluetoothStatus() {
@@ -2616,6 +2729,12 @@ ShellRoot {
         detachedRunner.startDetached();
     }
 
+    function lockSession()    { runDetached(["hyprlock"]) }
+    function suspendSystem()  { runDetached(["systemctl", "suspend"]) }
+    function logoutSession()  { runDetached(["hyprctl", "dispatch", "exit"]) }
+    function rebootSystem()   { runDetached(["systemctl", "reboot"]) }
+    function shutdownSystem() { runDetached(["systemctl", "poweroff"]) }
+
     function refreshControlPanelStatus() {
         controlPanelStatusPoll.refresh();
     }
@@ -2714,30 +2833,7 @@ ShellRoot {
         runDetached(["sh", "-lc", focusScript, "focus-media-app", playerName]);
     }
 
-    function agentIslandAction(action, requestId, value) {
-        const command = ["/usr/bin/python3", root.configDir + "/quickshell/scripts/agent-island-action.py", action || "approve"];
-        if (requestId && String(requestId).length > 0) {
-            command.push(String(requestId));
-        } else {
-            command.push("current");
-        }
-        if (value && String(value).length > 0) {
-            command.push(String(value));
-        }
-        runDetached(command);
-        agentIslandFollowupRefresh.restart();
-    }
-
-    function focusAgentIslandSession(sessionId) {
-        if (!sessionId || String(sessionId).length === 0) {
-            return;
-        }
-        runDetached(["/usr/bin/python3", root.configDir + "/quickshell/scripts/agent-island-action.py", "focus", String(sessionId)]);
-    }
-
-    function refreshPowerProfileStatus() {
-        powerProfilePoll.refresh();
-    }
+    function refreshPowerProfileStatus() {}
 
     Process {
         id: fluentIconLocator
@@ -2894,14 +2990,6 @@ ShellRoot {
         onTriggered: root._osdReady = true
     }
 
-    Timer {
-        id: agentIslandFollowupRefresh
-
-        interval: 220
-        repeat: false
-        onTriggered: agentIslandStatusPoll.refresh()
-    }
-
     Connections {
         target: root.bluetoothAdapterObject
         ignoreUnknownSignals: true
@@ -2920,6 +3008,52 @@ ShellRoot {
 
         function onStateChanged() {
             root.syncBluetoothStatusFromModel();
+        }
+    }
+
+    function layoutAbbrev(name) {
+        const n = name.toLowerCase();
+        if (n.includes("english") || n.includes("us")) return "ENG";
+        if (n.includes("swedish") || n === "se") return "SWE";
+        // Fallback: first 3 chars of the name uppercased
+        return name.slice(0, 3).toUpperCase();
+    }
+
+    Connections {
+        target: Hyprland
+        function onRawEvent(event) {
+            if (event.name === "activelayout") {
+                const parts = event.data.split(",");
+                if (parts.length >= 2) {
+                    root.keyboardLayout = root.layoutAbbrev(parts.slice(1).join(",").trim());
+                }
+            }
+        }
+    }
+
+    Process {
+        id: initialKeyboardLayoutProbe
+
+        running: true
+        command: ["hyprctl", "-j", "devices"]
+        stdout: StdioCollector { id: initialKeyboardLayoutStdout }
+
+        onExited: function(exitCode) {
+            if (exitCode !== 0) return;
+            try {
+                const devices = JSON.parse(initialKeyboardLayoutStdout.text || "{}");
+                const keyboards = devices.keyboards || [];
+                for (let i = 0; i < keyboards.length; i++) {
+                    const kb = keyboards[i];
+                    if (kb.main) {
+                        root.keyboardLayout = root.layoutAbbrev(kb.active_keymap || "");
+                        return;
+                    }
+                }
+                if (keyboards.length > 0) {
+                    root.keyboardLayout = root.layoutAbbrev(keyboards[0].active_keymap || "");
+                }
+            } catch (e) {}
         }
     }
 
@@ -2996,18 +3130,6 @@ ShellRoot {
         }
     }
 
-    PollCommand {
-        id: themePoll
-
-        interval: 2000
-        command: [root.configDir + "/quickshell/scripts/ui-state.sh", "print"]
-        onUpdated: function(output, exitCode) {
-            if (exitCode === 0) {
-                root.darkMode = output.indexOf("theme=dark") >= 0;
-            }
-        }
-    }
-
     Process {
         id: cavaAvailabilityProbe
 
@@ -3058,14 +3180,6 @@ ShellRoot {
         stderr: StdioCollector {}
     }
 
-    Process {
-        id: codexAppServerWatcher
-
-        running: true
-        command: ["/usr/bin/python3", root.configDir + "/quickshell/scripts/agent-island-codex-appserver.py"]
-        stderr: StdioCollector {}
-    }
-
     PollCommand {
         id: wifiStatusPoll
 
@@ -3078,16 +3192,33 @@ ShellRoot {
         }
     }
 
-    PollCommand {
-        id: notificationPoll
+    // D-Bus watcher: fires instantly on notification count or DND changes
+    Process {
+        id: notificationWatcher
 
-        interval: 2000
-        command: ["sh", "-lc", "swaync-client -swb | head -n 1"]
-        onUpdated: function(output, exitCode) {
-            if (exitCode === 0) {
-                root.updateNotificationState((output || "").split("\n")[0] || "");
+        running: true
+        command: [
+            "stdbuf", "-oL",
+            "gdbus", "monitor",
+            "--session",
+            "--dest", "org.erikreider.swaync",
+            "--object-path", "/org/erikreider/swaync/cc"
+        ]
+        stdout: SplitParser {
+            splitMarker: "\n"
+            onRead: function(line) {
+                // Signal: SubscribeV2 (uint32 count, bool dnd, bool cc_open, bool inhibited)
+                const m = line.match(/SubscribeV2 \(uint32 (\d+), (true|false),/);
+                if (!m) return;
+                const count = parseInt(m[1]);
+                const dnd = m[2] === "true";
+                root.dndEnabled = dnd;
+                root.notificationAlt = count > 0 ? "notification" : "none";
+                root.notificationTooltip = count === 0 ? ""
+                    : count + " notification" + (count !== 1 ? "s" : "");
             }
         }
+        stderr: StdioCollector {}
     }
 
     Process {
@@ -3129,31 +3260,6 @@ ShellRoot {
         }
     }
 
-    PollCommand {
-        id: agentIslandStatusPoll
-
-        interval: root.agentIslandActive ? 650 : 1200
-        command: ["/usr/bin/python3", root.configDir + "/quickshell/scripts/agent-island-status.py", "--json"]
-        onUpdated: function(output, exitCode) {
-            if (exitCode === 0) {
-                root.updateAgentIslandState(output);
-            } else {
-                root.resetAgentIslandState();
-            }
-        }
-    }
-
-    PollCommand {
-        id: powerProfilePoll
-
-        interval: 3000
-        command: [root.configDir + "/quickshell/scripts/power-profile.sh"]
-        onUpdated: function(output, exitCode) {
-            if (exitCode === 0 && output.length > 0) {
-                root.powerProfileText = output;
-            }
-        }
-    }
 
     PollCommand {
         id: batteryInfoPoll
@@ -3203,6 +3309,65 @@ ShellRoot {
                 root.updateControlPanelState(output);
             }
         }
+    }
+
+    // One-shot: read initial swaync state — returns (dnd, cc_open, uint32 count, inhibited)
+    Process {
+        id: notificationInitProbe
+
+        running: true
+        command: [
+            "gdbus", "call", "--session",
+            "--dest", "org.erikreider.swaync",
+            "--object-path", "/org/erikreider/swaync/cc",
+            "--method", "org.erikreider.swaync.cc.GetSubscribeData"
+        ]
+        stdout: StdioCollector { id: notificationInitStdout }
+        onExited: function() {
+            const text = (notificationInitStdout.text || "").trim();
+            const m = text.match(/\((\w+), \w+, uint32 (\d+),/);
+            if (m) {
+                root.dndEnabled = m[1] === "true";
+                const count = parseInt(m[2]);
+                root.notificationAlt = count > 0 ? "notification" : "none";
+            }
+        }
+    }
+
+    // One-shot: read current profile on startup
+    Process {
+        id: powerProfileInitProbe
+
+        running: true
+        command: ["powerprofilesctl", "get"]
+        stdout: StdioCollector { id: powerProfileInitStdout }
+        onExited: function() {
+            const profile = (powerProfileInitStdout.text || "").trim();
+            if (profile.length > 0) root.powerProfile = profile;
+        }
+    }
+
+    // Persistent D-Bus watcher: fires on every profile change
+    Process {
+        id: powerProfileWatcher
+
+        running: true
+        command: [
+            "stdbuf", "-oL",
+            "gdbus", "monitor",
+            "--system",
+            "--dest", "net.hadess.PowerProfiles",
+            "--object-path", "/net/hadess/PowerProfiles"
+        ]
+        stdout: SplitParser {
+            splitMarker: "\n"
+            onRead: function(line) {
+                // Line: /net/hadess/PowerProfiles: ...PropertiesChanged ('net.hadess.PowerProfiles', {'ActiveProfile': <'balanced'>}, ...)
+                const m = line.match(/'ActiveProfile':\s*<'([^']+)'>/);
+                if (m) root.powerProfile = m[1];
+            }
+        }
+        stderr: StdioCollector {}
     }
 
     ControlPanelPopup {
@@ -3257,10 +3422,10 @@ ShellRoot {
     IpcHandler {
         target: "osd"
 
-        function show(label: string, right: string, accent: string, iconCp: string, duration: string) {
+        function trigger(label: string, right: string, accent: string, iconCp: string, duration: string) {
             root.islandOsdLabel     = label;
             root.islandOsdRightText = right;
-            root.islandOsdAccent    = accent;
+            root.islandOsdAccent    = Qt.color(accent);
             root.islandOsdIcon      = String.fromCodePoint(parseInt(iconCp));
             root.islandOsdDuration  = duration ? parseInt(duration) : 1500;
             root.islandOsdType      = "sidetext";
@@ -3282,21 +3447,7 @@ ShellRoot {
             exclusiveZone: -1
             color: "transparent"
             surfaceFormat.opaque: false
-            mask: Region {
-                item: topLeftShade
-
-                Region {
-                    item: topRightShade
-                }
-
-                Region {
-                    item: bottomLeftShade
-                }
-
-                Region {
-                    item: bottomRightShade
-                }
-            }
+            mask: Region {}
 
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
@@ -3420,6 +3571,41 @@ ShellRoot {
 
                     GroupPill {
                         shellRoot: root
+                        TextModule {
+                            id: cpuTrigger
+
+                            label: " " + Math.round(root.cpuUsage) + "%"
+                            interactive: true
+                            paddingLeft: 12
+                            paddingRight: 4
+                            onLeftClicked: systemStatsPopup.toggleFor(cpuTrigger, barWindow)
+                            onRightClicked: root.runDetached(["kitty", "-t", "btop", "-o", "window.startup_mode=Fullscreen", "-e", "btop"])
+                        }
+
+                        TextModule {
+                            id: memoryTrigger
+
+                            label: " " + Math.round(root.memoryUsage) + "%"
+                            interactive: true
+                            paddingLeft: 6
+                            paddingRight: 4
+                            onLeftClicked: systemStatsPopup.toggleFor(memoryTrigger, barWindow)
+                            onRightClicked: root.runDetached(["kitty", "-t", "btop", "-o", "window.startup_mode=Fullscreen", "-e", "btop"])
+                        }
+
+                        TextModule {
+                            id: networkTrigger
+
+                            label: root.networkIcon + " " + root.networkText
+                            interactive: true
+                            paddingLeft: 6
+                            paddingRight: 12
+                            onLeftClicked: systemStatsPopup.toggleFor(networkTrigger, barWindow)
+                        }
+                    }
+
+                    GroupPill {
+                        shellRoot: root
 
                         Item {
                             implicitWidth: workspaceRow.implicitWidth + 8
@@ -3458,48 +3644,12 @@ ShellRoot {
                         }
                     }
 
-                    GroupPill {
-                        shellRoot: root
-                        TextModule {
-                            id: cpuTrigger
-
-                            label: " " + Math.round(root.cpuUsage) + "%"
-                            interactive: true
-                            paddingLeft: 12
-                            paddingRight: 4
-                            onLeftClicked: systemStatsPopup.toggleFor(cpuTrigger, barWindow)
-                            onRightClicked: root.runDetached(["kitty", "-t", "btop", "-o", "window.startup_mode=Fullscreen", "-e", "btop"])
-                        }
-
-                        TextModule {
-                            id: memoryTrigger
-
-                            label: " " + Math.round(root.memoryUsage) + "%"
-                            interactive: true
-                            paddingLeft: 6
-                            paddingRight: 4
-                            onLeftClicked: systemStatsPopup.toggleFor(memoryTrigger, barWindow)
-                            onRightClicked: root.runDetached(["kitty", "-t", "btop", "-o", "window.startup_mode=Fullscreen", "-e", "btop"])
-                        }
-
-                        TextModule {
-                            id: networkTrigger
-
-                            label: root.networkIcon + " " + root.networkText
-                            interactive: true
-                            paddingLeft: 6
-                            paddingRight: 12
-                            onLeftClicked: systemStatsPopup.toggleFor(networkTrigger, barWindow)
-                        }
-                    }
-
                 }
 
                 DynamicIsland {
                     id: centerSection
                     shellRoot: root
                     anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.horizontalCenterOffset: centerSection.attachedCenterOffset
                     anchors.top: parent.top
                     anchors.topMargin: 10
                     now: root.now
@@ -3512,10 +3662,6 @@ ShellRoot {
                     mediaPositionSeconds: root.mediaPositionSeconds
                     mediaLengthSeconds: root.mediaLengthSeconds
                     spectrumValues: root.audioSpectrumValues
-                    agentSessions: root.agentIslandSessions
-                    agentPending: root.agentIslandPending
-                    agentPendingCount: root.agentIslandPendingCount
-
                     onExpandedChanged: {
                         if (expanded) {
                             islandCollapseTimer.stop();
@@ -3526,26 +3672,10 @@ ShellRoot {
                     }
                     onHeightChanged: barWindow.islandCurrentHeight = height
                     onLockClicked: root.runDetached(["hyprlock"])
-                    onPowerClicked: root.runDetached(["wlogout", "--protocol", "layer-shell", "-b", "5"])
                     onSeekRequested: function(positionSeconds) {
                         root.seekMedia(positionSeconds);
                     }
                     onAppFocusRequested: root.focusMediaApp()
-                    onAgentFocusRequested: function(sessionId) {
-                        root.focusAgentIslandSession(sessionId);
-                    }
-                    onAgentApproveRequested: function(requestId) {
-                        root.agentIslandAction("approve", requestId, "");
-                    }
-                    onAgentDenyRequested: function(requestId) {
-                        root.agentIslandAction("deny", requestId, "");
-                    }
-                    onAgentReplyRequested: function(requestId) {
-                        root.agentIslandAction("reply", requestId, "");
-                    }
-                    onAgentAnswerRequested: function(requestId, answer) {
-                        root.agentIslandAction("answer", requestId, answer);
-                    }
                     onPreviousClicked: root.runDetached(["playerctl", "previous"])
                     onPlayPauseClicked: {
                         root.mediaPlaying = !root.mediaPlaying;
@@ -3564,11 +3694,11 @@ ShellRoot {
                     anchors.topMargin: 10
                     x: leftSection.x + leftSection.width + 9.5
                     width: Math.min(windowSection.availableWidth, Math.max(windowSection.minimumWidth, windowLabel.implicitWidth + 24))
-                    height: 38
-                    radius: 19
+                    height: root.barHeight
+                    radius: root.pillRadius
                     color: root.moduleBackground
                     border.width: 1
-                    border.color: root.withAlpha(root.primaryText, root.darkMode ? 0.13 : 0.10)
+                    border.color: root.pillBorder
                     visible: root.activeWindowTitle.length > 0 && width > 0
 
                     Text {
@@ -3611,7 +3741,15 @@ ShellRoot {
                             interactive: true
                             paddingLeft: 10
                             paddingRight: 5
-                            onLeftClicked: root.runDetached(["alacritty", "-t", "btop", "-o", "window.startup_mode=Fullscreen", "-e", "btop"])
+                            onLeftClicked: root.runDetached(["kitty", "--title", "btop", "--start-as=fullscreen", "-e", "btop"])
+                        }
+
+                        TextModule {
+                            label: root.keyboardLayout
+                            textColor: root.subtext
+                            paddingLeft: 5
+                            paddingRight: 5
+                            fontPixelSize: 13
                         }
 
                         Item {
@@ -3842,7 +3980,6 @@ ShellRoot {
                                         root.runDetached(["swaync-client", "-t", "-sw"]);
                                     } else if (mouse.button === Qt.RightButton) {
                                         root.runDetached(["swaync-client", "-d", "-sw"]);
-                                        notificationRefresh.restart();
                                     }
                                 }
                             }
@@ -3868,33 +4005,9 @@ ShellRoot {
                         }
 
                         Item {
-                            id: wlogoutTrigger
-
-                            implicitWidth: 30
-                            implicitHeight: 38
-
-                            Text {
-                                anchors.centerIn: parent
-                                anchors.horizontalCenterOffset: 4
-                                text: ""
-                                color: root.primaryText
-                                font.family: root.iconFont
-                                font.pixelSize: 14
-                                font.weight: Font.Bold
-                                renderType: Text.NativeRendering
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.runDetached(["wlogout", "--protocol", "layer-shell", "-b", "5"])
-                            }
-                        }
-
-                        Item {
                             id: controlPanelTrigger
 
-                            implicitWidth: controlPanelIcon.width + 22
+                            implicitWidth: 38
                             implicitHeight: 38
 
                             Image {
@@ -3925,29 +4038,6 @@ ShellRoot {
         }
     }
 
-    Timer {
-        id: themeRefresh
-
-        interval: 350
-        repeat: false
-        onTriggered: themePoll.refresh()
-    }
-
-    Timer {
-        id: notificationRefresh
-
-        interval: 350
-        repeat: false
-        onTriggered: notificationPoll.refresh()
-    }
-
-    Timer {
-        id: powerProfileRefresh
-
-        interval: 350
-        repeat: false
-        onTriggered: powerProfilePoll.refresh()
-    }
 }
 
 

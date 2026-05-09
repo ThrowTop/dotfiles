@@ -1,21 +1,30 @@
 local hlc = require("hlc")
 local M = {}
 
-local QS = os.getenv("HOME") .. "/.config/HyprV/quickshell"
-
-local function ipc(target, func, ...)
-    local cmd = "quickshell -p '" .. QS .. "' ipc call " .. target .. " " .. func
-    for _, v in ipairs({...}) do
-        cmd = cmd .. " '" .. tostring(v) .. "'"
-    end
-    hlc.d.exec_cmd(cmd .. " >/dev/null 2>&1 &")
+-- Resolve symlinks so the path matches what launch.sh passed to quickshell -p
+local function resolve(path)
+    local h = io.popen("readlink -f '" .. path .. "' 2>/dev/null")
+    if not h then return path end
+    local result = h:read("*l")
+    h:close()
+    return (result and result ~= "") and result or path
 end
 
--- OSD: show a sidetext notification in the Dynamic Island
+local QS = resolve(os.getenv("HOME") .. "/.config/HyprV/quickshell")
+
+local function ipc(target, func, ...)
+    local cmd = "quickshell -p " .. QS .. " ipc call " .. target .. " " .. func
+    for _, v in ipairs({...}) do
+        cmd = cmd .. ' "' .. tostring(v) .. '"'
+    end
+    hlc.d.exec_cmd("bash -c '" .. cmd .. "'")
+end
+
+-- OSD: show a sidetext notification in the Dynamic Island.
 -- icon: Nerd Font codepoint as hex string, e.g. "0xF052F"
 -- duration: optional milliseconds (default 1500)
 function M.osd(label, right, accent, icon, duration)
-    ipc("osd", "show", label, right, accent, tostring(icon), duration or "")
+    ipc("osd", "trigger", label, right, accent, tostring(icon), duration or "")
 end
 
 -- Control panel popup

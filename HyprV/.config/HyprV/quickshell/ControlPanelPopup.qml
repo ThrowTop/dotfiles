@@ -17,6 +17,7 @@ Item {
     readonly property bool wifiExpanded: currentPage === "wifi"
     readonly property bool bluetoothExpanded: currentPage === "bluetooth"
     property bool powerExpanded: false
+    property bool sessionExpanded: false
 
     readonly property int popupScreenMargin: 10
     readonly property int popupPadding: 12
@@ -29,8 +30,8 @@ Item {
     readonly property int popupWidth: currentPage === "main"
         ? (popupPadding * 2 + columnWidth * 2 + columnSpacing)
         : 384
-    readonly property color glassFill: shellRoot ? shellRoot.withAlpha(shellRoot.darkMode ? "#101214" : "#ffffff", shellRoot.darkMode ? 0.42 : 0.28) : "#202020"
-    readonly property color glassStroke: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, shellRoot.darkMode ? 0.14 : 0.1) : "#3a3a3a"
+    readonly property color glassFill: shellRoot ? shellRoot.glassFill : "#202020"
+    readonly property color glassStroke: shellRoot ? shellRoot.glassStroke : "#3a3a3a"
     readonly property color panelShadowColor: shellRoot ? (shellRoot.darkMode ? shellRoot.withAlpha("#000000", 0.45) : shellRoot.withAlpha("#000000", 0.16)) : Qt.rgba(0, 0, 0, 0.3)
     readonly property color mutedTextColor: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.68) : "#b0b0b0"
     readonly property color detailFill: shellRoot ? shellRoot.withAlpha(shellRoot.darkMode ? "#ffffff" : "#ffffff", shellRoot.darkMode ? 0.07 : 0.22) : "#2a2a2a"
@@ -40,7 +41,7 @@ Item {
         currentPage = "main";
         pendingPage = "";
         powerExpanded = false;
-
+        sessionExpanded = false;
     }
 
     function openFor(source, window) {
@@ -244,6 +245,7 @@ Item {
 
     function showMainPage() {
         powerExpanded = false;
+        sessionExpanded = false;
         switchPageWithAnimation("main");
     }
 
@@ -288,6 +290,22 @@ Item {
 
     function togglePowerExpanded() {
         powerExpanded = !powerExpanded;
+    }
+
+    function toggleSessionExpanded() {
+        sessionExpanded = !sessionExpanded;
+    }
+
+    function openToSession(window) {
+        if (!window) return;
+        sessionExpanded = true;
+        if (!popupWindow.visible) {
+            sourceItem = null;
+            parentWindow = window;
+            popupRequested = true;
+            animatingClose = false;
+            popupWindow.visible = true;
+        }
     }
 
     function handleMediaAction(command) {
@@ -641,6 +659,102 @@ Item {
                                         : (popupRoot.shellRoot ? popupRoot.shellRoot.primaryText : "#5a4030")
                                     strokeColor: popupRoot.detailStroke
                                     onClicked: popupRoot.setPowerProfile("performance")
+                                }
+                            }
+                        }
+                    }
+
+                    ControlPanelSplitTile {
+                        width: parent.width
+                        height: popupRoot.moduleSize
+
+                        shellRoot: popupRoot.shellRoot
+                        icon: "󰐥"
+                        title: "Session"
+                        subtitle: "Lock · Shutdown"
+                        active: false
+                        expanded: popupRoot.sessionExpanded
+                        expandIndicatorVisible: true
+                        onLeftClicked: popupRoot.toggleSessionExpanded()
+                        onRightClicked: popupRoot.toggleSessionExpanded()
+                    }
+
+                    ExpandableSection {
+                        width: parent.width
+                        expanded: popupRoot.sessionExpanded
+
+                        Rectangle {
+                            width: parent.width
+                            radius: 19
+                            color: popupRoot.detailFill
+                            border.width: 1
+                            border.color: popupRoot.detailStroke
+                            implicitHeight: sessionActions.implicitHeight + 20
+
+                            Column {
+                                id: sessionActions
+
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.top: parent.top
+                                anchors.margins: 10
+                                spacing: 6
+
+                                WifiActionChip {
+                                    width: parent.width
+                                    shellRoot: popupRoot.shellRoot
+                                    label: "Lock"
+                                    fillColor: popupRoot.detailFill
+                                    foregroundColor: popupRoot.shellRoot ? popupRoot.shellRoot.launchColor : "#89b4fa"
+                                    strokeColor: popupRoot.detailStroke
+                                    onClicked: {
+                                        popupRoot.shellRoot.lockSession();
+                                        popupRoot.toggleSessionExpanded();
+                                    }
+                                }
+
+                                WifiActionChip {
+                                    width: parent.width
+                                    shellRoot: popupRoot.shellRoot
+                                    label: "Suspend"
+                                    fillColor: popupRoot.detailFill
+                                    foregroundColor: popupRoot.shellRoot ? popupRoot.shellRoot.subtext : "#a6adc8"
+                                    strokeColor: popupRoot.detailStroke
+                                    onClicked: {
+                                        popupRoot.shellRoot.suspendSystem();
+                                        popupRoot.resetExpandedState();
+                                        popupWindow.visible = false;
+                                    }
+                                }
+
+                                WifiActionChip {
+                                    width: parent.width
+                                    shellRoot: popupRoot.shellRoot
+                                    label: "Logout"
+                                    fillColor: popupRoot.detailFill
+                                    foregroundColor: popupRoot.shellRoot ? popupRoot.shellRoot.primaryText : "#cdd6f4"
+                                    strokeColor: popupRoot.detailStroke
+                                    onClicked: popupRoot.shellRoot.logoutSession()
+                                }
+
+                                WifiActionChip {
+                                    width: parent.width
+                                    shellRoot: popupRoot.shellRoot
+                                    label: "Reboot"
+                                    fillColor: popupRoot.detailFill
+                                    foregroundColor: popupRoot.shellRoot ? popupRoot.shellRoot.brightnessColor : "#f3b35c"
+                                    strokeColor: popupRoot.detailStroke
+                                    onClicked: popupRoot.shellRoot.rebootSystem()
+                                }
+
+                                WifiActionChip {
+                                    width: parent.width
+                                    shellRoot: popupRoot.shellRoot
+                                    label: "Shutdown"
+                                    fillColor: popupRoot.detailFill
+                                    foregroundColor: popupRoot.shellRoot ? popupRoot.shellRoot.criticalColor : "#f38ba8"
+                                    strokeColor: popupRoot.detailStroke
+                                    onClicked: popupRoot.shellRoot.shutdownSystem()
                                 }
                             }
                         }

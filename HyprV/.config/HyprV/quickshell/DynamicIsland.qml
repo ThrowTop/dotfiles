@@ -132,7 +132,7 @@ Item {
     readonly property color surfaceColor: shellRoot ? shellRoot.moduleBackground : "#303030"
     readonly property color textColor: shellRoot ? shellRoot.primaryText : "#cdd6f4"
     readonly property color mutedTextColor: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, shellRoot.darkMode ? 0.68 : 0.62) : Qt.rgba(0.8, 0.8, 0.8, 0.68)
-    readonly property color strokeColor: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, shellRoot.darkMode ? 0.13 : 0.10) : Qt.rgba(0.8, 0.8, 0.8, 0.12)
+    readonly property color strokeColor: shellRoot ? shellRoot.pillBorder : Qt.rgba(0.8, 0.8, 0.8, 0.12)
     readonly property color hoverFill: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, shellRoot.darkMode ? 0.10 : 0.12) : Qt.rgba(0.8, 0.8, 0.8, 0.12)
     readonly property color softFill: shellRoot ? shellRoot.withAlpha(shellRoot.darkMode ? "#ffffff" : "#ffffff", shellRoot.darkMode ? 0.07 : 0.23) : Qt.rgba(1, 1, 1, 0.1)
     readonly property color accentColor: shellRoot ? shellRoot.launchColor : "#407cdd"
@@ -1833,3 +1833,5 @@ Item {
         }
     }
 }
+
+

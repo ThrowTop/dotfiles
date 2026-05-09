@@ -152,8 +152,16 @@ end
 -- -------------------------
 hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd("loginctl lock-session"), { locked = true })
 
-hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume --limit 1.0 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
-hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { locked = true, repeating = true })
+hl.bind(
+    "XF86AudioRaiseVolume",
+    hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ 0 && wpctl set-volume --limit 1.0 @DEFAULT_AUDIO_SINK@ 5%+"),
+    { locked = true, repeating = true }
+)
+hl.bind(
+    "XF86AudioLowerVolume",
+    hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ 0 && wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),
+    { locked = true, repeating = true }
+)
 hl.bind("XF86AudioMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true, repeating = true })
 hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"), { locked = true, repeating = true })
 hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd(s.qs .. "/brightness --inc"), { locked = true, repeating = true })
@@ -195,7 +203,7 @@ hl.bind("ALT+TAB", hl.dsp.window.cycle_next())
 hl.bind(mod .. "+ x", function()
     hlc.input.touchpad.tap_to_click = not hlc.input.touchpad.tap_to_click
     local tcc = hlc.input.touchpad.tap_to_click
-    hyprv.osd("Tap-to-click", tcc and "On" or "Off", tcc and "#a6e3a1" or "#f38ba8", "0xF052F")
+    hyprv.osd("Tap Click", tcc and "On" or "Off", tcc and "#a6e3a1" or "#f38ba8", "0xF052F")
 end)
 
 
