@@ -13,7 +13,7 @@ Rectangle {
     width: implicitWidth
     height: implicitHeight
     border.width: 1
-    border.color: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, shellRoot.darkMode ? 0.13 : 0.10) : Qt.rgba(0.8, 0.8, 0.8, 0.12)
+    border.color: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, shellRoot.darkMode ? 0.13 : 0.10) : Qt.rgba(0.4, 0.4, 0.4, 0.12)
 
     Row {
         id: contentRow
@@ -23,3 +23,5 @@ Rectangle {
         spacing: 0
     }
 }
+
+

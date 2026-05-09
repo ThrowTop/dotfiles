@@ -973,7 +973,7 @@ Item {
             island.osdType = island.shellRoot.islandOsdType;
             island.osdValue = island.shellRoot.islandOsdValue;
             island.osdActive = true;
-            osdDismissTimer.interval = (island.osdType === "charger" || island.osdType === "lowbattery") ? 2500 : 1500;
+            osdDismissTimer.interval = island.shellRoot ? island.shellRoot.islandOsdDuration : 1500;
             osdDismissTimer.restart();
         }
     }
@@ -1101,19 +1101,12 @@ Item {
         }
 
         SideTextOsd {
-            osdTypeName: "charger"
-            leftLabel: "Charging"
-            rightValue: island.osdValue + "%"
-            accentColor: "#30c85e"
-            iconGlyph: "󰂄"
-        }
-
-        SideTextOsd {
-            osdTypeName: "lowbattery"
-            leftLabel: "Low Charge"
-            rightValue: island.osdValue + "%"
-            accentColor: "#f38ba8"
-            iconGlyph: "󱃍"
+            osdTypeName: "sidetext"
+            leftLabel:   island.shellRoot ? island.shellRoot.islandOsdLabel     : ""
+            rightValue:  island.shellRoot ? island.shellRoot.islandOsdRightText : ""
+            accentColor: island.shellRoot && island.shellRoot.islandOsdAccent
+                             ? Qt.color(island.shellRoot.islandOsdAccent) : "#ffffff"
+            iconGlyph:   island.shellRoot ? island.shellRoot.islandOsdIcon      : ""
         }
     }
 

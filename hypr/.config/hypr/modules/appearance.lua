@@ -45,7 +45,7 @@ hlc.config({
 })
 
 local curves = {
-    spring = hlc.spring(1, 40, 7), -- smooth, slightly faster than before
+    spring = hlc.spring(1, 140, 18), -- smooth, slightly faster than before
     fluid = hlc.spring(1, 25, 5), -- softer spring for workspace slides
     ease = hlc.bezier(0.23, 1, 0.32, 1), -- easeOutQuint for exits/fades
     quick = hlc.bezier(0.15, 0, 0.1, 1),

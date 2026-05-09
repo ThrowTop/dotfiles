@@ -1,4 +1,5 @@
 local hlc = require("hlc")
+local hyprv = require("helpers/hyprv")
 
 local DEVICE = "i2c-GXTP7936:00"
 local DRIVER = "/sys/bus/i2c/drivers/i2c_hid_acpi"
@@ -9,12 +10,12 @@ end
 
 local function enable()
     hlc.d.exec_cmd("bash -c 'echo " .. DEVICE .. " | sudo tee " .. DRIVER .. "/bind > /dev/null'")
-    hl.notification.create({ text = "Touchscreen on", timeout = 1500, icon = "ok" })
+    hyprv.osd("Touchscreen", "On", "#a6e3a1", "0xF11FF")
 end
 
 local function disable()
     hlc.d.exec_cmd("bash -c 'echo " .. DEVICE .. " | sudo tee " .. DRIVER .. "/unbind > /dev/null'")
-    hl.notification.create({ text = "Touchscreen off", timeout = 1500, icon = "ok" })
+    hyprv.osd("Touchscreen", "Off", "#f38ba8", "0xF11FF")
 end
 
 return function(state)

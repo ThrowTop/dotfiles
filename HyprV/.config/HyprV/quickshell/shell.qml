@@ -3254,6 +3254,20 @@ ShellRoot {
         }
     }
 
+    IpcHandler {
+        target: "osd"
+
+        function show(label: string, right: string, accent: string, iconCp: string, duration: string) {
+            root.islandOsdLabel     = label;
+            root.islandOsdRightText = right;
+            root.islandOsdAccent    = accent;
+            root.islandOsdIcon      = String.fromCodePoint(parseInt(iconCp));
+            root.islandOsdDuration  = duration ? parseInt(duration) : 1500;
+            root.islandOsdType      = "sidetext";
+            root.islandOsdTrigger   = !root.islandOsdTrigger;
+        }
+    }
+
     Variants {
         model: Quickshell.screens
 
