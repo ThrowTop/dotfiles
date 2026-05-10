@@ -32,9 +32,9 @@ Item {
     readonly property var cpuCoreDisplayData: {
         const values = shellRoot && Array.isArray(shellRoot.cpuCoreUsages) ? shellRoot.cpuCoreUsages : [];
         const display = [];
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < 16; i++) {
             display.push({
-                label: "C" + (i + 1),
+                label: "C" + (i),
                 value: i < values.length ? values[i] : null
             });
         }
@@ -517,3 +517,5 @@ Item {
         }
     }
 }
+
+

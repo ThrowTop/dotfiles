@@ -95,10 +95,15 @@ if not s.is_laptop then
     hl.workspace_rule({ workspace = "2", monitor = "DP-2" })
 end
 
+local numpad_key = { "KP_End", "KP_Down", "KP_Next", "KP_Left", "KP_Begin", "KP_Right", "KP_Home", "KP_Up", "KP_Prior", "KP_Insert" }
+
 for i = 1, 10 do
-    local bi = i % 10 -- 0 becomes worspace 10
-    hl.bind(mod .. " + " .. bi, hl.dsp.focus({ workspace = i }))
-    hl.bind(mod .. " + SHIFT + " .. bi, hl.dsp.window.move({ workspace = tostring(i) }))
+    local mod_i = i % 10
+    hl.bind(mod .. " + " .. mod_i, hl.dsp.focus({ workspace = i }))
+    hl.bind(mod .. " + SHIFT + " .. mod_i, hl.dsp.window.move({ workspace = tostring(i) }))
+
+    hl.bind(mod .. " + " .. numpad_key[i], hl.dsp.focus({ workspace = i }))
+    hl.bind(mod .. " + SHIFT + " .. numpad_key[i], hl.dsp.window.move({ workspace = tostring(i) }))
 end
 
 -- -- Scroll through workspaces on current monitor
@@ -178,7 +183,7 @@ end)
 
 hl.bind(mod .. " + SHIFT + R", function()
     local cur = hlc.decoration.rounding
-    hlc.decoration.rounding = cur == 0 and 8 or 0
+    hlc.decoration.rounding = cur == 0 and 19 or 0
     hlc.notify("rounding: " .. hlc.decoration.rounding, 1500)
 end)
 
