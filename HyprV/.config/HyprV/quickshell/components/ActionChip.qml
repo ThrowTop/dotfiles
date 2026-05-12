@@ -3,13 +3,13 @@ import QtQuick
 Rectangle {
     id: chip
 
-    property var shellRoot: null
+    required property var shellRoot
     property string label: ""
     property string iconLabel: ""
     property bool disabled: false
-    property color fillColor: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.08) : "#333333"
-    property color foregroundColor: shellRoot ? shellRoot.primaryText : "white"
-    property color strokeColor: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.1) : "#444444"
+    property color fillColor: shellRoot.withAlpha(shellRoot.primaryText, 0.08)
+    property color foregroundColor: shellRoot.primaryText
+    property color strokeColor: shellRoot.withAlpha(shellRoot.primaryText, 0.1)
     property int minimumWidth: 0
     property int iconPixelSize: 16
     property int cornerRadius: 10
@@ -20,16 +20,16 @@ Rectangle {
     height: 34
     implicitWidth: Math.max(minimumWidth, Math.max(chipLabel.contentWidth, chipIcon.contentWidth) + 24)
     color: disabled
-    ? (shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.06) : "#232323")
+    ? (shellRoot.withAlpha(shellRoot.primaryText, 0.06))
     : (chipArea.pressed
         ? Qt.darker(fillColor, 1.08)
         : (chipArea.containsMouse ? Qt.lighter(fillColor, 1.06) : fillColor))
     opacity: disabled ? 0.56 : 1
     border.width: 1
     border.color: disabled
-    ? (shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.06) : "#333333")
+    ? (shellRoot.withAlpha(shellRoot.primaryText, 0.06))
     : (chipArea.containsMouse
-        ? (shellRoot ? shellRoot.withAlpha(foregroundColor, 0.22) : strokeColor)
+        ? shellRoot.withAlpha(foregroundColor, 0.22)
         : strokeColor)
     antialiasing: true
 
@@ -40,7 +40,7 @@ Rectangle {
         text: chip.label
         visible: chip.iconLabel.length === 0
         color: chip.foregroundColor
-        font.family: chip.shellRoot ? chip.shellRoot.baseFont : ""
+        font.family: chip.shellRoot.baseFont
         font.pixelSize: 13
         font.weight: Font.Bold
         renderType: Text.NativeRendering
@@ -53,7 +53,7 @@ Rectangle {
         text: chip.iconLabel
         visible: chip.iconLabel.length > 0
         color: chip.foregroundColor
-        font.family: chip.shellRoot ? chip.shellRoot.iconFont : "JetBrainsMono Nerd Font"
+        font.family: chip.shellRoot.iconFont
         font.pixelSize: chip.iconPixelSize
         font.weight: Font.Bold
         renderType: Text.NativeRendering

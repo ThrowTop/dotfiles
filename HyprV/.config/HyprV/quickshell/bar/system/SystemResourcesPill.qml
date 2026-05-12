@@ -10,34 +10,34 @@ GroupPill {
         id: cpuTrigger
 
         shellRoot: pill.shellRoot
-        label: " " + Math.round(pill.shellRoot ? pill.shellRoot.cpuUsage : 0) + "%"
+        label: " " + Math.round(pill.shellRoot.cpuUsage) + "%"
         interactive: true
         paddingLeft: 12
         paddingRight: 4
-        onLeftClicked: if (pill.shellRoot) pill.shellRoot.openSystemStatsPopup(cpuTrigger, pill.parentWindow)
-        onRightClicked: if (pill.shellRoot) pill.shellRoot.runDetached(["kitty", "-t", "btop", "-o", "window.startup_mode=Fullscreen", "-e", "btop"])
+        onLeftClicked: pill.shellRoot.openSystemStatsPopup(cpuTrigger, pill.parentWindow)
+        onRightClicked: pill.shellRoot.runDetached(["kitty", "-t", "btop", "-o", "window.startup_mode=Fullscreen", "-e", "btop"])
     }
 
     TextModule {
         id: memoryTrigger
 
         shellRoot: pill.shellRoot
-        label: " " + Math.round(pill.shellRoot ? pill.shellRoot.memoryUsage : 0) + "%"
+        label: " " + Math.round(pill.shellRoot.memoryUsage) + "%"
         interactive: true
         paddingLeft: 6
         paddingRight: 4
-        onLeftClicked: if (pill.shellRoot) pill.shellRoot.openSystemStatsPopup(memoryTrigger, pill.parentWindow)
-        onRightClicked: if (pill.shellRoot) pill.shellRoot.runDetached(["kitty", "-t", "btop", "-o", "window.startup_mode=Fullscreen", "-e", "btop"])
+        onLeftClicked: pill.shellRoot.openSystemStatsPopup(memoryTrigger, pill.parentWindow)
+        onRightClicked: pill.shellRoot.runDetached(["kitty", "-t", "btop", "-o", "window.startup_mode=Fullscreen", "-e", "btop"])
     }
 
     TextModule {
         id: networkTrigger
 
         shellRoot: pill.shellRoot
-        label: (pill.shellRoot ? pill.shellRoot.networkIcon : "") + " " + (pill.shellRoot ? pill.shellRoot.networkText : "")
+        label: (pill.shellRoot.networkIcon) + " " + (pill.shellRoot.networkText)
         interactive: true
         paddingLeft: 6
         paddingRight: 12
-        onLeftClicked: if (pill.shellRoot) pill.shellRoot.openSystemStatsPopup(networkTrigger, pill.parentWindow)
+        onLeftClicked: pill.shellRoot.openSystemStatsPopup(networkTrigger, pill.parentWindow)
     }
 }

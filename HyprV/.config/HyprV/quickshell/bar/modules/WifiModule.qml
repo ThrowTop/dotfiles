@@ -1,31 +1,27 @@
 import QtQuick
-import "../.."
+import "../../features/network"
 
 Item {
     id: module
 
-    property var shellRoot: null
+    required property var shellRoot
     property var parentWindow: null
 
-    implicitWidth: wifiLoader.item && wifiLoader.item.available ? wifiLoader.item.implicitWidth : 0
-    implicitHeight: shellRoot ? shellRoot.barHeight : 38
+    implicitWidth: wifiIndicator.visible && wifiIndicator.available ? wifiIndicator.implicitWidth : 0
+    implicitHeight: shellRoot.barHeight
     visible: implicitWidth > 0
 
-    Loader {
-        id: wifiLoader
+    WifiFallback {
+        id: wifiIndicator
 
         anchors.fill: parent
-        active: module.shellRoot && module.shellRoot.networkWidgetVisible
-        source: Qt.resolvedUrl("../../WifiNative.qml")
+        visible: module.shellRoot.networkWidgetVisible
+        shellRoot: module.shellRoot
+        parentWindow: module.parentWindow
 
-        onLoaded: {
-            if (!item || !module.shellRoot) {
-                return;
-            }
-            item.shellRoot = module.shellRoot;
-            item.parentWindow = module.parentWindow;
+        Component.onCompleted: {
             if (!module.shellRoot.wifiPanelController || module.parentWindow === module.shellRoot.primaryBarWindow) {
-                module.shellRoot.wifiPanelController = item;
+                module.shellRoot.wifiPanelController = wifiIndicator;
             }
         }
     }

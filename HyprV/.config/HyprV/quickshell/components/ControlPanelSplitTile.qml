@@ -3,7 +3,7 @@ import QtQuick
 Item {
     id: tile
 
-    property var shellRoot: null
+    required property var shellRoot
     property string icon: ""
     property string title: ""
     property string subtitle: ""
@@ -21,17 +21,15 @@ Item {
     implicitHeight: 72
 
     readonly property color accentColor: destructive
-        ? (shellRoot ? shellRoot.criticalColor : "#d9485f")
-        : (shellRoot ? shellRoot.launchColor : "#89b4fa")
-    readonly property color textColor: shellRoot ? shellRoot.primaryText : "#cdd6f4"
-    readonly property color mutedTextColor: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.68) : "#b0b0b0"
-    readonly property color baseFill: shellRoot ? shellRoot.withAlpha("#ffffff", 0.07) : "#2a2a2a"
-    readonly property color baseStroke: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.12) : "#454545"
-    readonly property color activeFill: shellRoot ? shellRoot.withAlpha(accentColor, 0.28) : Qt.rgba(0.54, 0.71, 0.98, 0.22)
-    readonly property color activeStroke: shellRoot ? shellRoot.withAlpha(accentColor, 0.42) : Qt.rgba(0.54, 0.71, 0.98, 0.32)
-    readonly property color iconWellFill: shellRoot
-        ? shellRoot.withAlpha("#ffffff", active ? 0.14 : 0.11)
-        : "#303030"
+        ? (shellRoot.criticalColor)
+        : (shellRoot.launchColor)
+    readonly property color textColor: shellRoot.primaryText
+    readonly property color mutedTextColor: shellRoot.withAlpha(shellRoot.primaryText, 0.68)
+    readonly property color baseFill: shellRoot.withAlpha("#ffffff", 0.07)
+    readonly property color baseStroke: shellRoot.withAlpha(shellRoot.primaryText, 0.12)
+    readonly property color activeFill: shellRoot.withAlpha(accentColor, 0.28)
+    readonly property color activeStroke: shellRoot.withAlpha(accentColor, 0.42)
+    readonly property color iconWellFill: shellRoot.withAlpha("#ffffff", active ? 0.14 : 0.11)
     readonly property real frameRadius: 19
     readonly property real inset: Math.max(6, Math.round(height * 0.14))
     readonly property real iconWellWidth: Math.max(28, iconAreaWidth - inset * 2)
@@ -70,7 +68,7 @@ Item {
         anchors.centerIn: iconWell
         text: tile.icon
         color: tile.active ? "#fff7ef" : tile.textColor
-        font.family: tile.shellRoot ? tile.shellRoot.iconFont : "JetBrainsMono Nerd Font"
+        font.family: tile.shellRoot.iconFont
         font.pixelSize: tile.iconPixelSize
         font.weight: Font.Bold
         renderType: Text.NativeRendering
@@ -97,7 +95,7 @@ Item {
                 width: parent.width
                 text: tile.title
                 color: tile.active ? "#ffffff" : tile.textColor
-                font.family: tile.shellRoot ? tile.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                font.family: tile.shellRoot.baseFont
                 font.pixelSize: 11
                 font.weight: Font.Bold
                 renderType: Text.NativeRendering
@@ -109,7 +107,7 @@ Item {
                 visible: tile.subtitle.length > 0
                 text: tile.subtitle
                 color: tile.active ? Qt.rgba(1, 1, 1, 0.82) : tile.mutedTextColor
-                font.family: tile.shellRoot ? tile.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                font.family: tile.shellRoot.baseFont
                 font.pixelSize: 9
                 font.weight: Font.Medium
                 renderType: Text.NativeRendering
@@ -125,7 +123,7 @@ Item {
             visible: tile.expandIndicatorVisible
             text: tile.expanded ? "" : ""
             color: tile.active ? "#ffffff" : tile.mutedTextColor
-            font.family: tile.shellRoot ? tile.shellRoot.iconFont : "JetBrainsMono Nerd Font"
+            font.family: tile.shellRoot.iconFont
             font.pixelSize: 11
             font.weight: Font.Bold
             renderType: Text.NativeRendering

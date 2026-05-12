@@ -4,7 +4,7 @@ import Quickshell.Widgets
 Item {
     id: root
 
-    property var shellRoot: null
+    required property var shellRoot
     property string iconSource: ""
     property string fallbackLabel: "󰤮"
     property int iconSize: 24
@@ -13,7 +13,7 @@ Item {
     readonly property int effectiveIconSize: Math.max(16, Math.round(iconSize * contentScale))
     readonly property int effectiveVerticalOffset: usesSymbolicSource ? -2 : 0
     property int fallbackPixelSize: Math.max(13, effectiveIconSize - 2)
-    property color fallbackColor: shellRoot ? shellRoot.primaryText : "white"
+    property color fallbackColor: shellRoot.primaryText
 
     implicitWidth: iconSize
     implicitHeight: iconSize
@@ -40,7 +40,7 @@ Item {
         visible: !iconImage.visible
         text: root.fallbackLabel
         color: root.fallbackColor
-        font.family: root.shellRoot ? root.shellRoot.iconFont : "JetBrainsMono Nerd Font"
+        font.family: root.shellRoot.iconFont
         font.pixelSize: root.fallbackPixelSize
         font.weight: Font.Bold
         renderType: Text.NativeRendering

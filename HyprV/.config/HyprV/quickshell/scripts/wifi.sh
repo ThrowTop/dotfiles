@@ -6,10 +6,10 @@ script_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 case "${1:-status}" in
     status)
-        exec sh "$script_dir/lib/status.sh"
+        exec sh "$script_dir/lib/wifi-status.sh"
         ;;
     toggle|rescan|disconnect|connect)
-        exec sh "$script_dir/lib/action.sh" "$@"
+        exec sh "$script_dir/lib/wifi-action.sh" "$@"
         ;;
     *)
         printf 'Usage: %s [status|toggle on|toggle off|rescan|disconnect|connect <ssid> [password] [security]]\n' "$0" >&2

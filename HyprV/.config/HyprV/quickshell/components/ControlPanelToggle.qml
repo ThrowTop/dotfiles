@@ -4,7 +4,7 @@ import QtQuick.Effects
 Rectangle {
     id: toggle
 
-    property var shellRoot: null
+    required property var shellRoot
     property string icon: ""
     property url iconSource: ""
     property string label: ""
@@ -16,16 +16,14 @@ Rectangle {
     signal clicked()
 
     readonly property color activeColor: destructive
-        ? (shellRoot ? shellRoot.criticalColor : "#d9485f")
-        : (shellRoot ? shellRoot.launchColor : "#89b4fa")
-    readonly property color titleColor: shellRoot ? shellRoot.primaryText : "#cdd6f4"
-    readonly property color activeFill: shellRoot ? shellRoot.withAlpha(activeColor, 0.28) : Qt.rgba(0.54, 0.71, 0.98, 0.22)
-    readonly property color inactiveFill: shellRoot ? shellRoot.withAlpha("#ffffff", 0.07) : "#2a2a2a"
-    readonly property color activeStroke: shellRoot ? shellRoot.withAlpha(activeColor, 0.42) : Qt.rgba(0.54, 0.71, 0.98, 0.32)
-    readonly property color inactiveStroke: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.12) : "#454545"
-    readonly property color iconWellFill: shellRoot
-        ? shellRoot.withAlpha("#ffffff", active ? 0.14 : 0.11)
-        : "#303030"
+        ? (shellRoot.criticalColor)
+        : (shellRoot.launchColor)
+    readonly property color titleColor: shellRoot.primaryText
+    readonly property color activeFill: shellRoot.withAlpha(activeColor, 0.28)
+    readonly property color inactiveFill: shellRoot.withAlpha("#ffffff", 0.07)
+    readonly property color activeStroke: shellRoot.withAlpha(activeColor, 0.42)
+    readonly property color inactiveStroke: shellRoot.withAlpha(shellRoot.primaryText, 0.12)
+    readonly property color iconWellFill: shellRoot.withAlpha("#ffffff", active ? 0.14 : 0.11)
     readonly property color iconColor: toggle.active ? "#ffffff" : toggle.titleColor
     readonly property real frameRadius: 19
     readonly property real iconBoxSize: iconOnly ? Math.max(22, Math.min(30, Math.min(toggle.width, toggle.height) - 12)) : Math.max(28, Math.min(34, toggle.height - 16))
@@ -102,7 +100,7 @@ Rectangle {
                 visible: !iconImage.visible
                 text: toggle.icon
                 color: toggle.iconColor
-                font.family: toggle.shellRoot ? toggle.shellRoot.iconFont : "JetBrainsMono Nerd Font"
+                font.family: toggle.shellRoot.iconFont
                 font.pixelSize: toggle.iconPixelSize
                 font.weight: Font.Bold
                 renderType: Text.NativeRendering
@@ -114,7 +112,7 @@ Rectangle {
             width: Math.max(40, toggle.width - 14)
             text: toggle.label
             color: toggle.active ? "#ffffff" : toggle.titleColor
-            font.family: toggle.shellRoot ? toggle.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+            font.family: toggle.shellRoot.baseFont
             font.pixelSize: 10
             font.weight: Font.Bold
             renderType: Text.NativeRendering

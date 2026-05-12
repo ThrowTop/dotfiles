@@ -16,7 +16,7 @@ printf 'wifi_enabled=%s\n' "$wifi_enabled"
 
 # Screen brightness
 brightness=50
-brightness_script="$(readlink -f "${HOME}/.config/HyprV/quickshell")/scripts/backlight/brightness"
+brightness_script="$(readlink -f "${HOME}/.config/HyprV/quickshell")/scripts/brightness.sh"
 if [[ -x "$brightness_script" ]]; then
     pct="$(run_quick "$brightness_script" --get-level)"
     if [[ -n "$pct" && "$pct" =~ ^[0-9]+$ ]]; then
@@ -41,7 +41,7 @@ printf 'recording=%s\n' "$recording"
 
 # Prevent sleep state
 prevent_sleep=false
-prevent_sleep_script="${HOME}/.config/HyprV/quickshell/scripts/system/prevent-sleep"
+prevent_sleep_script="${HOME}/.config/HyprV/quickshell/scripts/prevent-sleep.sh"
 if [[ -x "$prevent_sleep_script" ]]; then
     inhibit_status="$("$prevent_sleep_script" status 2>/dev/null || true)"
     if [[ "$inhibit_status" == *"enabled=true"* ]]; then

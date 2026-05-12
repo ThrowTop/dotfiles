@@ -4,7 +4,7 @@ import QtQuick.Effects
 Rectangle {
     id: card
 
-    property var shellRoot: null
+    required property var shellRoot
     property bool available: false
     property bool playing: false
     property string title: ""
@@ -18,18 +18,18 @@ Rectangle {
 
     radius: frameRadius
     implicitHeight: 160
-    color: shellRoot ? shellRoot.withAlpha("#ffffff", 0.11) : "#303030"
+    color: shellRoot.withAlpha("#ffffff", 0.11)
     border.width: 1
-    border.color: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.12) : "#454545"
+    border.color: shellRoot.withAlpha(shellRoot.primaryText, 0.12)
     antialiasing: true
     clip: true
 
-    readonly property color titleColor: shellRoot ? shellRoot.primaryText : "#cdd6f4"
-    readonly property color mutedColor: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.68) : "#b0b0b0"
-    readonly property color artFill: shellRoot ? shellRoot.withAlpha("#ffffff", 0.08) : "#2a2a2a"
-    readonly property color buttonFill: shellRoot ? shellRoot.withAlpha("#ffffff", 0.07) : "#2a2a2a"
-    readonly property color buttonStroke: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.12) : "#454545"
-    readonly property color playFill: playing ? (shellRoot ? shellRoot.withAlpha(shellRoot.launchColor, 0.3) : "#3a5f97") : buttonFill
+    readonly property color titleColor: shellRoot.primaryText
+    readonly property color mutedColor: shellRoot.withAlpha(shellRoot.primaryText, 0.68)
+    readonly property color artFill: shellRoot.withAlpha("#ffffff", 0.08)
+    readonly property color buttonFill: shellRoot.withAlpha("#ffffff", 0.07)
+    readonly property color buttonStroke: shellRoot.withAlpha(shellRoot.primaryText, 0.12)
+    readonly property color playFill: playing ? (shellRoot.withAlpha(shellRoot.launchColor, 0.3)) : buttonFill
     readonly property real frameRadius: 19
     readonly property real outerPadding: 9
     readonly property real alignedArtSize: 44
@@ -75,7 +75,7 @@ Rectangle {
             anchors.bottomMargin: button.glyphBottomMargin
             text: button.glyph
             color: primary ? "#000000" : card.titleColor
-            font.family: card.shellRoot ? card.shellRoot.iconFont : "JetBrainsMono Nerd Font"
+            font.family: card.shellRoot.iconFont
             font.pixelSize: primary ? card.primaryGlyphPixelSize : card.secondaryGlyphPixelSize
             font.weight: Font.Bold
             renderType: Text.NativeRendering
@@ -148,7 +148,7 @@ Rectangle {
                 visible: !albumArt.visible
                 text: ""
                 color: card.mutedColor
-                font.family: card.shellRoot ? card.shellRoot.iconFont : "JetBrainsMono Nerd Font"
+                font.family: card.shellRoot.iconFont
                 font.pixelSize: Math.round(card.artSize * 0.42)
                 font.weight: Font.Bold
                 renderType: Text.NativeRendering
@@ -161,7 +161,7 @@ Rectangle {
             anchors.leftMargin: 2
             text: card.available ? (card.title.length > 0 ? card.title : "Unknown track") : "Idle"
             color: card.titleColor
-            font.family: card.shellRoot ? card.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+            font.family: card.shellRoot.baseFont
             font.pixelSize: card.titlePixelSize
             font.weight: Font.Bold
             renderType: Text.NativeRendering

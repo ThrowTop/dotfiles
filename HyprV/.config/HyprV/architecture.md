@@ -67,25 +67,18 @@ quickshell/
       TrayOverflowPopup.qml
 
   scripts/
-    audio/
-      spectrum
-    backlight/
-      brightness
-    network/
-      wifi
-      lib/
-        action.sh
-        status.sh
-        wifi.sh
-    power/
-      battery
-      lib/
-        limit
-    runtime/
-      osd
-    system/
-      prevent-sleep
-      status
+    audio-spectrum.sh
+    battery.sh
+    brightness.sh
+    osd.sh
+    prevent-sleep.sh
+    system-status.sh
+    wifi.sh
+    lib/
+      battery-limit.sh
+      wifi-action.sh
+      wifi-common.sh
+      wifi-status.sh
 ```
 
 ## Ownership Rules
@@ -185,17 +178,17 @@ Audio should not copy Wi-Fi directly. It should reuse the device-panel shell whi
 
 ## Scripts
 
-Scripts are feature-oriented and process-based. Public script entrypoints live directly under a feature directory; helper implementations live in that feature's `lib/` directory. Prefer Quickshell services and event streams over polling scripts.
+Scripts are feature-oriented and process-based. Public script entrypoints live directly under `quickshell/scripts/` with the feature name in the filename. Shared helper implementations live in `quickshell/scripts/lib/`. Prefer Quickshell services and event streams over polling scripts.
 
 | Script | Primary caller | Purpose |
 |---|---|---|
-| `audio/spectrum` | `shell.qml` | Audio spectrum data for the island |
-| `backlight/brightness` | `shell.qml` / quick adjust | Backlight get/set and brightness IPC feedback |
-| `network/wifi` | `shell.qml` / Wi-Fi popup | Wi-Fi status, scan, connect, disconnect, radio toggle |
-| `power/battery` | battery popup | Battery charge limit actions |
-| `runtime/osd` | external scripts / IPC | OSD trigger helper |
-| `system/prevent-sleep` | control panel | Sleep inhibition toggle |
-| `system/status` | control panel open/action refresh | Batch status for brightness, recording, and prevent-sleep state |
+| `audio-spectrum.sh` | `shell.qml` | Audio spectrum data for the island |
+| `brightness.sh` | `shell.qml` / quick adjust | Backlight get/set and brightness IPC feedback |
+| `wifi.sh` | `shell.qml` / Wi-Fi popup | Wi-Fi status, scan, connect, disconnect, radio toggle |
+| `battery.sh` | battery popup | Battery charge limit actions |
+| `osd.sh` | external scripts / IPC | OSD trigger helper |
+| `prevent-sleep.sh` | control panel | Sleep inhibition toggle |
+| `system-status.sh` | control panel open/action refresh | Batch status for brightness, recording, and prevent-sleep state |
 
 ## Design Direction
 

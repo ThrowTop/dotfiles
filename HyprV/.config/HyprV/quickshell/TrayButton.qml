@@ -4,10 +4,10 @@ import Quickshell.Widgets
 Item {
     id: trayButton
 
-    property var shellRoot: null
+    required property var shellRoot
     property var trayItem: null
     property var parentWindow: null
-    property string iconSource: shellRoot ? shellRoot.trayIconSource(trayItem) : ""
+    property string iconSource: shellRoot.trayIconSource(trayItem)
 
     implicitWidth: 18
     implicitHeight: 38
@@ -32,8 +32,8 @@ Item {
             const id = trayButton.trayItem && trayButton.trayItem.id ? trayButton.trayItem.id : "";
             return id ? id.charAt(0).toUpperCase() : "?";
         }
-        color: shellRoot ? shellRoot.primaryText : "white"
-        font.family: shellRoot ? shellRoot.baseFont : ""
+        color: shellRoot.primaryText
+        font.family: shellRoot.baseFont
         font.pixelSize: 10
     }
 
@@ -44,7 +44,7 @@ Item {
         cursorShape: Qt.PointingHandCursor
 
         onClicked: function(mouse) {
-            if (!trayButton.trayItem || !shellRoot) {
+            if (!trayButton.trayItem) {
                 return;
             }
             if (mouse.button === Qt.LeftButton) {

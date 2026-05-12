@@ -7,7 +7,7 @@ import "../../components"
 Item {
     id: popupRoot
 
-    property var shellRoot: null
+    required property var shellRoot
     property string mode: "brightness"
     property bool closing: false
 
@@ -58,10 +58,6 @@ Item {
     }
 
     function applyValue(newValue) {
-        if (!shellRoot) {
-            return;
-        }
-
         const nextValue = Math.max(0, Math.min(100, Math.round(newValue)));
         restartAutoHide();
 
@@ -74,7 +70,7 @@ Item {
     }
 
     function toggleAudioMute() {
-        if (!shellRoot || mode !== "volume") {
+        if (mode !== "volume") {
             return;
         }
         restartAutoHide();
@@ -105,9 +101,7 @@ Item {
     PanelWindow {
         id: popupWindow
 
-        screen: popupRoot.shellRoot && popupRoot.shellRoot.primaryBarWindow
-            ? popupRoot.shellRoot.primaryBarWindow.screen
-            : null
+        screen: popupRoot.shellRoot.primaryBarWindow ? popupRoot.shellRoot.primaryBarWindow.screen : null
         visible: false
         aboveWindows: true
         focusable: false
@@ -144,7 +138,7 @@ Item {
             if (!visible || !screen) {
                 return;
             }
-            const anchor = popupRoot.shellRoot ? popupRoot.shellRoot.quickAdjustAnchorItem : null;
+            const anchor = popupRoot.shellRoot.quickAdjustAnchorItem;
             if (anchor) {
                 const point = anchor.mapToGlobal(anchor.width, anchor.height);
                 const anchorRight = Math.round(point.x - screen.x);
@@ -158,7 +152,7 @@ Item {
             }
 
             popupBounds.x = Math.max(popupRoot.popupScreenMargin, width - popupBounds.width - popupRoot.popupScreenMargin);
-            const barBottom = popupRoot.shellRoot && popupRoot.shellRoot.primaryBarWindow
+            const barBottom = popupRoot.shellRoot.primaryBarWindow
                 ? Math.max(0, popupRoot.shellRoot.primaryBarWindow.exclusiveZone || 58)
                 : 58;
             popupBounds.y = barBottom + 10;
@@ -174,16 +168,16 @@ Item {
                 anchors.fill: parent
                 shellRoot: popupRoot.shellRoot
                 icon: popupRoot.mode === "volume"
-                    ? (popupRoot.shellRoot ? popupRoot.shellRoot.volumeIcon : "")
+                    ? (popupRoot.shellRoot.volumeIcon)
                     : "󰃟"
                 iconClickable: popupRoot.mode === "volume"
                 label: popupRoot.mode === "volume" ? "Volume" : "Brightness"
                 value: popupRoot.mode === "volume"
-                    ? (popupRoot.shellRoot ? popupRoot.shellRoot.audioVolumePercent : 0)
-                    : (popupRoot.shellRoot ? popupRoot.shellRoot.brightnessPercent : 0)
+                    ? (popupRoot.shellRoot.audioVolumePercent)
+                    : (popupRoot.shellRoot.brightnessPercent)
                 accentColor: popupRoot.mode === "volume"
-                    ? (popupRoot.shellRoot ? popupRoot.shellRoot.launchColor : "#89b4fa")
-                    : (popupRoot.shellRoot ? popupRoot.shellRoot.brightnessColor : "#d47b1f")
+                    ? (popupRoot.shellRoot.launchColor)
+                    : (popupRoot.shellRoot.brightnessColor)
                 opacity: popupRoot.cardOpacity
                 scale: popupRoot.cardScale
                 transformOrigin: Item.TopRight

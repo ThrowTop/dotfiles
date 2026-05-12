@@ -7,16 +7,16 @@ DynamicIsland {
     property var parentWindow: null
     property var collapseTimer: null
 
-    now: islandHost.shellRoot ? islandHost.shellRoot.now : new Date()
-    mediaAvailable: islandHost.shellRoot ? islandHost.shellRoot.mediaAvailable : false
-    mediaPlaying: islandHost.shellRoot ? islandHost.shellRoot.mediaPlaying : false
-    mediaTitle: islandHost.shellRoot ? islandHost.shellRoot.mediaTitle : ""
-    mediaArtist: islandHost.shellRoot ? islandHost.shellRoot.mediaArtist : ""
-    mediaPlayerName: islandHost.shellRoot ? islandHost.shellRoot.mediaPlayerName : ""
-    mediaArtUrl: islandHost.shellRoot ? islandHost.shellRoot.mediaArtUrl : ""
-    mediaPositionSeconds: islandHost.shellRoot ? islandHost.shellRoot.mediaPositionSeconds : 0
-    mediaLengthSeconds: islandHost.shellRoot ? islandHost.shellRoot.mediaLengthSeconds : 0
-    spectrumValues: islandHost.shellRoot ? islandHost.shellRoot.audioSpectrumValues : []
+    now: islandHost.shellRoot.now
+    mediaAvailable: islandHost.shellRoot.mediaAvailable
+    mediaPlaying: islandHost.shellRoot.mediaPlaying
+    mediaTitle: islandHost.shellRoot.mediaTitle
+    mediaArtist: islandHost.shellRoot.mediaArtist
+    mediaPlayerName: islandHost.shellRoot.mediaPlayerName
+    mediaArtUrl: islandHost.shellRoot.mediaArtUrl
+    mediaPositionSeconds: islandHost.shellRoot.mediaPositionSeconds
+    mediaLengthSeconds: islandHost.shellRoot.mediaLengthSeconds
+    spectrumValues: islandHost.shellRoot.audioSpectrumValues
 
     onExpandedChanged: {
         if (!islandHost.parentWindow || !islandHost.collapseTimer) {
@@ -34,14 +34,12 @@ DynamicIsland {
         islandHost.parentWindow.islandCurrentHeight = height;
     }
 
-    onLockClicked: if (islandHost.shellRoot) islandHost.shellRoot.runDetached(["hyprlock"])
+    onLockClicked: islandHost.shellRoot.runDetached(["hyprlock"])
     onSeekRequested: function(positionSeconds) {
-        if (islandHost.shellRoot) {
-            islandHost.shellRoot.seekMedia(positionSeconds);
-        }
+        islandHost.shellRoot.seekMedia(positionSeconds);
     }
-    onAppFocusRequested: if (islandHost.shellRoot) islandHost.shellRoot.focusMediaApp()
-    onPreviousClicked: if (islandHost.shellRoot) islandHost.shellRoot.previousMedia()
-    onPlayPauseClicked: if (islandHost.shellRoot) islandHost.shellRoot.toggleMediaPlayback()
-    onNextClicked: if (islandHost.shellRoot) islandHost.shellRoot.nextMedia()
+    onAppFocusRequested: islandHost.shellRoot.focusMediaApp()
+    onPreviousClicked: islandHost.shellRoot.previousMedia()
+    onPlayPauseClicked: islandHost.shellRoot.toggleMediaPlayback()
+    onNextClicked: islandHost.shellRoot.nextMedia()
 }

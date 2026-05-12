@@ -3,7 +3,7 @@ import QtQuick
 Item {
     id: root
 
-    property var shellRoot: null
+    required property var shellRoot
     property string iconSource: ""
     property string fallbackLabel: "󰖩"
     property bool available: true
@@ -18,9 +18,9 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: 10
-        color: mouseArea.containsMouse && root.shellRoot
-        ? root.shellRoot.withAlpha(root.shellRoot.activeWorkspaceBackground, 0.18)
-        : "transparent"
+        color: mouseArea.containsMouse
+            ? root.shellRoot.withAlpha(root.shellRoot.activeWorkspaceBackground, 0.18)
+            : "transparent"
     }
 
     WifiIconWithFallback {

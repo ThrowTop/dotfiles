@@ -4,37 +4,37 @@ import "../../components"
 Rectangle {
     id: root
 
-    property var shellRoot: null
+    required property var shellRoot
     property bool useExternalPanelBackground: false
 
     signal closeRequested()
 
-    readonly property bool bluetoothPresent: shellRoot ? shellRoot.bluetoothPresent : false
-    readonly property bool bluetoothEnabled: shellRoot ? shellRoot.bluetoothEnabled : false
-    readonly property bool bluetoothDiscovering: shellRoot ? shellRoot.bluetoothDiscovering : false
-    readonly property bool bluetoothPairable: shellRoot ? shellRoot.bluetoothPairable : false
-    readonly property bool showUnnamedDevices: shellRoot ? shellRoot.bluetoothShowUnnamedDevices : true
-    readonly property bool busy: shellRoot ? shellRoot.bluetoothActionBusy : false
-    readonly property var devices: shellRoot && Array.isArray(shellRoot.bluetoothDevices) ? shellRoot.bluetoothDevices : []
+    readonly property bool bluetoothPresent: shellRoot.bluetoothPresent
+    readonly property bool bluetoothEnabled: shellRoot.bluetoothEnabled
+    readonly property bool bluetoothDiscovering: shellRoot.bluetoothDiscovering
+    readonly property bool bluetoothPairable: shellRoot.bluetoothPairable
+    readonly property bool showUnnamedDevices: shellRoot.bluetoothShowUnnamedDevices
+    readonly property bool busy: shellRoot.bluetoothActionBusy
+    readonly property var devices: Array.isArray(shellRoot.bluetoothDevices) ? shellRoot.bluetoothDevices : []
     readonly property var visibleDevices: devices.filter(device => showUnnamedDevices || !!device.hasName)
     readonly property int hiddenUnnamedCount: Math.max(0, devices.length - visibleDevices.length)
     readonly property var connectedDevices: devices.filter(device => !!device.connected)
     readonly property int connectedCount: connectedDevices.length
     readonly property int pairedCount: devices.filter(device => !!device.paired).length
-    readonly property color cardFill: shellRoot ? shellRoot.withAlpha("#ffffff", 0.07) : "#2a2a2a"
-    readonly property color cardStrongFill: shellRoot ? shellRoot.withAlpha("#ffffff", 0.11) : "#303030"
-    readonly property color cardStroke: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.12) : "#454545"
-    readonly property color accentFill: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.1) : "#445566"
-    readonly property color accentStroke: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.18) : "#667788"
-    readonly property color mutedText: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.68) : "#b0b0b0"
-    readonly property color panelFill: shellRoot ? shellRoot.withAlpha("#101214", 0.42) : "#202020"
-    readonly property color panelStroke: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.14) : "#3a3a3a"
-    readonly property color powerToggleOnFill: shellRoot ? shellRoot.withAlpha("#7f99bd", 0.94) : "#8faad1"
-    readonly property color powerToggleOnStroke: shellRoot ? shellRoot.withAlpha("#98b2d8", 0.84) : "#7f9ec8"
-    readonly property color powerToggleOffFill: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.16) : "#d1d1d6"
-    readonly property color powerToggleOffStroke: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.18) : "#b8b8be"
-    readonly property color powerToggleKnob: shellRoot ? ("#f7f7fa") : "#ffffff"
-    readonly property color powerToggleKnobStroke: shellRoot ? shellRoot.withAlpha("#000000", 0.18) : "#d0d0d0"
+    readonly property color cardFill: shellRoot.withAlpha("#ffffff", 0.07)
+    readonly property color cardStrongFill: shellRoot.withAlpha("#ffffff", 0.11)
+    readonly property color cardStroke: shellRoot.withAlpha(shellRoot.primaryText, 0.12)
+    readonly property color accentFill: shellRoot.withAlpha(shellRoot.primaryText, 0.1)
+    readonly property color accentStroke: shellRoot.withAlpha(shellRoot.primaryText, 0.18)
+    readonly property color mutedText: shellRoot.withAlpha(shellRoot.primaryText, 0.68)
+    readonly property color panelFill: shellRoot.withAlpha("#101214", 0.42)
+    readonly property color panelStroke: shellRoot.withAlpha(shellRoot.primaryText, 0.14)
+    readonly property color powerToggleOnFill: shellRoot.withAlpha("#7f99bd", 0.94)
+    readonly property color powerToggleOnStroke: shellRoot.withAlpha("#98b2d8", 0.84)
+    readonly property color powerToggleOffFill: shellRoot.withAlpha(shellRoot.primaryText, 0.16)
+    readonly property color powerToggleOffStroke: shellRoot.withAlpha(shellRoot.primaryText, 0.18)
+    readonly property color powerToggleKnob: "#f7f7fa"
+    readonly property color powerToggleKnobStroke: shellRoot.withAlpha("#000000", 0.18)
     readonly property real panelSurfaceOpacity: 0.82
     readonly property int pageSpacing: 10
     readonly property int panelPadding: 10
@@ -215,8 +215,8 @@ Rectangle {
 
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Bluetooth"
-                    color: root.shellRoot ? root.shellRoot.primaryText : "white"
-                    font.family: root.shellRoot ? root.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                    color: root.shellRoot.primaryText
+                    font.family: root.shellRoot.baseFont
                     font.pixelSize: 17
                     font.weight: Font.Bold
                     renderType: Text.NativeRendering
@@ -270,7 +270,7 @@ Rectangle {
 
                     MouseArea {
                         anchors.fill: parent
-                        enabled: !!root.shellRoot && root.bluetoothPresent && !root.busy
+                        enabled: root.bluetoothPresent && !root.busy
                         hoverEnabled: true
                         cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                         onClicked: root.shellRoot.bluetoothSetPower(!root.bluetoothEnabled)
@@ -285,7 +285,7 @@ Rectangle {
                 cornerRadius: root.innerRadius
                 label: "Close"
                 minimumWidth: 76
-                fillColor: root.shellRoot ? root.shellRoot.withAlpha(root.shellRoot.primaryText, 0.08) : "#333333"
+                fillColor: root.shellRoot.withAlpha(root.shellRoot.primaryText, 0.08)
                 strokeColor: root.cardStroke
                 onClicked: root.closeRequested()
             }
@@ -314,8 +314,8 @@ Rectangle {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.bluetoothEnabled ? "󰂯" : "󰂲"
-                    color: root.shellRoot ? root.shellRoot.primaryText : "white"
-                    font.family: root.shellRoot ? root.shellRoot.iconFont : "JetBrainsMono Nerd Font"
+                    color: root.shellRoot.primaryText
+                    font.family: root.shellRoot.iconFont
                     font.pixelSize: 24
                     font.weight: Font.Bold
                     renderType: Text.NativeRendering
@@ -333,10 +333,10 @@ Rectangle {
                     minimumWidth: 72
                     fillColor: root.cardFill
                     foregroundColor: root.connectedCount > 0
-                        ? (root.shellRoot ? root.shellRoot.launchColor : "white")
-                        : (root.shellRoot ? root.shellRoot.primaryText : "white")
+                        ? (root.shellRoot.launchColor)
+                        : (root.shellRoot.primaryText)
                     strokeColor: root.connectedCount > 0
-                        ? (root.shellRoot ? root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18) : "#5176d2")
+                        ? (root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18))
                         : root.cardStroke
                 }
 
@@ -354,8 +354,8 @@ Rectangle {
                         width: parent.width
                         text: root.connectionSummary
                         elide: Text.ElideRight
-                        color: root.shellRoot ? root.shellRoot.primaryText : "white"
-                        font.family: root.shellRoot ? root.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                        color: root.shellRoot.primaryText
+                        font.family: root.shellRoot.baseFont
                         font.pixelSize: 14
                         font.weight: Font.Bold
                         renderType: Text.NativeRendering
@@ -366,7 +366,7 @@ Rectangle {
                         text: root.detailText
                         elide: Text.ElideRight
                         color: root.mutedText
-                        font.family: root.shellRoot ? root.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                        font.family: root.shellRoot.baseFont
                         font.pixelSize: 12
                         renderType: Text.NativeRendering
                     }
@@ -383,7 +383,7 @@ Rectangle {
                 cornerRadius: root.innerRadius
                 label: root.bluetoothDiscovering ? "Scanning" : "Scan"
                 minimumWidth: 88
-                disabled: !root.shellRoot || !root.bluetoothPresent || !root.bluetoothEnabled || root.busy
+                disabled: !root.bluetoothPresent || !root.bluetoothEnabled || root.busy
                 fillColor: root.cardFill
                 strokeColor: root.cardStroke
                 onClicked: root.shellRoot.bluetoothScan()
@@ -394,13 +394,13 @@ Rectangle {
                 cornerRadius: root.innerRadius
                 label: root.showUnnamedDevices ? "Hide Unnamed" : "Show Unnamed"
                 minimumWidth: 132
-                disabled: !root.shellRoot
+                disabled: false
                 fillColor: root.showUnnamedDevices ? root.cardStrongFill : root.cardFill
                 foregroundColor: root.showUnnamedDevices
-                    ? (root.shellRoot ? root.shellRoot.launchColor : "white")
-                    : (root.shellRoot ? root.shellRoot.primaryText : "white")
+                    ? (root.shellRoot.launchColor)
+                    : (root.shellRoot.primaryText)
                 strokeColor: root.showUnnamedDevices
-                    ? (root.shellRoot ? root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18) : "#5176d2")
+                    ? (root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18))
                     : root.cardStroke
                 onClicked: root.shellRoot.bluetoothShowUnnamedDevices = !root.shellRoot.bluetoothShowUnnamedDevices
             }
@@ -410,7 +410,7 @@ Rectangle {
                 cornerRadius: root.innerRadius
                 label: "Advanced"
                 minimumWidth: 98
-                disabled: !root.shellRoot
+                disabled: false
                 fillColor: root.cardFill
                 strokeColor: root.cardStroke
                 onClicked: root.shellRoot.openBluetoothManager()
@@ -419,7 +419,7 @@ Rectangle {
 
         Rectangle {
             width: parent.width
-            visible: root.shellRoot && root.shellRoot.bluetoothActionMessage.length > 0
+            visible: root.shellRoot.bluetoothActionMessage.length > 0
             implicitHeight: actionMessageLabel.implicitHeight + 18
             radius: root.innerRadius
             color: root.panelColor(root.cardFill)
@@ -433,9 +433,9 @@ Rectangle {
                 anchors.right: parent.right
                 anchors.top: parent.top
                 anchors.margins: root.innerPadding
-                text: root.shellRoot ? root.shellRoot.bluetoothActionMessage : ""
-                color: root.shellRoot ? root.shellRoot.withAlpha(root.shellRoot.primaryText, 0.82) : "#d8d8d8"
-                font.family: root.shellRoot ? root.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                text: root.shellRoot.bluetoothActionMessage
+                color: root.shellRoot.withAlpha(root.shellRoot.primaryText, 0.82)
+                font.family: root.shellRoot.baseFont
                 font.pixelSize: 12
                 wrapMode: Text.Wrap
                 renderType: Text.NativeRendering
@@ -459,7 +459,7 @@ Rectangle {
                 horizontalAlignment: Text.AlignHCenter
                 text: root.emptyStateText
                 color: root.mutedText
-                font.family: root.shellRoot ? root.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                font.family: root.shellRoot.baseFont
                 font.pixelSize: 13
                 wrapMode: Text.Wrap
                 renderType: Text.NativeRendering
@@ -517,8 +517,8 @@ Rectangle {
                                     anchors.left: parent.left
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: root.deviceGlyph(modelData)
-                                    color: root.shellRoot ? root.shellRoot.primaryText : "white"
-                                    font.family: root.shellRoot ? root.shellRoot.iconFont : "JetBrainsMono Nerd Font"
+                                    color: root.shellRoot.primaryText
+                                    font.family: root.shellRoot.iconFont
                                     font.pixelSize: 24
                                     font.weight: Font.Bold
                                     renderType: Text.NativeRendering
@@ -534,14 +534,14 @@ Rectangle {
                                     label: ""
                                     iconLabel: root.deviceActionIcon(modelData)
                                     minimumWidth: 50
-                                    disabled: !root.shellRoot || root.busy || (!root.bluetoothEnabled && !modelData.connected)
+                                    disabled: root.busy || (!root.bluetoothEnabled && !modelData.connected)
                                     fillColor: modelData.connected ? root.cardStrongFill : root.cardFill
                                     foregroundColor: modelData.connected
-                                        ? (root.shellRoot ? root.shellRoot.criticalColor : "white")
-                                        : (root.shellRoot ? root.shellRoot.launchColor : "white")
+                                        ? (root.shellRoot.criticalColor)
+                                        : (root.shellRoot.launchColor)
                                     strokeColor: modelData.connected
-                                        ? (root.shellRoot ? root.shellRoot.withAlpha(root.shellRoot.criticalColor, 0.2) : "#a55454")
-                                        : (root.shellRoot ? root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18) : "#5176d2")
+                                        ? (root.shellRoot.withAlpha(root.shellRoot.criticalColor, 0.2))
+                                        : (root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18))
                                     onClicked: root.activateDevice(modelData)
                                 }
 
@@ -559,8 +559,8 @@ Rectangle {
                                         width: parent.width
                                         text: modelData.displayName || modelData.address
                                         elide: Text.ElideRight
-                                        color: root.shellRoot ? root.shellRoot.primaryText : "white"
-                                        font.family: root.shellRoot ? root.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                                        color: root.shellRoot.primaryText
+                                        font.family: root.shellRoot.baseFont
                                         font.pixelSize: 14
                                         font.weight: Font.Bold
                                         renderType: Text.NativeRendering
@@ -571,7 +571,7 @@ Rectangle {
                                         text: root.deviceMeta(modelData)
                                         elide: Text.ElideRight
                                         color: root.mutedText
-                                        font.family: root.shellRoot ? root.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                                        font.family: root.shellRoot.baseFont
                                         font.pixelSize: 11
                                         renderType: Text.NativeRendering
                                     }

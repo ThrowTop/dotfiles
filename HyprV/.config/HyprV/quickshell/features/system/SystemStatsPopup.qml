@@ -6,7 +6,7 @@ import "../.."
 Item {
     id: popupRoot
 
-    property var shellRoot: null
+    required property var shellRoot
     property var sourceItem: null
     property var parentWindow: null
     property bool popupRequested: false
@@ -16,22 +16,22 @@ Item {
     readonly property int popupScreenMargin: 10
     readonly property int popupWidth: 548
     readonly property int popupPadding: 16
-    readonly property color glassFill: shellRoot ? shellRoot.glassFill : Qt.rgba(0.06, 0.07, 0.08, 0.42)
-    readonly property color glassStroke: shellRoot ? shellRoot.glassStroke : Qt.rgba(0.8, 0.8, 0.8, 0.12)
-    readonly property color mutedTextColor: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.72) : Qt.rgba(0.8, 0.8, 0.8, 0.7)
-    readonly property color panelShadowColor: shellRoot ? shellRoot.withAlpha("#000000", 0.45) : Qt.rgba(0, 0, 0, 0.35)
-    readonly property color metricTextColor: shellRoot ? (shellRoot.primaryText) : "#000000"
+    readonly property color glassFill: shellRoot.glassFill
+    readonly property color glassStroke: shellRoot.glassStroke
+    readonly property color mutedTextColor: shellRoot.withAlpha(shellRoot.primaryText, 0.72)
+    readonly property color panelShadowColor: shellRoot.withAlpha("#000000", 0.45)
+    readonly property color metricTextColor: shellRoot.primaryText
     readonly property real panelSurfaceOpacity: 0.82
-    readonly property color accentColor: shellRoot ? shellRoot.systemChartAccent : "#b9782f"
-    readonly property color cpuChartColor: shellRoot ? shellRoot.usageSeverityColor(shellRoot.cpuUsage || 0) : "#2f9e44"
-    readonly property color memoryChartColor: shellRoot ? shellRoot.usageSeverityColor(shellRoot.memoryUsage || 0) : "#2f9e44"
-    readonly property color networkChartColor: shellRoot ? shellRoot.launchColor : "#407cdd"
-    readonly property string cpuCurrentText: Math.round(shellRoot ? (shellRoot.cpuUsage || 0) : 0) + "%"
-    readonly property string memoryCurrentText: Math.round(shellRoot ? (shellRoot.memoryUsage || 0) : 0) + "%"
-    readonly property string networkCurrentText: shellRoot && shellRoot.defaultInterface ? shellRoot.humanRate((shellRoot.networkRxRate || 0) + (shellRoot.networkTxRate || 0)) : "Disconnected"
-    readonly property string networkDetailText: shellRoot ? ("↓ " + shellRoot.humanRate(shellRoot.networkRxRate || 0) + "   ↑ " + shellRoot.humanRate(shellRoot.networkTxRate || 0)) : ""
+    readonly property color accentColor: shellRoot.systemChartAccent
+    readonly property color cpuChartColor: shellRoot.usageSeverityColor(shellRoot.cpuUsage || 0)
+    readonly property color memoryChartColor: shellRoot.usageSeverityColor(shellRoot.memoryUsage || 0)
+    readonly property color networkChartColor: shellRoot.launchColor
+    readonly property string cpuCurrentText: Math.round(shellRoot.cpuUsage || 0) + "%"
+    readonly property string memoryCurrentText: Math.round(shellRoot.memoryUsage || 0) + "%"
+    readonly property string networkCurrentText: shellRoot.defaultInterface ? shellRoot.humanRate((shellRoot.networkRxRate || 0) + (shellRoot.networkTxRate || 0)) : "Disconnected"
+    readonly property string networkDetailText: "↓ " + shellRoot.humanRate(shellRoot.networkRxRate || 0) + "   ↑ " + shellRoot.humanRate(shellRoot.networkTxRate || 0)
     readonly property var cpuCoreDisplayData: {
-        const values = shellRoot && Array.isArray(shellRoot.cpuCoreUsages) ? shellRoot.cpuCoreUsages : [];
+        const values = Array.isArray(shellRoot.cpuCoreUsages) ? shellRoot.cpuCoreUsages : [];
         const display = [];
         for (let i = 0; i < 16; i++) {
             display.push({
@@ -305,8 +305,8 @@ Item {
                         anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
                         text: "System Resources"
-                        color: popupRoot.shellRoot ? popupRoot.shellRoot.primaryText : "#2b2b2c"
-                        font.family: popupRoot.shellRoot ? popupRoot.shellRoot.baseFont : "monospace"
+                        color: popupRoot.shellRoot.primaryText
+                        font.family: popupRoot.shellRoot.baseFont
                         font.pixelSize: 15
                         font.weight: Font.Bold
                         renderType: Text.NativeRendering
@@ -319,7 +319,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Last 120s · 1s"
                         color: popupRoot.mutedTextColor
-                        font.family: popupRoot.shellRoot ? popupRoot.shellRoot.baseFont : "monospace"
+                        font.family: popupRoot.shellRoot.baseFont
                         font.pixelSize: 11
                         font.weight: Font.Medium
                         renderType: Text.NativeRendering
@@ -340,8 +340,8 @@ Item {
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
                             text: "CPU:"
-                            color: popupRoot.shellRoot ? popupRoot.shellRoot.primaryText : "#2b2b2c"
-                            font.family: popupRoot.shellRoot ? popupRoot.shellRoot.baseFont : "monospace"
+                            color: popupRoot.shellRoot.primaryText
+                            font.family: popupRoot.shellRoot.baseFont
                             font.pixelSize: 16
                             font.weight: Font.Bold
                             renderType: Text.NativeRendering
@@ -355,7 +355,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: popupRoot.cpuCurrentText
                             color: popupRoot.metricTextColor
-                            font.family: popupRoot.shellRoot ? popupRoot.shellRoot.baseFont : "monospace"
+                            font.family: popupRoot.shellRoot.baseFont
                             font.pixelSize: 16
                             font.weight: Font.Bold
                             renderType: Text.NativeRendering
@@ -370,7 +370,7 @@ Item {
                             id: cpuChart
 
                             shellRoot: popupRoot.shellRoot
-                            samples: popupRoot.shellRoot ? popupRoot.shellRoot.cpuHistory : []
+                            samples: popupRoot.shellRoot.cpuHistory
                             accentColor: popupRoot.cpuChartColor
                             width: Math.max(240, parent.width - cpuCoreGrid.implicitWidth - 16)
                             height: Math.max(112, cpuCoreGrid.implicitHeight)
@@ -396,7 +396,7 @@ Item {
                                     width: 74
                                     height: 32
                                     radius: 10
-                                    color: popupRoot.panelColor(popupRoot.shellRoot ? popupRoot.shellRoot.withAlpha(popupRoot.shellRoot.primaryText, 0.06) : Qt.rgba(0.2, 0.2, 0.2, 0.04))
+                                    color: popupRoot.panelColor(popupRoot.shellRoot.withAlpha(popupRoot.shellRoot.primaryText, 0.06))
                                     border.width: 1
                                     border.color: popupRoot.glassStroke
                                     antialiasing: true
@@ -405,7 +405,7 @@ Item {
                                         anchors.centerIn: parent
                                         text: modelData.label + " " + popupRoot.formatPercent(modelData.value)
                                         color: popupRoot.coreUsageColor(modelData.value)
-                                        font.family: popupRoot.shellRoot ? popupRoot.shellRoot.baseFont : "monospace"
+                                        font.family: popupRoot.shellRoot.baseFont
                                         font.pixelSize: 13
                                         font.weight: Font.Bold
                                         renderType: Text.NativeRendering
@@ -430,8 +430,8 @@ Item {
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
                             text: "RAM:"
-                            color: popupRoot.shellRoot ? popupRoot.shellRoot.primaryText : "#2b2b2c"
-                            font.family: popupRoot.shellRoot ? popupRoot.shellRoot.baseFont : "monospace"
+                            color: popupRoot.shellRoot.primaryText
+                            font.family: popupRoot.shellRoot.baseFont
                             font.pixelSize: 16
                             font.weight: Font.Bold
                             renderType: Text.NativeRendering
@@ -445,7 +445,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: popupRoot.memoryCurrentText
                             color: popupRoot.metricTextColor
-                            font.family: popupRoot.shellRoot ? popupRoot.shellRoot.baseFont : "monospace"
+                            font.family: popupRoot.shellRoot.baseFont
                             font.pixelSize: 16
                             font.weight: Font.Bold
                             renderType: Text.NativeRendering
@@ -454,7 +454,7 @@ Item {
 
                     SystemTrendChart {
                         shellRoot: popupRoot.shellRoot
-                        samples: popupRoot.shellRoot ? popupRoot.shellRoot.memoryHistory : []
+                        samples: popupRoot.shellRoot.memoryHistory
                         accentColor: popupRoot.memoryChartColor
                         width: parent.width
                         height: 112
@@ -477,8 +477,8 @@ Item {
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Network:"
-                            color: popupRoot.shellRoot ? popupRoot.shellRoot.primaryText : "#2b2b2c"
-                            font.family: popupRoot.shellRoot ? popupRoot.shellRoot.baseFont : "monospace"
+                            color: popupRoot.shellRoot.primaryText
+                            font.family: popupRoot.shellRoot.baseFont
                             font.pixelSize: 16
                             font.weight: Font.Bold
                             renderType: Text.NativeRendering
@@ -492,7 +492,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: popupRoot.networkCurrentText
                             color: popupRoot.metricTextColor
-                            font.family: popupRoot.shellRoot ? popupRoot.shellRoot.baseFont : "monospace"
+                            font.family: popupRoot.shellRoot.baseFont
                             font.pixelSize: 16
                             font.weight: Font.Bold
                             renderType: Text.NativeRendering
@@ -505,7 +505,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: popupRoot.networkDetailText
                             color: popupRoot.metricTextColor
-                            font.family: popupRoot.shellRoot ? popupRoot.shellRoot.baseFont : "monospace"
+                            font.family: popupRoot.shellRoot.baseFont
                             font.pixelSize: 11
                             font.weight: Font.Medium
                             renderType: Text.NativeRendering
@@ -514,7 +514,7 @@ Item {
 
                     SystemTrendChart {
                         shellRoot: popupRoot.shellRoot
-                        samples: popupRoot.shellRoot ? popupRoot.shellRoot.networkHistory : []
+                        samples: popupRoot.shellRoot.networkHistory
                         accentColor: popupRoot.networkChartColor
                         width: parent.width
                         height: 112

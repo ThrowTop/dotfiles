@@ -14,7 +14,7 @@ PanelWindow {
     id: barWindow
 
     property var screenModel: null
-    property var shellRoot: null
+    required property var shellRoot
     property bool islandExpanded: false
     property real islandCurrentHeight: 38
 
@@ -41,7 +41,7 @@ PanelWindow {
     }
 
     Component.onCompleted: {
-        if (barWindow.shellRoot && !barWindow.shellRoot.primaryBarWindow) {
+        if (!barWindow.shellRoot.primaryBarWindow) {
             barWindow.shellRoot.primaryBarWindow = barWindow;
         }
     }
@@ -130,7 +130,7 @@ PanelWindow {
 
                 Item {
                     implicitWidth: 8
-                    implicitHeight: barWindow.shellRoot ? barWindow.shellRoot.barHeight : 38
+                    implicitHeight: barWindow.shellRoot.barHeight
                 }
 
                 WifiModule {
@@ -144,7 +144,7 @@ PanelWindow {
 
                 Item {
                     implicitWidth: 6
-                    implicitHeight: barWindow.shellRoot ? barWindow.shellRoot.barHeight : 38
+                    implicitHeight: barWindow.shellRoot.barHeight
                 }
             }
 
@@ -155,7 +155,7 @@ PanelWindow {
 
                 Item {
                     implicitWidth: 8
-                    implicitHeight: barWindow.shellRoot ? barWindow.shellRoot.barHeight : 38
+                    implicitHeight: barWindow.shellRoot.barHeight
                 }
 
                 SystemTrayModule {
@@ -178,7 +178,7 @@ PanelWindow {
 
                 Item {
                     implicitWidth: 6
-                    implicitHeight: barWindow.shellRoot ? barWindow.shellRoot.barHeight : 38
+                    implicitHeight: barWindow.shellRoot.barHeight
                 }
             }
 

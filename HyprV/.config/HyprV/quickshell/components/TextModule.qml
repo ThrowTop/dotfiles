@@ -3,10 +3,10 @@ import QtQuick
 Item {
     id: module
 
-    property var shellRoot: null
+    required property var shellRoot
     property string label: ""
-    property color textColor: shellRoot ? shellRoot.primaryText : "white"
-    property string fontFamily: shellRoot ? shellRoot.baseFont : ""
+    property color textColor: shellRoot.primaryText
+    property string fontFamily: shellRoot.baseFont
     property int fontPixelSize: 16
     property int fontWeight: Font.Bold
     property real paddingLeft: 8
@@ -17,8 +17,8 @@ Item {
     property bool wheelInteractive: false
     property bool hoverable: false
     property bool highlighted: false
-    property color highlightColor: shellRoot ? shellRoot.activeWorkspaceBackground : "#8e90cb"
-    property color highlightedTextColor: shellRoot ? shellRoot.activeWorkspaceText : "black"
+    property color highlightColor: shellRoot.activeWorkspaceBackground
+    property color highlightedTextColor: shellRoot.activeWorkspaceText
     property real highlightInset: 0
     readonly property real effectivePaddingLeft: Math.max(0, paddingLeft)
     readonly property real effectivePaddingRight: Math.max(0, paddingRight)
@@ -34,10 +34,10 @@ Item {
     Rectangle {
         anchors.fill: parent
         anchors.margins: module.highlightInset
-        radius: module.shellRoot ? module.shellRoot.pillRadius : 19
+        radius: module.shellRoot.pillRadius
         color: highlighted
             ? module.highlightColor
-            : (module.shellRoot ? module.shellRoot.workspaceHoverBackground : Qt.rgba(1, 1, 1, 0.08))
+            : module.shellRoot.workspaceHoverBackground
         visible: highlighted || (module.hoverable && mouseArea.containsMouse)
     }
 

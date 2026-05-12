@@ -3,11 +3,11 @@ import QtQuick
 Item {
     id: infoLine
 
-    property var shellRoot: null
+    required property var shellRoot
     property string title: ""
     property string value: ""
-    property color titleColor: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.72) : "#b0b0b0"
-    property color valueColor: shellRoot ? shellRoot.primaryText : "white"
+    property color titleColor: shellRoot.withAlpha(shellRoot.primaryText, 0.72)
+    property color valueColor: shellRoot.primaryText
     property real titleWidth: 118
 
     width: parent ? parent.width : implicitWidth
@@ -22,7 +22,7 @@ Item {
         width: infoLine.titleWidth
         text: infoLine.title
         color: infoLine.titleColor
-        font.family: shellRoot ? shellRoot.baseFont : ""
+        font.family: shellRoot.baseFont
         font.pixelSize: 13
         font.weight: Font.DemiBold
         renderType: Text.NativeRendering
@@ -38,7 +38,7 @@ Item {
         anchors.right: parent.right
         text: infoLine.value
         color: infoLine.valueColor
-        font.family: shellRoot ? shellRoot.baseFont : ""
+        font.family: shellRoot.baseFont
         font.pixelSize: 13
         font.weight: Font.Bold
         horizontalAlignment: Text.AlignRight

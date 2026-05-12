@@ -90,13 +90,12 @@ Keep the shell compact and desktop-native:
 
 ## Script Conventions
 
-- Scripts live in feature folders under `quickshell/scripts/`.
-- Public entrypoints are feature commands such as `network/wifi`, `power/battery`, `backlight/brightness`, and `system/status`.
-- Helper implementations live under that feature's `lib/` directory and should not be called directly from QML.
-- Wi-Fi status/actions are handled through `network/wifi`.
+- Public scripts live directly under `quickshell/scripts/` with feature-prefixed filenames such as `wifi.sh`, `brightness.sh`, `battery.sh`, and `system-status.sh`.
+- Shared helper implementations live under `quickshell/scripts/lib/` and should not be called directly from QML.
+- Wi-Fi status/actions are handled through `wifi.sh`.
 - Media state is handled reactively through `Quickshell.Services.Mpris`.
 - Audio volume state/actions are handled reactively through `Quickshell.Services.Pipewire`.
-- Battery state is handled through `Quickshell.Services.UPower`; charge limit actions go through `power/battery`.
+- Battery state is handled through `Quickshell.Services.UPower`; charge limit actions go through `battery.sh`.
 - Long-running status that needs QML updates should prefer native Quickshell services or event streams. Use `PollCommand` only for sampled values or on-demand probes.
 
 ## Environment Variables

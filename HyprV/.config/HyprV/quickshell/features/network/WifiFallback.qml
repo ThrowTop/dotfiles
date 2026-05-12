@@ -7,7 +7,6 @@ import "../../components"
 WifiIndicator {
     id: root
 
-    property var shellRoot: null
     property var parentWindow: null
     property bool popupVisible: false
     property string expandedSsid: ""
@@ -15,25 +14,25 @@ WifiIndicator {
     property var displayedNetworks: []
     property double displayedNetworksTimestamp: 0
 
-    readonly property bool wifiEnabled: shellRoot ? shellRoot.wifiRadioEnabled : false
-    readonly property bool wifiConnectedState: shellRoot ? (shellRoot.wifiConnectionActive || shellRoot.wifiConnected) : false
-    readonly property bool networkConnectedState: shellRoot ? shellRoot.networkConnected : false
-    readonly property bool wiredConnectedState: shellRoot ? shellRoot.wiredConnectionActive : false
-    readonly property bool otherConnectedState: shellRoot ? shellRoot.otherConnectionActive : false
-    readonly property bool wifiControlsAvailable: shellRoot ? (shellRoot.wifiDevicePresent || shellRoot.wifiCapabilityDetected) : false
-    readonly property real wifiStrength: shellRoot ? shellRoot.wifiSignalStrength : 0
-    readonly property var liveNetworks: shellRoot ? shellRoot.wifiNetworks : []
+    readonly property bool wifiEnabled: shellRoot.wifiRadioEnabled
+    readonly property bool wifiConnectedState: shellRoot.wifiConnectionActive || shellRoot.wifiConnected
+    readonly property bool networkConnectedState: shellRoot.networkConnected
+    readonly property bool wiredConnectedState: shellRoot.wiredConnectionActive
+    readonly property bool otherConnectedState: shellRoot.otherConnectionActive
+    readonly property bool wifiControlsAvailable: shellRoot.wifiDevicePresent || shellRoot.wifiCapabilityDetected
+    readonly property real wifiStrength: shellRoot.wifiSignalStrength
+    readonly property var liveNetworks: shellRoot.wifiNetworks
     readonly property var networks: displayedNetworks
-    readonly property color glassFill: shellRoot ? shellRoot.glassFill : "#202020"
-    readonly property color glassStroke: shellRoot ? shellRoot.glassStroke : "#3a3a3a"
-    readonly property color cardFill: shellRoot ? shellRoot.withAlpha("#ffffff", 0.07) : "#2a2a2a"
-    readonly property color cardStrongFill: shellRoot ? shellRoot.withAlpha("#ffffff", 0.11) : "#303030"
-    readonly property color cardStroke: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.12) : "#454545"
-    readonly property color accentFill: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.1) : "#445566"
-    readonly property color accentStroke: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.18) : "#667788"
-    readonly property color mutedText: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.68) : "#b0b0b0"
-    readonly property color softText: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.44) : "#8a8a8a"
-    readonly property color inputFill: shellRoot ? shellRoot.withAlpha("#000000", 0.2) : "#1d1d1d"
+    readonly property color glassFill: shellRoot.glassFill
+    readonly property color glassStroke: shellRoot.glassStroke
+    readonly property color cardFill: shellRoot.withAlpha("#ffffff", 0.07)
+    readonly property color cardStrongFill: shellRoot.withAlpha("#ffffff", 0.11)
+    readonly property color cardStroke: shellRoot.withAlpha(shellRoot.primaryText, 0.12)
+    readonly property color accentFill: shellRoot.withAlpha(shellRoot.primaryText, 0.1)
+    readonly property color accentStroke: shellRoot.withAlpha(shellRoot.primaryText, 0.18)
+    readonly property color mutedText: shellRoot.withAlpha(shellRoot.primaryText, 0.68)
+    readonly property color softText: shellRoot.withAlpha(shellRoot.primaryText, 0.44)
+    readonly property color inputFill: shellRoot.withAlpha("#000000", 0.2)
     readonly property real panelSurfaceOpacity: 0.82
     readonly property int popupPanelWidth: 384
     readonly property int popupRightMargin: 10
@@ -55,11 +54,8 @@ WifiIndicator {
     readonly property real fixedSpacingHeight: Math.max(0, fixedSectionCount - 1) * panelSectionSpacing
     readonly property real networkListTopSpacing: root.networks.length > 0 ? panelSectionSpacing : 0
     readonly property real maxNetworkListHeight: Math.max(0, panelMaxHeight - panelVerticalPadding - fixedSectionHeight - fixedSpacingHeight - networkListTopSpacing)
-    readonly property string trayIconUrl: shellRoot ? shellRoot.networkTrayIconSource() : ""
+    readonly property string trayIconUrl: shellRoot.networkTrayIconSource()
     readonly property string connectionSummary: {
-        if (!shellRoot) {
-            return "";
-        }
         if (wiredConnectedState) {
             return "Ethernet connected";
         }
@@ -81,9 +77,9 @@ WifiIndicator {
         return "Not connected";
     }
 
-    available: shellRoot ? shellRoot.networkWidgetVisible : false
+    available: shellRoot.networkWidgetVisible
     iconSource: trayIconUrl
-    fallbackLabel: shellRoot ? shellRoot.networkTrayGlyph() : "󰤮"
+    fallbackLabel: shellRoot.networkTrayGlyph()
 
     function updatePopupAnchor() {
         if (popup.visible) {
@@ -138,7 +134,7 @@ WifiIndicator {
         const cacheAgeMs = Date.now() - displayedNetworksTimestamp;
         const popupShouldHoldSnapshot = root.popupVisible
             && root.wifiEnabled
-            && (!root.shellRoot || root.shellRoot.wifiHardwareEnabled);
+            && root.shellRoot.wifiHardwareEnabled;
 
         if (!force && expandedSsid.length > 0) {
             const expandedNetworkStillAvailable = source.some(network => (network.ssid || "") === expandedSsid);
@@ -174,7 +170,7 @@ WifiIndicator {
     }
 
     function openPopup() {
-        if (shellRoot && (!Array.isArray(root.liveNetworks) || root.liveNetworks.length === 0)) {
+        if (!Array.isArray(root.liveNetworks) || root.liveNetworks.length === 0) {
             shellRoot.refreshWifiStatus();
         }
         popupVisible = true;
@@ -458,8 +454,8 @@ WifiIndicator {
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Network"
-                            color: root.shellRoot ? root.shellRoot.primaryText : "white"
-                            font.family: root.shellRoot ? root.shellRoot.baseFont : ""
+                            color: root.shellRoot.primaryText
+                            font.family: root.shellRoot.baseFont
                             font.pixelSize: 17
                             font.weight: Font.Bold
                             renderType: Text.NativeRendering
@@ -472,7 +468,7 @@ WifiIndicator {
                             cornerRadius: root.innerRadius
                             label: "Close"
                             minimumWidth: 76
-                            fillColor: root.shellRoot ? root.shellRoot.withAlpha(root.shellRoot.primaryText, 0.08) : "#333333"
+                            fillColor: root.shellRoot.withAlpha(root.shellRoot.primaryText, 0.08)
                             strokeColor: root.cardStroke
                             onClicked: root.closePopup()
                         }
@@ -504,7 +500,7 @@ WifiIndicator {
                             anchors.verticalCenter: parent.verticalCenter
                             shellRoot: root.shellRoot
                             iconSource: root.trayIconUrl
-                            fallbackLabel: root.shellRoot ? root.shellRoot.networkTrayGlyph() : "󰤮"
+                            fallbackLabel: root.shellRoot.networkTrayGlyph()
                             iconSize: 24
                         }
 
@@ -521,17 +517,17 @@ WifiIndicator {
                                 ? "Online"
                                 : (!root.wifiControlsAvailable
                                     ? "No Wi-Fi"
-                                    : (!root.shellRoot || !root.shellRoot.wifiHardwareEnabled
+                                    : (!root.shellRoot.wifiHardwareEnabled
                                         ? "Blocked"
                                         : (root.wifiEnabled ? (root.wifiConnectedState ? "Online" : "Ready") : "Off"))))
                             disabled: true
                             minimumWidth: 72
                             fillColor: root.cardFill
                             foregroundColor: root.networkConnectedState
-                            ? (root.shellRoot ? root.shellRoot.launchColor : "white")
-                            : (root.shellRoot ? root.shellRoot.primaryText : "white")
+                            ? (root.shellRoot.launchColor)
+                            : (root.shellRoot.primaryText)
                             strokeColor: root.networkConnectedState
-                            ? (root.shellRoot ? root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18) : "#5176d2")
+                            ? (root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18))
                             : root.cardStroke
                         }
 
@@ -549,8 +545,8 @@ WifiIndicator {
                                 width: parent.width
                                 text: root.connectionSummary
                                 elide: Text.ElideRight
-                                color: root.shellRoot ? root.shellRoot.primaryText : "white"
-                                font.family: root.shellRoot ? root.shellRoot.baseFont : ""
+                                color: root.shellRoot.primaryText
+                                font.family: root.shellRoot.baseFont
                                 font.pixelSize: 14
                                 font.weight: Font.Bold
                                 renderType: Text.NativeRendering
@@ -558,14 +554,14 @@ WifiIndicator {
 
                             Text {
                                 width: parent.width
-                                text: root.shellRoot && root.networkConnectedState
+                                text: root.networkConnectedState
                                 ? "Interface: " + (root.shellRoot.defaultInterface || "network")
-                                : (root.shellRoot && root.shellRoot.wifiDevicePresent
+                                : (root.shellRoot.wifiDevicePresent
                                     ? "Wireless interface: " + (root.shellRoot.wifiInterface || "wifi")
                                     : "No wireless device detected")
                                 elide: Text.ElideRight
                                 color: root.mutedText
-                                font.family: root.shellRoot ? root.shellRoot.baseFont : ""
+                                font.family: root.shellRoot.baseFont
                                 font.pixelSize: 12
                                 renderType: Text.NativeRendering
                             }
@@ -584,10 +580,10 @@ WifiIndicator {
                         cornerRadius: root.innerRadius
                         label: root.wifiEnabled ? "Turn Off" : "Turn On"
                         minimumWidth: 96
-                        disabled: !root.shellRoot || !root.wifiControlsAvailable || !root.shellRoot.wifiHardwareEnabled || root.shellRoot.wifiActionBusy
+                        disabled: !root.wifiControlsAvailable || !root.shellRoot.wifiHardwareEnabled || root.shellRoot.wifiActionBusy
                         fillColor: root.cardStrongFill
-                        foregroundColor: root.shellRoot ? root.shellRoot.launchColor : "white"
-                        strokeColor: root.shellRoot ? root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18) : "#5176d2"
+                        foregroundColor: root.shellRoot.launchColor
+                        strokeColor: root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18)
                         onClicked: root.shellRoot.wifiSetRadio(!root.wifiEnabled)
                     }
 
@@ -596,7 +592,7 @@ WifiIndicator {
                         cornerRadius: root.innerRadius
                         label: "Rescan"
                         minimumWidth: 88
-                        disabled: !root.shellRoot || !root.wifiControlsAvailable || !root.wifiEnabled || root.shellRoot.wifiActionBusy
+                        disabled: !root.wifiControlsAvailable || !root.wifiEnabled || root.shellRoot.wifiActionBusy
                         fillColor: root.cardFill
                         strokeColor: root.cardStroke
                         onClicked: root.shellRoot.wifiRescan()
@@ -607,7 +603,7 @@ WifiIndicator {
                         cornerRadius: root.innerRadius
                         label: "Advanced"
                         minimumWidth: 98
-                        disabled: !root.shellRoot
+                        disabled: false
                         fillColor: root.cardFill
                         strokeColor: root.cardStroke
                         onClicked: root.shellRoot.openWifiManager()
@@ -618,7 +614,7 @@ WifiIndicator {
                     id: messageCard
 
                     width: parent.width
-                    visible: root.shellRoot && root.shellRoot.wifiActionMessage.length > 0
+                    visible: root.shellRoot.wifiActionMessage.length > 0
                     implicitHeight: actionMessageLabel.implicitHeight + 18
                     radius: root.innerRadius
                     color: root.panelColor(root.cardFill)
@@ -632,9 +628,9 @@ WifiIndicator {
                         anchors.right: parent.right
                         anchors.top: parent.top
                         anchors.margins: root.innerPadding
-                        text: root.shellRoot ? root.shellRoot.wifiActionMessage : ""
-                        color: root.shellRoot ? root.shellRoot.withAlpha(root.shellRoot.primaryText, 0.82) : "#d8d8d8"
-                        font.family: root.shellRoot ? root.shellRoot.baseFont : ""
+                        text: root.shellRoot.wifiActionMessage
+                        color: root.shellRoot.withAlpha(root.shellRoot.primaryText, 0.82)
+                        font.family: root.shellRoot.baseFont
                         font.pixelSize: 12
                         wrapMode: Text.Wrap
                         renderType: Text.NativeRendering
@@ -664,7 +660,7 @@ WifiIndicator {
                             ? (root.networkConnectedState ? "Ethernet is active. No visible Wi-Fi networks right now." : "No visible networks right now.")
                             : (root.networkConnectedState ? "Ethernet is active. Turn Wi-Fi on to scan for wireless networks." : "Turn Wi-Fi on to scan for networks."))
                         color: root.mutedText
-                        font.family: root.shellRoot ? root.shellRoot.baseFont : ""
+                        font.family: root.shellRoot.baseFont
                         font.pixelSize: 13
                         wrapMode: Text.Wrap
                         renderType: Text.NativeRendering
@@ -737,8 +733,8 @@ WifiIndicator {
                                             anchors.left: parent.left
                                             anchors.verticalCenter: parent.verticalCenter
                                             shellRoot: root.shellRoot
-                                            iconSource: root.shellRoot ? root.shellRoot.wifiListIconSource(networkCard.modelData.signal, networkCard.modelData.secure) : ""
-                                            fallbackLabel: root.shellRoot ? root.shellRoot.wifiSignalGlyph(networkCard.modelData.signal) : "󰤨"
+                                            iconSource: root.shellRoot.wifiListIconSource(networkCard.modelData.signal, networkCard.modelData.secure)
+                                            fallbackLabel: root.shellRoot.wifiSignalGlyph(networkCard.modelData.signal)
                                             iconSize: 24
                                         }
 
@@ -752,17 +748,16 @@ WifiIndicator {
                                             label: ""
                                             iconLabel: networkCard.buttonIconLabel
                                             minimumWidth: 50
-                                            disabled: !root.shellRoot
-                                            || root.shellRoot.wifiActionBusy
+                                            disabled: root.shellRoot.wifiActionBusy
                                             || (!root.wifiEnabled && !networkCard.modelData.active)
                                             || (networkCard.expanded && networkCard.modelData.secure && !networkCard.modelData.known && root.passwordText.length === 0)
                                             fillColor: networkCard.modelData.active ? root.cardStrongFill : root.cardFill
                                             foregroundColor: networkCard.modelData.active
-                                            ? (root.shellRoot ? root.shellRoot.criticalColor : "white")
-                                            : (root.shellRoot ? root.shellRoot.launchColor : "white")
+                                            ? (root.shellRoot.criticalColor)
+                                            : (root.shellRoot.launchColor)
                                             strokeColor: networkCard.modelData.active
-                                            ? (root.shellRoot ? root.shellRoot.withAlpha(root.shellRoot.criticalColor, 0.2) : "#a55454")
-                                            : (root.shellRoot ? root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18) : "#5176d2")
+                                            ? (root.shellRoot.withAlpha(root.shellRoot.criticalColor, 0.2))
+                                            : (root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18))
                                             onClicked: root.activateNetwork(networkCard.modelData)
                                         }
 
@@ -798,8 +793,8 @@ WifiIndicator {
                                                         width: Math.max(0, Math.min(implicitWidth, titleLine.width - titleLine.badgeWidth))
                                                         text: networkCard.modelData.ssid
                                                         elide: Text.ElideRight
-                                                        color: root.shellRoot ? root.shellRoot.primaryText : "white"
-                                                        font.family: root.shellRoot ? root.shellRoot.baseFont : ""
+                                                        color: root.shellRoot.primaryText
+                                                        font.family: root.shellRoot.baseFont
                                                         font.pixelSize: 14
                                                         font.weight: Font.Bold
                                                         renderType: Text.NativeRendering
@@ -820,7 +815,7 @@ WifiIndicator {
                                                 text: root.networkMeta(networkCard.modelData)
                                                 elide: Text.ElideRight
                                                 color: root.mutedText
-                                                font.family: root.shellRoot ? root.shellRoot.baseFont : ""
+                                                font.family: root.shellRoot.baseFont
                                                 font.pixelSize: 11
                                                 renderType: Text.NativeRendering
                                             }
@@ -867,8 +862,8 @@ WifiIndicator {
                                                     activeFocusOnPress: true
                                                     focus: networkCard.expanded && popup.visible && !popup.animatingClose
                                                     selectByMouse: true
-                                                    color: root.shellRoot ? root.shellRoot.primaryText : "white"
-                                                    font.family: root.shellRoot ? root.shellRoot.baseFont : ""
+                                                    color: root.shellRoot.primaryText
+                                                    font.family: root.shellRoot.baseFont
                                                     font.pixelSize: 13
                                                     font.letterSpacing: 3
                                                     echoMode: TextInput.Password
@@ -890,7 +885,7 @@ WifiIndicator {
                                                     visible: passwordInput.text.length === 0
                                                     text: "Password"
                                                     color: root.softText
-                                                    font.family: root.shellRoot ? root.shellRoot.baseFont : ""
+                                                    font.family: root.shellRoot.baseFont
                                                     font.pixelSize: 13
                                                     renderType: Text.NativeRendering
                                                 }
@@ -904,10 +899,10 @@ WifiIndicator {
                                                     cornerRadius: root.innerRadius
                                                     label: "Join"
                                                     minimumWidth: 82
-                                                    disabled: root.passwordText.length === 0 || (root.shellRoot && root.shellRoot.wifiActionBusy)
+                                                    disabled: root.passwordText.length === 0 || root.shellRoot.wifiActionBusy
                                                     fillColor: root.cardStrongFill
-                                                    foregroundColor: root.shellRoot ? root.shellRoot.launchColor : "white"
-                                                    strokeColor: root.shellRoot ? root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18) : "#5176d2"
+                                                    foregroundColor: root.shellRoot.launchColor
+                                                    strokeColor: root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18)
                                                     onClicked: root.activateNetwork(networkCard.modelData)
                                                 }
 

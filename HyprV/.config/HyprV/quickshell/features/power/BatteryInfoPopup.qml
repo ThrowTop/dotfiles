@@ -379,7 +379,7 @@ Item {
                                         onClicked: {
                                             batteryPopupRoot.chargeLimitIndex = index;
                                             root.chargeLimit = chargeLimitSelector.values[index];
-                                            root.runDetached([root.configDir + "/quickshell/scripts/power/battery", "limit", String(chargeLimitSelector.values[index])]);
+                                            root.runDetached([root.configDir + "/quickshell/scripts/battery.sh", "limit", String(chargeLimitSelector.values[index])]);
                                         }
                                     }
                                 }

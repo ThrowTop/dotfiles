@@ -3,11 +3,11 @@ import QtQuick
 Item {
     id: slider
 
-    property var shellRoot: null
+    required property var shellRoot
     property string icon: ""
     property string label: ""
     property real value: 50
-    property color accentColor: shellRoot ? shellRoot.launchColor : "#89b4fa"
+    property color accentColor: shellRoot.launchColor
     property bool iconClickable: false
 
     signal valueChangeRequested(real newValue)
@@ -16,10 +16,10 @@ Item {
     height: 62
     implicitHeight: 62
 
-    readonly property color frameFill: shellRoot ? shellRoot.withAlpha("#ffffff", 0.07) : "#2a2a2a"
-    readonly property color frameStroke: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.12) : "#454545"
-    readonly property color textColor: shellRoot ? shellRoot.primaryText : "#cdd6f4"
-    readonly property color trackBg: shellRoot ? shellRoot.withAlpha("#ffffff", 0.08) : "#2a2a2a"
+    readonly property color frameFill: shellRoot.withAlpha("#ffffff", 0.07)
+    readonly property color frameStroke: shellRoot.withAlpha(shellRoot.primaryText, 0.12)
+    readonly property color textColor: shellRoot.primaryText
+    readonly property color trackBg: shellRoot.withAlpha("#ffffff", 0.08)
     property real _localValue: value
     onValueChanged: { if (!trackArea.pressed) _localValue = value; }
     readonly property real clampedValue: Math.max(0, Math.min(100, _localValue))
@@ -67,7 +67,7 @@ Item {
                     anchors.centerIn: parent
                     text: slider.icon
                     color: slider.accentColor
-                    font.family: slider.shellRoot ? slider.shellRoot.iconFont : "JetBrainsMono Nerd Font"
+                    font.family: slider.shellRoot.iconFont
                     font.pixelSize: slider.iconPixelSize
                     font.weight: Font.Bold
                     renderType: Text.NativeRendering
@@ -98,7 +98,7 @@ Item {
                     width: parent.width
                     text: slider.label
                     color: slider.textColor
-                    font.family: slider.shellRoot ? slider.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                    font.family: slider.shellRoot.baseFont
                     font.pixelSize: slider.titlePixelSize
                     font.weight: Font.Bold
                     renderType: Text.NativeRendering
@@ -113,7 +113,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     text: slider.valueText
                     color: slider.textColor
-                    font.family: slider.shellRoot ? slider.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                    font.family: slider.shellRoot.baseFont
                     font.pixelSize: slider.titlePixelSize
                     font.weight: Font.Bold
                     renderType: Text.NativeRendering
@@ -161,7 +161,7 @@ Item {
                 width: slider.thumbSize
                 height: slider.thumbSize
                 radius: slider.thumbSize / 2
-                color: shellRoot ? ("#f7f7f8") : "#ffffff"
+                color: "#f7f7f8"
                 border.width: 2
                 border.color: slider.accentColor
                 antialiasing: true

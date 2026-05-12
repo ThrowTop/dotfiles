@@ -3,20 +3,20 @@ import QtQuick
 Item {
     id: root
 
-    property var shellRoot: null
+    required property var shellRoot
     property var samples: []
     property real maxValue: 100
     property bool autoScale: false
     property real lineWidth: 2.25
     property int gridLineCount: 4
     property real surfaceOpacity: 0.82
-    property color accentColor: shellRoot ? shellRoot.systemChartAccent : "#b9782f"
-    property color frameColor: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.12) : Qt.rgba(0.2, 0.2, 0.2, 0.10)
-    property color gridColor: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.10) : Qt.rgba(0.2, 0.2, 0.2, 0.08)
-    property color panelFill: shellRoot ? shellRoot.withAlpha("#ffffff", 0.055) : Qt.rgba(0.2, 0.2, 0.2, 0.032)
-    property color overlayFill: shellRoot ? shellRoot.withAlpha("#ffffff", 0.018) : "transparent"
-    property color areaTopColor: shellRoot ? shellRoot.withAlpha(accentColor, 0.18) : Qt.rgba(0.73, 0.47, 0.18, 0.14)
-    property color areaBottomColor: shellRoot ? shellRoot.withAlpha(accentColor, 0.02) : Qt.rgba(0.73, 0.47, 0.18, 0.02)
+    property color accentColor: shellRoot.systemChartAccent
+    property color frameColor: shellRoot.withAlpha(shellRoot.primaryText, 0.12)
+    property color gridColor: shellRoot.withAlpha(shellRoot.primaryText, 0.10)
+    property color panelFill: shellRoot.withAlpha("#ffffff", 0.055)
+    property color overlayFill: shellRoot.withAlpha("#ffffff", 0.018)
+    property color areaTopColor: shellRoot.withAlpha(accentColor, 0.18)
+    property color areaBottomColor: shellRoot.withAlpha(accentColor, 0.02)
 
     readonly property real resolvedMaxValue: {
         let upper = autoScale ? 0 : Math.max(1, Number(maxValue) || 1);

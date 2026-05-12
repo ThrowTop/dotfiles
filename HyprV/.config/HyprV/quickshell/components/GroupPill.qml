@@ -3,17 +3,17 @@ import QtQuick
 Rectangle {
     id: pill
 
-    property var shellRoot: null
+    required property var shellRoot
     default property alias contentData: contentRow.data
 
-    radius: shellRoot ? shellRoot.pillRadius : 19
-    color: shellRoot ? shellRoot.moduleBackground : "#303030"
+    radius: shellRoot.pillRadius
+    color: shellRoot.moduleBackground
     implicitWidth: contentRow.implicitWidth
-    implicitHeight: shellRoot ? shellRoot.barHeight : 38
+    implicitHeight: shellRoot.barHeight
     width: implicitWidth
     height: implicitHeight
     border.width: 1
-    border.color: shellRoot ? shellRoot.pillBorder : Qt.rgba(0.4, 0.4, 0.4, 0.12)
+    border.color: shellRoot.pillBorder
 
     Row {
         id: contentRow
@@ -23,5 +23,4 @@ Rectangle {
         spacing: 0
     }
 }
-
 

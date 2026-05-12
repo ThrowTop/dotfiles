@@ -6,11 +6,11 @@ GroupPill {
 
     property var parentWindow: null
 
-    Component.onCompleted: if (pill.shellRoot && pill.parentWindow === pill.shellRoot.primaryBarWindow) {
+    Component.onCompleted: if (pill.parentWindow === pill.shellRoot.primaryBarWindow) {
         pill.shellRoot.quickAdjustAnchorItem = pill;
     }
 
-    Component.onDestruction: if (pill.shellRoot && pill.shellRoot.quickAdjustAnchorItem === pill) {
+    Component.onDestruction: if (pill.shellRoot.quickAdjustAnchorItem === pill) {
         pill.shellRoot.quickAdjustAnchorItem = null;
     }
 
@@ -37,7 +37,7 @@ GroupPill {
         MouseArea {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
-            onClicked: if (pill.shellRoot) pill.shellRoot.openControlPanelPopup(controlPanelTrigger, pill.parentWindow)
+            onClicked: pill.shellRoot.openControlPanelPopup(controlPanelTrigger, pill.parentWindow)
         }
     }
 }

@@ -3,7 +3,7 @@ import QtQuick
 Rectangle {
     id: badge
 
-    property var shellRoot: null
+    required property var shellRoot
     property bool active: false
     property int cornerRadius: 10
 
@@ -11,15 +11,15 @@ Rectangle {
     implicitWidth: 22
     implicitHeight: 20
     radius: cornerRadius
-    color: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.08) : "#2a2a2a"
+    color: shellRoot.withAlpha(shellRoot.primaryText, 0.08)
     border.width: 1
-    border.color: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.08) : "#444444"
+    border.color: shellRoot.withAlpha(shellRoot.primaryText, 0.08)
 
     Text {
         anchors.centerIn: parent
         text: ""
-        color: badge.shellRoot ? badge.shellRoot.withAlpha(badge.shellRoot.primaryText, 0.82) : "white"
-        font.family: badge.shellRoot ? badge.shellRoot.iconFont : "JetBrainsMono Nerd Font"
+        color: badge.shellRoot.withAlpha(badge.shellRoot.primaryText, 0.82)
+        font.family: badge.shellRoot.iconFont
         font.pixelSize: 11
         font.weight: Font.Bold
         renderType: Text.NativeRendering

@@ -3,7 +3,7 @@
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-. "$script_dir/wifi.sh"
+. "$script_dir/wifi-common.sh"
 
 iface="$(detect_wifi_iface || true)"
 command="${1:-}"

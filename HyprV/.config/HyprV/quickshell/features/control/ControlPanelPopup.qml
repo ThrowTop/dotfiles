@@ -9,7 +9,7 @@ import "../../features/media"
 Item {
     id: popupRoot
 
-    property var shellRoot: null
+    required property var shellRoot
     property var sourceItem: null
     property var parentWindow: null
     property bool popupRequested: false
@@ -34,12 +34,12 @@ Item {
     readonly property int popupWidth: currentPage === "main"
         ? (popupPadding * 2 + columnWidth * 2 + columnSpacing)
         : 384
-    readonly property color glassFill: shellRoot ? shellRoot.glassFill : "#202020"
-    readonly property color glassStroke: shellRoot ? shellRoot.glassStroke : "#3a3a3a"
-    readonly property color panelShadowColor: shellRoot ? shellRoot.withAlpha("#000000", 0.45) : Qt.rgba(0, 0, 0, 0.3)
-    readonly property color mutedTextColor: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.68) : "#b0b0b0"
-    readonly property color detailFill: shellRoot ? shellRoot.withAlpha("#ffffff", 0.07) : "#2a2a2a"
-    readonly property color detailStroke: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.12) : "#454545"
+    readonly property color glassFill: shellRoot.glassFill
+    readonly property color glassStroke: shellRoot.glassStroke
+    readonly property color panelShadowColor: shellRoot.withAlpha("#000000", 0.45)
+    readonly property color mutedTextColor: shellRoot.withAlpha(shellRoot.primaryText, 0.68)
+    readonly property color detailFill: shellRoot.withAlpha("#ffffff", 0.07)
+    readonly property color detailStroke: shellRoot.withAlpha(shellRoot.primaryText, 0.12)
 
     function resetExpandedState() {
         currentPage = "main";
@@ -57,9 +57,7 @@ Item {
         popupRequested = true;
         animatingClose = false;
         resetExpandedState();
-        if (shellRoot) {
-            shellRoot.refreshControlPanelStatus();
-        }
+        shellRoot.refreshControlPanelStatus();
         positionTimer.restart();
         if (popupWindow.visible) {
             popupCard.prepareOpenAnimation();
@@ -133,16 +131,11 @@ Item {
         popupRequested = true;
         animatingClose = false;
         resetExpandedState();
-        if (shellRoot) {
-            shellRoot.refreshControlPanelStatus();
-        }
+        shellRoot.refreshControlPanelStatus();
         popupWindow.visible = true;
     }
 
     function runAndRefresh(command) {
-        if (!shellRoot) {
-            return;
-        }
         shellRoot.runDetached(command);
         controlPanelRefreshTimer.restart();
     }
@@ -152,29 +145,18 @@ Item {
     }
 
     function setBrightnessPercent(value) {
-        if (!shellRoot) {
-            return;
-        }
         shellRoot.applyBrightnessPercent(clampPercent(value));
     }
 
     function setAudioVolumePercent(value) {
-        if (shellRoot) {
-            shellRoot.setAudioVolumePercent(clampPercent(value));
-        }
+        shellRoot.setAudioVolumePercent(clampPercent(value));
     }
 
     function toggleAudioMute() {
-        if (!shellRoot) {
-            return;
-        }
         shellRoot.toggleAudioMute();
     }
 
     function toggleWifiEnabled() {
-        if (!shellRoot) {
-            return;
-        }
         const enabled = !shellRoot.wifiRadioEnabled;
         shellRoot.wifiRadioEnabled = enabled;
         shellRoot.wifiEnabled = enabled;
@@ -183,23 +165,15 @@ Item {
     }
 
     function toggleBluetoothEnabled() {
-        if (!shellRoot) {
-            return;
-        }
         shellRoot.bluetoothSetPower(!shellRoot.bluetoothEnabled);
     }
 
     function toggleDnd() {
-        if (shellRoot) {
-            shellRoot.dndEnabled = !shellRoot.dndEnabled;
-        }
+        shellRoot.dndEnabled = !shellRoot.dndEnabled;
         runAndRefresh(["swaync-client", "-d", "-sw"]);
     }
 
     function toggleRecording() {
-        if (!shellRoot) {
-            return;
-        }
         const nextState = !shellRoot.screenRecording;
         shellRoot.screenRecording = nextState;
         if (nextState) {
@@ -210,17 +184,11 @@ Item {
     }
 
     function togglePreventSleep() {
-        if (!shellRoot) {
-            return;
-        }
         shellRoot.preventSleepEnabled = !shellRoot.preventSleepEnabled;
-        runAndRefresh([shellRoot.configDir + "/quickshell/scripts/system/prevent-sleep", "toggle"]);
+        runAndRefresh([shellRoot.configDir + "/quickshell/scripts/prevent-sleep.sh", "toggle"]);
     }
 
     function toggleWifiExpanded() {
-        if (!shellRoot) {
-            return;
-        }
         popupRequested = false;
         animatingClose = false;
         popupWindow.visible = false;
@@ -233,9 +201,7 @@ Item {
             showMainPage();
             return;
         }
-        if (shellRoot) {
-            shellRoot.refreshBluetoothStatus();
-        }
+        shellRoot.refreshBluetoothStatus();
         switchPageWithAnimation("bluetooth");
     }
 
@@ -266,7 +232,7 @@ Item {
     }
 
     function setPowerProfile(profile) {
-        if (!shellRoot || !profile) {
+        if (!profile) {
             return;
         }
         shellRoot.powerProfile = profile;
@@ -275,9 +241,6 @@ Item {
     }
 
     function cyclePowerProfile() {
-        if (!shellRoot) {
-            return;
-        }
         const order = ["power-saver", "balanced", "performance"];
         const current = order.indexOf(shellRoot.powerProfile);
         const nextIndex = current >= 0 ? (current + 1) % order.length : 1;
@@ -305,7 +268,7 @@ Item {
     }
 
     function handleMediaAction(command) {
-        if (!shellRoot || !shellRoot.mediaAvailable) {
+        if (!shellRoot.mediaAvailable) {
             return;
         }
         if (command === "previous") {
@@ -322,9 +285,6 @@ Item {
     }
 
     function currentWifiSubtitle() {
-        if (!shellRoot) {
-            return "";
-        }
         if (!shellRoot.wifiRadioEnabled) {
             return "Turned off";
         }
@@ -335,7 +295,7 @@ Item {
     }
 
     function currentBluetoothTitle() {
-        if (!shellRoot || !Array.isArray(shellRoot.bluetoothDevices)) {
+        if (!Array.isArray(shellRoot.bluetoothDevices)) {
             return "Bluetooth";
         }
         for (let i = 0; i < shellRoot.bluetoothDevices.length; i++) {
@@ -348,9 +308,6 @@ Item {
     }
 
     function currentBluetoothSubtitle() {
-        if (!shellRoot) {
-            return "";
-        }
         if (!shellRoot.bluetoothPresent) {
             return "No adapter";
         }
@@ -389,9 +346,7 @@ Item {
 
         interval: 400
         repeat: false
-        onTriggered: if (shellRoot) {
-            shellRoot.refreshControlPanelStatus();
-        }
+        onTriggered: shellRoot.refreshControlPanelStatus()
     }
 
     Timer {
@@ -399,9 +354,7 @@ Item {
 
         interval: 900
         repeat: false
-        onTriggered: if (shellRoot) {
-            shellRoot.refreshPowerProfileStatus();
-        }
+        onTriggered: shellRoot.refreshPowerProfileStatus()
     }
 
 
@@ -472,7 +425,7 @@ Item {
                         icon: active ? "󰤨" : "󰤭"
                         title: popupRoot.currentWifiTitle()
                         subtitle: popupRoot.currentWifiSubtitle()
-                        active: popupRoot.shellRoot ? popupRoot.shellRoot.wifiRadioEnabled : false
+                        active: popupRoot.shellRoot.wifiRadioEnabled
                         expanded: popupRoot.wifiExpanded
                         onLeftClicked: popupRoot.toggleWifiEnabled()
                         onRightClicked: popupRoot.toggleWifiExpanded()
@@ -486,7 +439,7 @@ Item {
                         icon: active ? "󰂯" : "󰂲"
                         title: popupRoot.currentBluetoothTitle()
                         subtitle: popupRoot.currentBluetoothSubtitle()
-                        active: popupRoot.shellRoot ? popupRoot.shellRoot.bluetoothEnabled : false
+                        active: popupRoot.shellRoot.bluetoothEnabled
                         expanded: popupRoot.bluetoothExpanded
                         onLeftClicked: popupRoot.toggleBluetoothEnabled()
                         onRightClicked: popupRoot.toggleBluetoothExpanded()
@@ -505,7 +458,7 @@ Item {
                             icon: "󰻃"
                             iconOnly: true
                             label: "Screen\nrecord"
-                            active: popupRoot.shellRoot ? popupRoot.shellRoot.screenRecording : false
+                            active: popupRoot.shellRoot.screenRecording
                             onClicked: popupRoot.toggleRecording()
                         }
 
@@ -517,46 +470,8 @@ Item {
                             icon: active ? "" : ""
                             iconOnly: true
                             label: "Prevent\nsleep"
-                            active: popupRoot.shellRoot ? popupRoot.shellRoot.preventSleepEnabled : false
+                            active: popupRoot.shellRoot.preventSleepEnabled
                             onClicked: popupRoot.togglePreventSleep()
-                        }
-                    }
-                }
-
-                Column {
-                    width: popupRoot.columnWidth
-                    spacing: popupRoot.cardSpacing
-
-                    ControlPanelMediaCard {
-                        width: parent.width
-                        height: popupRoot.moduleSize * 2 + popupRoot.cardSpacing
-
-                        shellRoot: popupRoot.shellRoot
-                        available: popupRoot.shellRoot ? popupRoot.shellRoot.mediaAvailable : false
-                        playing: popupRoot.shellRoot ? popupRoot.shellRoot.mediaPlaying : false
-                        title: popupRoot.shellRoot ? popupRoot.shellRoot.mediaTitle : ""
-                        subtitle: popupRoot.shellRoot ? popupRoot.shellRoot.mediaArtist : ""
-                        playerName: popupRoot.shellRoot ? popupRoot.shellRoot.mediaPlayerName : ""
-                        artUrl: popupRoot.shellRoot ? popupRoot.shellRoot.mediaArtUrl : ""
-                        onPreviousClicked: popupRoot.handleMediaAction("previous")
-                        onPlayPauseClicked: popupRoot.handleMediaAction("play-pause")
-                        onNextClicked: popupRoot.handleMediaAction("next")
-                    }
-
-                    Row {
-                        width: parent.width
-                        spacing: popupRoot.cardSpacing
-
-                        ControlPanelToggle {
-                            width: parent.width
-                            height: popupRoot.moduleSize
-    
-                            shellRoot: popupRoot.shellRoot
-                            icon: "󰂛"
-                            iconOnly: true
-                            label: "No\ndisturb"
-                            active: popupRoot.shellRoot ? popupRoot.shellRoot.dndEnabled : false
-                            onClicked: popupRoot.toggleDnd()
                         }
                     }
 
@@ -565,9 +480,9 @@ Item {
                         height: popupRoot.moduleSize
 
                         shellRoot: popupRoot.shellRoot
-                        icon: popupRoot.powerProfileIcon(popupRoot.shellRoot ? popupRoot.shellRoot.powerProfile : "balanced")
+                        icon: popupRoot.powerProfileIcon(popupRoot.shellRoot.powerProfile)
                         title: "Power"
-                        subtitle: popupRoot.powerProfileLabel(popupRoot.shellRoot ? popupRoot.shellRoot.powerProfile : "balanced")
+                        subtitle: popupRoot.powerProfileLabel(popupRoot.shellRoot.powerProfile)
                         active: false
                         expanded: popupRoot.powerExpanded
                         onLeftClicked: popupRoot.cyclePowerProfile()
@@ -599,12 +514,12 @@ Item {
                                     width: parent.width
                                     shellRoot: popupRoot.shellRoot
                                     label: "Saver"
-                                    fillColor: popupRoot.shellRoot && popupRoot.shellRoot.powerProfile === "power-saver"
+                                    fillColor: popupRoot.shellRoot.powerProfile === "power-saver"
                                         ? popupRoot.shellRoot.withAlpha(popupRoot.shellRoot.batteryColor, 0.22)
                                         : popupRoot.detailFill
-                                    foregroundColor: popupRoot.shellRoot && popupRoot.shellRoot.powerProfile === "power-saver"
+                                    foregroundColor: popupRoot.shellRoot.powerProfile === "power-saver"
                                         ? popupRoot.shellRoot.batteryColor
-                                        : (popupRoot.shellRoot ? popupRoot.shellRoot.primaryText : "#5a4030")
+                                        : popupRoot.shellRoot.primaryText
                                     strokeColor: popupRoot.detailStroke
                                     onClicked: popupRoot.setPowerProfile("power-saver")
                                 }
@@ -613,12 +528,12 @@ Item {
                                     width: parent.width
                                     shellRoot: popupRoot.shellRoot
                                     label: "Balanced"
-                                    fillColor: popupRoot.shellRoot && popupRoot.shellRoot.powerProfile === "balanced"
+                                    fillColor: popupRoot.shellRoot.powerProfile === "balanced"
                                         ? popupRoot.shellRoot.withAlpha(popupRoot.shellRoot.launchColor, 0.22)
                                         : popupRoot.detailFill
-                                    foregroundColor: popupRoot.shellRoot && popupRoot.shellRoot.powerProfile === "balanced"
+                                    foregroundColor: popupRoot.shellRoot.powerProfile === "balanced"
                                         ? popupRoot.shellRoot.launchColor
-                                        : (popupRoot.shellRoot ? popupRoot.shellRoot.primaryText : "#5a4030")
+                                        : popupRoot.shellRoot.primaryText
                                     strokeColor: popupRoot.detailStroke
                                     onClicked: popupRoot.setPowerProfile("balanced")
                                 }
@@ -627,16 +542,54 @@ Item {
                                     width: parent.width
                                     shellRoot: popupRoot.shellRoot
                                     label: "Fast"
-                                    fillColor: popupRoot.shellRoot && popupRoot.shellRoot.powerProfile === "performance"
+                                    fillColor: popupRoot.shellRoot.powerProfile === "performance"
                                         ? popupRoot.shellRoot.withAlpha(popupRoot.shellRoot.criticalColor, 0.22)
                                         : popupRoot.detailFill
-                                    foregroundColor: popupRoot.shellRoot && popupRoot.shellRoot.powerProfile === "performance"
+                                    foregroundColor: popupRoot.shellRoot.powerProfile === "performance"
                                         ? popupRoot.shellRoot.criticalColor
-                                        : (popupRoot.shellRoot ? popupRoot.shellRoot.primaryText : "#5a4030")
+                                        : popupRoot.shellRoot.primaryText
                                     strokeColor: popupRoot.detailStroke
                                     onClicked: popupRoot.setPowerProfile("performance")
                                 }
                             }
+                        }
+                    }
+                }
+
+                Column {
+                    width: popupRoot.columnWidth
+                    spacing: popupRoot.cardSpacing
+
+                    ControlPanelMediaCard {
+                        width: parent.width
+                        height: popupRoot.moduleSize * 2 + popupRoot.cardSpacing
+
+                        shellRoot: popupRoot.shellRoot
+                        available: popupRoot.shellRoot.mediaAvailable
+                        playing: popupRoot.shellRoot.mediaPlaying
+                        title: popupRoot.shellRoot.mediaTitle
+                        subtitle: popupRoot.shellRoot.mediaArtist
+                        playerName: popupRoot.shellRoot.mediaPlayerName
+                        artUrl: popupRoot.shellRoot.mediaArtUrl
+                        onPreviousClicked: popupRoot.handleMediaAction("previous")
+                        onPlayPauseClicked: popupRoot.handleMediaAction("play-pause")
+                        onNextClicked: popupRoot.handleMediaAction("next")
+                    }
+
+                    Row {
+                        width: parent.width
+                        spacing: popupRoot.cardSpacing
+
+                        ControlPanelToggle {
+                            width: parent.width
+                            height: popupRoot.moduleSize
+
+                            shellRoot: popupRoot.shellRoot
+                            icon: "󰂛"
+                            iconOnly: true
+                            label: "No\ndisturb"
+                            active: popupRoot.shellRoot.dndEnabled
+                            onClicked: popupRoot.toggleDnd()
                         }
                     }
 
@@ -681,7 +634,7 @@ Item {
                                     shellRoot: popupRoot.shellRoot
                                     label: "Lock"
                                     fillColor: popupRoot.detailFill
-                                    foregroundColor: popupRoot.shellRoot ? popupRoot.shellRoot.launchColor : "#89b4fa"
+                                    foregroundColor: popupRoot.shellRoot.launchColor
                                     strokeColor: popupRoot.detailStroke
                                     onClicked: {
                                         popupRoot.shellRoot.lockSession();
@@ -694,7 +647,7 @@ Item {
                                     shellRoot: popupRoot.shellRoot
                                     label: "Suspend"
                                     fillColor: popupRoot.detailFill
-                                    foregroundColor: popupRoot.shellRoot ? popupRoot.shellRoot.subtext : "#a6adc8"
+                                    foregroundColor: popupRoot.shellRoot.subtext
                                     strokeColor: popupRoot.detailStroke
                                     onClicked: {
                                         popupRoot.shellRoot.suspendSystem();
@@ -708,7 +661,7 @@ Item {
                                     shellRoot: popupRoot.shellRoot
                                     label: "Logout"
                                     fillColor: popupRoot.detailFill
-                                    foregroundColor: popupRoot.shellRoot ? popupRoot.shellRoot.primaryText : "#cdd6f4"
+                                    foregroundColor: popupRoot.shellRoot.primaryText
                                     strokeColor: popupRoot.detailStroke
                                     onClicked: popupRoot.shellRoot.logoutSession()
                                 }
@@ -718,7 +671,7 @@ Item {
                                     shellRoot: popupRoot.shellRoot
                                     label: "Reboot"
                                     fillColor: popupRoot.detailFill
-                                    foregroundColor: popupRoot.shellRoot ? popupRoot.shellRoot.brightnessColor : "#f3b35c"
+                                    foregroundColor: popupRoot.shellRoot.brightnessColor
                                     strokeColor: popupRoot.detailStroke
                                     onClicked: popupRoot.shellRoot.rebootSystem()
                                 }
@@ -728,7 +681,7 @@ Item {
                                     shellRoot: popupRoot.shellRoot
                                     label: "Shutdown"
                                     fillColor: popupRoot.detailFill
-                                    foregroundColor: popupRoot.shellRoot ? popupRoot.shellRoot.criticalColor : "#f38ba8"
+                                    foregroundColor: popupRoot.shellRoot.criticalColor
                                     strokeColor: popupRoot.detailStroke
                                     onClicked: popupRoot.shellRoot.shutdownSystem()
                                 }
@@ -748,8 +701,8 @@ Item {
                     height: popupRoot.moduleSize
                     icon: "󰃟"
                     label: "Brightness"
-                    value: popupRoot.shellRoot ? popupRoot.shellRoot.brightnessPercent : 50
-                    accentColor: popupRoot.shellRoot ? popupRoot.shellRoot.brightnessColor : "#d47b1f"
+                    value: popupRoot.shellRoot.brightnessPercent
+                    accentColor: popupRoot.shellRoot.brightnessColor
                     onValueChangeRequested: function(newValue) { popupRoot.setBrightnessPercent(newValue); }
                 }
 
@@ -757,11 +710,11 @@ Item {
                     shellRoot: popupRoot.shellRoot
                     width: parent.width
                     height: popupRoot.moduleSize
-                    icon: popupRoot.shellRoot ? popupRoot.shellRoot.volumeIcon : ""
+                    icon: popupRoot.shellRoot.volumeIcon
                     iconClickable: true
                     label: "Volume"
-                    value: popupRoot.shellRoot ? popupRoot.shellRoot.audioVolumePercent : 50
-                    accentColor: popupRoot.shellRoot ? popupRoot.shellRoot.launchColor : "#89b4fa"
+                    value: popupRoot.shellRoot.audioVolumePercent
+                    accentColor: popupRoot.shellRoot.launchColor
                     onValueChangeRequested: function(newValue) { popupRoot.setAudioVolumePercent(newValue); }
                     onIconClicked: popupRoot.toggleAudioMute()
                 }
@@ -816,13 +769,11 @@ Item {
                 if (visible) {
                     updatePopupPosition();
                     popupFocusScope.forceActiveFocus();
-                    if (shellRoot) {
-                        shellRoot.refreshBrightnessStatus();
-                        shellRoot.refreshControlPanelStatus();
-                        shellRoot.refreshMediaStatus();
-                        shellRoot.refreshWifiStatus();
+                    shellRoot.refreshBrightnessStatus();
+                    shellRoot.refreshControlPanelStatus();
+                    shellRoot.refreshMediaStatus();
+                    shellRoot.refreshWifiStatus();
                     shellRoot.refreshBluetoothStatus();
-                }
                 if (!popupRoot.animatingClose) {
                     popupRoot.openAnimationPending = true;
                     popupCard.prepareOpenAnimation();

@@ -69,7 +69,7 @@ ShellRoot {
     property alias bluetoothShowUnnamedDevices: bluetoothController.showUnnamedDevices
     readonly property alias bluetoothAdapterObject: bluetoothController.adapterObject
     readonly property alias bluetoothDeviceObjects: bluetoothController.deviceObjects
-    readonly property string brightnessScriptPath: configDir + "/quickshell/scripts/backlight/brightness"
+    readonly property string brightnessScriptPath: configDir + "/quickshell/scripts/brightness.sh"
     readonly property int brightnessUiStepPercent: 2
     property int brightnessPercent: 50
     property bool dndEnabled: false
@@ -1143,19 +1143,19 @@ ShellRoot {
     }
 
     function wifiSetRadio(enabled) {
-        startWifiAction([root.configDir + "/quickshell/scripts/network/wifi", "toggle", enabled ? "on" : "off"], enabled ? "Turning Wi-Fi on..." : "Turning Wi-Fi off...", enabled ? "Wi-Fi enabled" : "Wi-Fi disabled");
+        startWifiAction([root.configDir + "/quickshell/scripts/wifi.sh", "toggle", enabled ? "on" : "off"], enabled ? "Turning Wi-Fi on..." : "Turning Wi-Fi off...", enabled ? "Wi-Fi enabled" : "Wi-Fi disabled");
     }
 
     function wifiRescan() {
-        startWifiAction([root.configDir + "/quickshell/scripts/network/wifi", "rescan"], "Scanning for networks...", "Scan started");
+        startWifiAction([root.configDir + "/quickshell/scripts/wifi.sh", "rescan"], "Scanning for networks...", "Scan started");
     }
 
     function wifiDisconnect() {
-        startWifiAction([root.configDir + "/quickshell/scripts/network/wifi", "disconnect"], "Disconnecting...", "Disconnected");
+        startWifiAction([root.configDir + "/quickshell/scripts/wifi.sh", "disconnect"], "Disconnecting...", "Disconnected");
     }
 
     function wifiConnect(ssid, password, security) {
-        const command = [root.configDir + "/quickshell/scripts/network/wifi", "connect", ssid || "", password || "", security || ""];
+        const command = [root.configDir + "/quickshell/scripts/wifi.sh", "connect", ssid || "", password || "", security || ""];
         startWifiAction(command, "Connecting to " + (ssid || "network") + "...", "Connection requested for " + (ssid || "network"));
     }
 
@@ -1499,7 +1499,7 @@ ShellRoot {
         id: audioSpectrumProcess
 
         running: root.audioSpectrumCavaAvailable && root.mediaAvailable && root.mediaPlaying
-        command: [root.configDir + "/quickshell/scripts/audio/spectrum"]
+        command: [root.configDir + "/quickshell/scripts/audio-spectrum.sh"]
 
         onRunningChanged: {
             if (!running) {
@@ -1620,7 +1620,7 @@ ShellRoot {
 
         scheduled: false
         interval: 8000
-        command: [root.configDir + "/quickshell/scripts/network/wifi", "status"]
+        command: [root.configDir + "/quickshell/scripts/wifi.sh", "status"]
         onUpdated: function(output, exitCode) {
             if (exitCode === 0) {
                 root.updateWifiStatus(output);
@@ -1712,7 +1712,7 @@ ShellRoot {
 
         scheduled: false
         interval: 10000
-        command: [root.configDir + "/quickshell/scripts/system/status"]
+        command: [root.configDir + "/quickshell/scripts/system-status.sh"]
         onUpdated: function(output, exitCode) {
             if (exitCode === 0) {
                 root.updateControlPanelState(output);

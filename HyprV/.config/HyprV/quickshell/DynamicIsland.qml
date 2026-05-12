@@ -4,7 +4,7 @@ import QtQuick.Effects
 Item {
     id: island
 
-    property var shellRoot: null
+    required property var shellRoot
     property date now: new Date()
     property bool mediaAvailable: false
     property bool mediaPlaying: false
@@ -64,14 +64,14 @@ Item {
     readonly property real targetHeight: osdActive
         ? osdExpandedHeight
         : (musicExpanded ? expandedHeight : (idleExpanded ? idleExpandedHeight : collapsedHeight))
-    readonly property color surfaceColor: shellRoot ? shellRoot.moduleBackground : "#303030"
-    readonly property color textColor: shellRoot ? shellRoot.primaryText : "#cdd6f4"
-    readonly property color mutedTextColor: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.68) : Qt.rgba(0.8, 0.8, 0.8, 0.68)
-    readonly property color strokeColor: shellRoot ? shellRoot.pillBorder : Qt.rgba(0.8, 0.8, 0.8, 0.12)
-    readonly property color hoverFill: shellRoot ? shellRoot.withAlpha(shellRoot.primaryText, 0.10) : Qt.rgba(0.8, 0.8, 0.8, 0.12)
-    readonly property color softFill: shellRoot ? shellRoot.withAlpha("#ffffff", 0.07) : Qt.rgba(1, 1, 1, 0.1)
-    readonly property color accentColor: shellRoot ? shellRoot.launchColor : "#407cdd"
-    readonly property color accentSoftColor: shellRoot ? shellRoot.withAlpha(shellRoot.launchColor, 0.72) : "#407cdd"
+    readonly property color surfaceColor: shellRoot.moduleBackground
+    readonly property color textColor: shellRoot.primaryText
+    readonly property color mutedTextColor: shellRoot.withAlpha(shellRoot.primaryText, 0.68)
+    readonly property color strokeColor: shellRoot.pillBorder
+    readonly property color hoverFill: shellRoot.withAlpha(shellRoot.primaryText, 0.10)
+    readonly property color softFill: shellRoot.withAlpha("#ffffff", 0.07)
+    readonly property color accentColor: shellRoot.launchColor
+    readonly property color accentSoftColor: shellRoot.withAlpha(shellRoot.launchColor, 0.72)
     readonly property real displayedPositionSeconds: seeking ? seekPreviewSeconds : mediaPositionSeconds
     readonly property real progressRatio: mediaLengthSeconds > 0 ? Math.max(0, Math.min(1, displayedPositionSeconds / mediaLengthSeconds)) : 0
 
@@ -142,7 +142,7 @@ Item {
 
         property string label: ""
         property color labelColor: island.textColor
-        property string fontFamily: island.shellRoot ? island.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+        property string fontFamily: island.shellRoot.baseFont
         property int fontPixelSize: 16
         property int fontWeight: Font.Bold
         property real paddingLeft: 8
@@ -254,7 +254,7 @@ Item {
             visible: !albumArt.visible
             text: ""
             color: island.accentColor
-            font.family: island.shellRoot ? island.shellRoot.iconFont : "JetBrainsMono Nerd Font"
+            font.family: island.shellRoot.iconFont
             font.pixelSize: Math.round(Math.min(parent.width, parent.height) * 0.46)
             font.weight: Font.Bold
             renderType: Text.NativeRendering
@@ -294,7 +294,7 @@ Item {
             anchors.verticalCenterOffset: control.primary ? 1 : 0
             text: control.glyph
             color: control.primary ? "#ffffff" : island.textColor
-            font.family: island.shellRoot ? island.shellRoot.iconFont : "JetBrainsMono Nerd Font"
+            font.family: island.shellRoot.iconFont
             font.pixelSize: control.primary ? 21 : 17
             font.weight: Font.Bold
             renderType: Text.NativeRendering
@@ -404,7 +404,7 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: Qt.formatTime(island.now, "hh:mm")
                     color: island.textColor
-                    font.family: island.shellRoot ? island.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                    font.family: island.shellRoot.baseFont
                     font.pixelSize: 20
                     font.weight: Font.Bold
                     horizontalAlignment: Text.AlignHCenter
@@ -415,7 +415,7 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: Qt.formatDate(island.now, "dddd, d MMMM")
                     color: island.mutedTextColor
-                    font.family: island.shellRoot ? island.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                    font.family: island.shellRoot.baseFont
                     font.pixelSize: 13
                     font.weight: Font.Medium
                     horizontalAlignment: Text.AlignHCenter
@@ -441,7 +441,7 @@ Item {
             island.osdType = island.shellRoot.islandOsdType;
             island.osdValue = island.shellRoot.islandOsdValue;
             island.osdActive = true;
-            osdDismissTimer.interval = island.shellRoot ? island.shellRoot.islandOsdDuration : 1500;
+            osdDismissTimer.interval = island.shellRoot.islandOsdDuration;
             osdDismissTimer.restart();
         }
     }
@@ -465,7 +465,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             text: leftLabel
             color: island.textColor
-            font.family: island.shellRoot ? island.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+            font.family: island.shellRoot.baseFont
             font.pixelSize: 13
             font.bold: true
             renderType: Text.NativeRendering
@@ -475,7 +475,7 @@ Item {
             anchors.centerIn: parent
             text: Qt.formatTime(island.now, "hh:mm")
             color: island.textColor
-            font.family: island.shellRoot ? island.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+            font.family: island.shellRoot.baseFont
             font.pixelSize: 16
             font.bold: true
             renderType: Text.NativeRendering
@@ -491,7 +491,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 text: rightValue
                 color: accentColor
-                font.family: island.shellRoot ? island.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                font.family: island.shellRoot.baseFont
                 font.pixelSize: 13
                 font.bold: true
                 renderType: Text.NativeRendering
@@ -501,7 +501,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 text: iconGlyph
                 color: accentColor
-                font.family: island.shellRoot ? island.shellRoot.iconFont : "JetBrainsMono Nerd Font"
+                font.family: island.shellRoot.iconFont
                 font.pixelSize: 15
                 renderType: Text.NativeRendering
             }
@@ -525,24 +525,24 @@ Item {
                 anchors.left: parent.left
                 anchors.leftMargin: 14
                 anchors.verticalCenter: parent.verticalCenter
-                text: island.osdType === "brightness" ? "󰃟" : (island.shellRoot ? island.shellRoot.volumeIcon : "")
+                text: island.osdType === "brightness" ? "󰃟" : (island.shellRoot.volumeIcon)
                 color: island.osdType === "brightness"
-                    ? (island.shellRoot ? island.shellRoot.brightnessColor : "#f3b35c")
+                    ? (island.shellRoot.brightnessColor)
                     : island.accentColor
-                font.family: island.shellRoot ? island.shellRoot.iconFont : "JetBrainsMono Nerd Font"
+                font.family: island.shellRoot.iconFont
                 font.pixelSize: 16
                 renderType: Text.NativeRendering
             }
 
             Rectangle {
                 readonly property color barColor: island.osdType === "brightness"
-                    ? (island.shellRoot ? island.shellRoot.brightnessColor : "#f3b35c")
+                    ? (island.shellRoot.brightnessColor)
                     : island.accentColor
                 anchors.centerIn: parent
                 width: 120
                 height: 4
                 radius: 2
-                color: island.shellRoot ? island.shellRoot.withAlpha(island.shellRoot.primaryText, 0.12) : "#30303060"
+                color: island.shellRoot.withAlpha(island.shellRoot.primaryText, 0.12)
 
                 Rectangle {
                     width: parent.width * Math.max(0, Math.min(1, island.osdValue / 100))
@@ -562,7 +562,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 text: island.osdValue + "%"
                 color: island.mutedTextColor
-                font.family: island.shellRoot ? island.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                font.family: island.shellRoot.baseFont
                 font.pixelSize: 13
                 renderType: Text.NativeRendering
             }
@@ -570,11 +570,11 @@ Item {
 
         SideTextOsd {
             osdTypeName: "sidetext"
-            leftLabel:   island.shellRoot ? island.shellRoot.islandOsdLabel     : ""
-            rightValue:  island.shellRoot ? island.shellRoot.islandOsdRightText : ""
-            accentColor: island.shellRoot && island.shellRoot.islandOsdAccent
+            leftLabel:   island.shellRoot.islandOsdLabel
+            rightValue:  island.shellRoot.islandOsdRightText
+            accentColor: island.shellRoot.islandOsdAccent
                              ? Qt.color(island.shellRoot.islandOsdAccent) : "#ffffff"
-            iconGlyph:   island.shellRoot ? island.shellRoot.islandOsdIcon      : ""
+            iconGlyph:   island.shellRoot.islandOsdIcon
         }
     }
 
@@ -619,7 +619,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 text: Qt.formatTime(island.now, "hh:mm")
                 color: island.textColor
-                font.family: island.shellRoot ? island.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                font.family: island.shellRoot.baseFont
                 font.pixelSize: 16
                 font.weight: Font.Bold
                 horizontalAlignment: Text.AlignHCenter
@@ -706,7 +706,7 @@ Item {
                     width: parent.width
                     text: island.displayTitle()
                     color: island.textColor
-                    font.family: island.shellRoot ? island.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                    font.family: island.shellRoot.baseFont
                     font.pixelSize: 18
                     font.weight: Font.Bold
                     elide: Text.ElideRight
@@ -718,7 +718,7 @@ Item {
                     text: island.displayArtist()
                     visible: text.length > 0
                     color: island.mutedTextColor
-                    font.family: island.shellRoot ? island.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                    font.family: island.shellRoot.baseFont
                     font.pixelSize: 13
                     font.weight: Font.DemiBold
                     elide: Text.ElideRight
@@ -838,7 +838,7 @@ Item {
                 width: parent.width / 2
                 text: island.mediaLengthSeconds > 0 ? island.trackTime(island.displayedPositionSeconds) : "--:--"
                 color: island.mutedTextColor
-                font.family: island.shellRoot ? island.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                font.family: island.shellRoot.baseFont
                 font.pixelSize: 9
                 font.weight: Font.Bold
                 renderType: Text.NativeRendering
@@ -848,7 +848,7 @@ Item {
                 width: parent.width / 2
                 text: island.mediaLengthSeconds > 0 ? "-" + island.trackTime(Math.max(0, island.mediaLengthSeconds - island.displayedPositionSeconds)) : "--:--"
                 color: island.mutedTextColor
-                font.family: island.shellRoot ? island.shellRoot.baseFont : "JetBrainsMono Nerd Font"
+                font.family: island.shellRoot.baseFont
                 font.pixelSize: 9
                 font.weight: Font.Bold
                 horizontalAlignment: Text.AlignRight
