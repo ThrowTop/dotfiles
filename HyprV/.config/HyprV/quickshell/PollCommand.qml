@@ -7,6 +7,7 @@ Item {
     property var command: []
     property int interval: 1000
     property bool active: true
+    property bool scheduled: true
     property string output: ""
 
     signal updated(string output, int exitCode)
@@ -22,7 +23,7 @@ Item {
     Timer {
         interval: poll.interval
         repeat: true
-        running: poll.active
+        running: poll.active && poll.scheduled
         triggeredOnStart: true
         onTriggered: poll.refresh()
     }

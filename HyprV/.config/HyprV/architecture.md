@@ -1,123 +1,208 @@
-  ---
-  Project Structure
+# HyprV Architecture
 
-  shell.qml  (ShellRoot — the root, owns ALL global state)
-  │
-  │  ┌─ Global State ──────────────────────────────────────────┐
-  │  │  CPU/memory/network/battery/temperature metrics         │
-  │  │  WiFi/Bluetooth state, media playback, audio spectrum   │
-  │  │  Active workspace, window title, keyboard layout        │
-  │  │  Dark mode, color tokens, tray items                    │
-  │  └─────────────────────────────────────────────────────────┘
-  │
-  │  ┌─ Inline components (defined inside shell.qml) ──────────┐
-  │  │  TextModule      — single labeled pill cell             │
-  │  │  TrayMenuPopup   — per-item right-click context menu    │
-  │  │  TrayOverflowPopup — collapsed tray overflow bubble     │
-  │  │  BatteryInfoPopup  — battery detail popup               │
-  │  └─────────────────────────────────────────────────────────┘
-  │
-  ├── Colors.qml
-  │   └─ Color palette (Catppuccin Mocha), instantiated as `colors`
-  │      All color tokens on ShellRoot are derived from this
-  │
-  ├── PollCommand.qml  (used many times in shell.qml)
-  │   └─ Runs a shell command on a timer, exposes stdout as `output`
-  │      Used for: system stats, battery, media, control panel status, volume monitor
-  │
-  │  ╔══════════════════════════════════════╗
-  │  ║  WINDOWS (PanelWindow instances)    ║
-  │  ╚══════════════════════════════════════╝
-  │
-  ├── [trayMenuWindow]     — tray item right-click menu (Quickshell DBusMenu)
-  ├── [overflowWindow]     — tray overflow bubble
-  ├── [popupWindow]        — battery info panel
-  │
-  ├── SystemStatsPopup.qml ← shell.qml
-  │   ├── AnimatedGlassPanel.qml  — frosted glass backdrop
-  │   └── SystemTrendChart.qml   — sparkline history graphs (CPU/mem/net)
-  │
-  ├── ControlPanelPopup.qml ← shell.qml
-  │   ├── AnimatedGlassPanel.qml
-  │   ├── ControlPanelSplitTile.qml  — two-button tile (e.g. WiFi/BT)
-  │   ├── ControlPanelToggle.qml     — single on/off toggle
-  │   ├── ControlPanelSlider.qml     — brightness/volume slider
-  │   ├── ControlPanelMediaCard.qml  — media player card
-  │   ├── ControlPanelBluetoothDetails.qml  — BT device list sub-page
-  │   │   └── WifiActionChip.qml    — reusable action chip button
-  │   ├── ExpandableSection.qml     — collapsible section wrapper
-  │   │   └── AnimatedReveal.qml   — height-animate reveal helper
-  │   └── WifiFallback.qml          — WiFi networks list (nmcli path)
-  │       ├── AnimatedGlassPanel.qml
-  │       ├── WifiIndicator.qml
-  │       │   └── WifiIconWithFallback.qml  — icon w/ SVG/text fallback
-  │       ├── WifiIconWithFallback.qml
-  │       ├── WifiActionChip.qml
-  │       ├── WifiSecurityBadge.qml — lock icon for secured networks
-  │       └── ExpandableSection.qml
-  │
-  ├── QuickAdjustPopup.qml ← shell.qml
-  │   └── ControlPanelSlider.qml   — brightness quick-adjust overlay
-  │
-  │  ┌─ Corner shades PanelWindow ─────┐
-  │  │  ScreenCornerShade.qml × 4     │
-  │  │  (top-left, top-right corners)  │
-  │  └─────────────────────────────────┘
-  │
-  └── [barWindow]  — the main floating top bar PanelWindow
-      │
-      ├── leftSection (Row)
-      │   ├── GroupPill.qml — [System Resources]  CPU% · RAM% · Net
-      │   └── GroupPill.qml — [Workspaces]        workspace buttons (TextModule × n)
-      │
-      ├── centerSection
-      │   └── DynamicIsland.qml
-      │       └── AudioSpectrum.qml  — waveform visualizer
-      │
-      ├── windowSection — active window title pill
-      │
-      └── rightSection (Row)
-          ├── GroupPill.qml — [Status]   temp · keyboard layout · battery
-          └── GroupPill.qml — [Tray]
-              ├── WifiNative.qml (Loader)  — NM bindings WiFi indicator
-              │   └── WifiFallback.qml    — fallback if NM unavailable
-              ├── Volume icon + scroll wheel handler
-              ├── TrayButton.qml × n      — visible system tray items
-              ├── Tray overflow button    — "⋯" for hidden items
-              ├── Notification bell
-              ├── Volume icon + scroll wheel handler
-              ├── TrayButton.qml × n      — visible system tray items
-              ├── Tray overflow button    — "⋯" for hidden items
-              ├── Notification bell
-              └── Control panel trigger  → opens ControlPanelPopup
+HyprV is a custom Hyprland desktop shell built with Quickshell, QML, and small shell/Python helper scripts. The goal is a compact, glassy top bar with first-class controls for system state: workspaces, active window, media, network, Bluetooth, power, tray apps, notifications, and quick adjustment overlays.
 
-  ---
-  Scripts (called by PollCommand / Process nodes)
+The project is moving toward feature-owned modules. Generic UI primitives live in `components/`; domain state, controllers, and feature-specific popups live under `features/`; the bar only owns always-visible bar layout.
 
-  ┌────────────────────────────┬───────────────────┬─────────────────────────────────────────────────┐
-  │           Script           │    Called from    │                     Purpose                     │
-  ├────────────────────────────┼───────────────────┼─────────────────────────────────────────────────┤
-  │ control-panel-status.sh    │ shell.qml         │ WiFi/BT/brightness/theme state batch query      │
-  ├────────────────────────────┼───────────────────┼─────────────────────────────────────────────────┤
-  │ audio-spectrum.sh          │ shell.qml         │ Reads PipeWire FFT data for visualizer          │
-  ├────────────────────────────┼───────────────────┼─────────────────────────────────────────────────┤
-  │ battery-info.sh            │ shell.qml         │ Detailed battery stats                          │
-  ├────────────────────────────┼───────────────────┼─────────────────────────────────────────────────┤
-  │ media-status.sh            │ shell.qml         │ playerctl metadata                              │
-  ├────────────────────────────┼───────────────────┼─────────────────────────────────────────────────┤
-  │ wifi-status.sh             │ WifiFallback      │ Network list (nmcli fallback)                   │
-  ├────────────────────────────┼───────────────────┼─────────────────────────────────────────────────┤
-  │ wifi-action.sh             │ ControlPanelPopup │ Connect/disconnect/toggle WiFi                  │
-  ├────────────────────────────┼───────────────────┼─────────────────────────────────────────────────┤
-  │ volume                     │ shell.qml         │ Get/set PipeWire volume                         │
-  ├────────────────────────────┼───────────────────┼─────────────────────────────────────────────────┤
-  │ brightness                 │ shell.qml         │ Get/set backlight brightness                    │
-  ├────────────────────────────┼───────────────────┼─────────────────────────────────────────────────┤
-  │ osd                        │ shell.qml         │ On-screen display for vol/brightness            │
-  ├────────────────────────────┼───────────────────┼─────────────────────────────────────────────────┤
-  │ ui-state.sh                │ launch/reload     │ Read/write persistent UI state (dark mode etc.) │
-  ├────────────────────────────┼───────────────────┼─────────────────────────────────────────────────┤
-  │ toggle-theme.sh            │ ControlPanelPopup │ Switch dark/light mode                          │
-  ├────────────────────────────┼───────────────────┼─────────────────────────────────────────────────┤
-  │ cider-metadata-fallback.py │ shell.qml         │ Cider (Apple Music) metadata workaround         │
-  └────────────────────────────┴───────────────────┴─────────────────────────────────────────────────┘
+## Current Structure
+
+```text
+quickshell/
+  shell.qml                  # ShellRoot composition root and global wiring
+  Colors.qml                 # Catppuccin-derived color palette
+  PollCommand.qml            # Reusable polling command wrapper
+  DynamicIsland.qml          # Center island UI
+  AnimatedGlassPanel.qml     # Shared glass popup chrome
+  AnimatedReveal.qml
+  ExpandableSection.qml
+  ScreenCornerShade.qml
+  TrayButton.qml
+  WifiNative.qml             # Legacy loader entrypoint for network tray item
+
+  bar/
+    BarWindow.qml
+    control/ControlPanelButton.qml
+    island/IslandHost.qml
+    modules/AudioModule.qml
+    modules/NotificationsModule.qml
+    modules/SystemTrayModule.qml
+    modules/WifiModule.qml
+    status/StatusPill.qml
+    system/SystemResourcesPill.qml
+    window/WindowTitlePill.qml
+    workspaces/WorkspacesPill.qml
+
+  components/
+    ActionChip.qml
+    ControlPanelSlider.qml
+    ControlPanelSplitTile.qml
+    ControlPanelToggle.qml
+    GroupPill.qml
+    TextModule.qml
+
+  features/
+    bluetooth/
+      BluetoothController.qml
+      ControlPanelBluetoothDetails.qml
+    control/
+      ControlPanelPopup.qml
+    media/
+      ControlPanelMediaCard.qml
+    network/
+      WifiFallback.qml
+      WifiIconWithFallback.qml
+      WifiIndicator.qml
+      WifiSecurityBadge.qml
+    power/
+      BatteryInfoLine.qml
+      BatteryInfoPopup.qml
+    quickadjust/
+      QuickAdjustPopup.qml
+    system/
+      SystemStatsController.qml
+      SystemStatsPopup.qml
+      SystemTrendChart.qml
+    tray/
+      TrayMenuPopup.qml
+      TrayOverflowPopup.qml
+
+  scripts/
+    audio/
+      spectrum
+    backlight/
+      brightness
+    network/
+      wifi
+      lib/
+        action.sh
+        status.sh
+        wifi.sh
+    power/
+      battery
+      lib/
+        limit
+    runtime/
+      osd
+    system/
+      prevent-sleep
+      status
+```
+
+## Ownership Rules
+
+`shell.qml` is the composition root. It should create long-lived services/controllers, wire bar modules to feature popups, expose shared colors/helpers, and own only state that is genuinely global.
+
+Feature folders own domain behavior. A feature can contain its controller, popup/window UI, rows, badges, and helper components when they are not broadly reusable. Example: Bluetooth state and actions belong in `features/bluetooth/BluetoothController.qml`; Bluetooth detail UI belongs next to it.
+
+`components/` is only for reusable UI primitives with no domain assumptions. `ActionChip.qml`, sliders, toggles, split tiles, and pill primitives belong here. Domain-specific names should not live in `components/`.
+
+`bar/` owns visible bar composition only. Bar modules should mostly call root methods like `openBatteryInfoPopup()` or read already-exposed state. They should not parse command output or own feature controllers.
+
+There is no separate top-level `popups/` directory. Popups are feature UI unless they become generic primitives.
+
+## Runtime Flow
+
+```text
+shell.qml
+  ├─ creates shared state, controllers, pollers, popup instances
+  ├─ creates BarWindow per screen with Variants
+  ├─ exposes open/toggle functions used by bar modules
+  └─ delegates feature behavior to controllers where available
+
+BarWindow
+  ├─ left: system resources, workspaces
+  ├─ center: DynamicIsland via IslandHost
+  ├─ middle/right: active window title
+  └─ right: status, explicit grouped modules, control button
+```
+
+Bar grouping is intentionally owned by `BarWindow.qml`:
+
+```qml
+GroupPill {
+  WifiModule {}
+  AudioModule {}
+}
+
+GroupPill {
+  SystemTrayModule {}
+  NotificationsModule {}
+}
+```
+
+Individual modules should represent one behavior/display unit. `GroupPill` should stay a visual grouping primitive, not a place where unrelated domain modules are hardcoded together.
+
+Feature popup flow:
+
+```text
+Bar module click
+  -> shell.qml open/toggle function
+  -> feature popup instance
+  -> feature controller or shell compatibility API
+  -> scripts / Quickshell services / detached commands
+```
+
+## Controllers
+
+Implemented controllers:
+
+- `features/bluetooth/BluetoothController.qml`: owns Bluetooth adapter state, device snapshots, connect/disconnect/pair/remove/scan actions, action messages, timeouts, and model signal watchers.
+- `features/system/SystemStatsController.qml`: parses `/proc` snapshots and updates CPU, memory, temperature, network rates, core usage, and history arrays.
+
+Still to extract:
+
+- Network/Wi-Fi controller: `shell.qml` still owns Wi-Fi status parsing, cached network list handling, and action process state.
+- Audio controller: volume status exists today, but default device management and microphone controls should be a dedicated audio feature.
+- Power controller: battery parsing is mostly root-owned and should move behind a power controller if it grows.
+- Media controller: media parsing/actions remain in `shell.qml` and can be extracted later.
+
+## Wi-Fi, Bluetooth, And Future Audio
+
+Wi-Fi and Bluetooth now share small UI primitives such as `ActionChip`, but their panel layouts are still largely separate. This is acceptable short-term because their connection models differ, but an audio device popup will benefit from extracting a generic device-panel layout first.
+
+Recommended next reusable pieces:
+
+```text
+components/
+  DevicePanel.qml       # header, status card, action row, scrollable list shell
+  DeviceRow.qml         # icon/title/subtitle/action slot layout
+
+features/network/
+  NetworkController.qml
+  WifiPopup.qml or WifiMenu.qml
+
+features/bluetooth/
+  BluetoothController.qml
+  BluetoothDeviceRow.qml
+
+features/audio/
+  AudioController.qml
+  AudioPopup.qml
+  AudioDeviceRow.qml
+```
+
+Audio should not copy Wi-Fi directly. It should reuse the device-panel shell while owning its own model: playback devices, capture devices, default sink/source, output volume, microphone volume, and mute state.
+
+## Scripts
+
+Scripts are feature-oriented and process-based. Public script entrypoints live directly under a feature directory; helper implementations live in that feature's `lib/` directory. Prefer Quickshell services and event streams over polling scripts.
+
+| Script | Primary caller | Purpose |
+|---|---|---|
+| `audio/spectrum` | `shell.qml` | Audio spectrum data for the island |
+| `backlight/brightness` | `shell.qml` / quick adjust | Backlight get/set and brightness IPC feedback |
+| `network/wifi` | `shell.qml` / Wi-Fi popup | Wi-Fi status, scan, connect, disconnect, radio toggle |
+| `power/battery` | battery popup | Battery charge limit actions |
+| `runtime/osd` | external scripts / IPC | OSD trigger helper |
+| `system/prevent-sleep` | control panel | Sleep inhibition toggle |
+| `system/status` | control panel open/action refresh | Batch status for brightness, recording, and prevent-sleep state |
+
+## Design Direction
+
+HyprV should feel like a dense desktop shell, not a web dashboard. Keep visual language compact, consistent, and utilitarian:
+
+- Glass surfaces are framed by `AnimatedGlassPanel`.
+- Bar modules use pill primitives.
+- Feature actions use icon/text chips and compact rows.
+- Popups should be anchored, keyboard dismissible, and behaviorally stable.
+- Avoid adding new global state to `shell.qml` unless several features need it.

@@ -6,8 +6,8 @@ hlc.config({
         gaps_out = 10,
         border_size = 1,
         col = {
-            active_border = { colors = { "rgba(8e90cb80)", angle = 45 } },
-            inactive_border = { colors = { "rgb(303030)", "rgb(8e90cb)", angle = 35 } },
+            active_border = { colors = { "rgb(8789C1)", angle = 45 } },
+            inactive_border = { colors = { "rgba(FeF0Fb30)", angle = 45 } },
         },
         layout = "dwindle",
         resize_on_border = false,
@@ -65,8 +65,8 @@ local gnomed = hlc.style.gnomed()
 hlc.animation = {
     global = hlc.anim(10, curves.linear),
 
-    -- border: snappy focus highlight, fast like macOS title bar
-    border = hlc.anim(9, curves.outCubic),
+    -- border: snappy focus highlight
+    border = hlc.anim(2.5, curves.outCubic),
 
     -- windows
     windows = hlc.anim(4.5, curves.outCubic),

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+script_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+case "${1:-status}" in
+    status)
+        exec sh "$script_dir/lib/status.sh"
+        ;;
+    toggle|rescan|disconnect|connect)
+        exec sh "$script_dir/lib/action.sh" "$@"
+        ;;
+    *)
+        printf 'Usage: %s [status|toggle on|toggle off|rescan|disconnect|connect <ssid> [password] [security]]\n' "$0" >&2
+        exit 2
+        ;;
+esac
