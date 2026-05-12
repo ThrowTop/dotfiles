@@ -1,5 +1,4 @@
 local hlc = require("hlc")
-local s = require("settings")
 
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
@@ -20,9 +19,7 @@ hl.on("hyprland.start", function()
     hlc.d.exec_cmd("hyprlock")
     hlc.d.exec_cmd("vicinae server")
     hlc.d.exec_cmd("swaync")
-    hlc.d.exec_cmd("bash " .. os.getenv("HOME") .. "/.config/HyprV/quickshell/scripts/launch.sh")
+    hlc.d.exec_cmd("bash " .. settings.qs .. "/launch.sh")
     hlc.d.exec_cmd("awww-daemon & waypaper --restore")
     hlc.d.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme prefer-dark")
 end)
-
-

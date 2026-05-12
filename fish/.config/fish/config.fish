@@ -1,6 +1,6 @@
 # ── Environment ─────────────────────────────────────────────────
 set -gx EDITOR nvim
-fish_add_path ~/.local/bin ~/dotfiles/bin
+fish_add_path ~/.local/bin ~/dotfiles/bin /usr/lib/qt6/bin
 
 # ── Greeting ────────────────────────────────────────────────────
 function fish_greeting

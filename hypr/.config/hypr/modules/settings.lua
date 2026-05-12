@@ -1,12 +1,26 @@
 local home = os.getenv("HOME")
+local quickshell = home .. "/.config/HyprV/quickshell"
+
+local function exists(path)
+    local file = io.open(path)
+    if file then
+        file:close()
+        return true
+    end
+    return false
+end
+
 local M = {
-    mainMod = "SUPER",
+    home = home,
+    main_mod = "SUPER + ",
     terminal = "kitty",
+    file_manager = "thunar",
     browser = "brave",
-    is_laptop = io.open("/sys/class/power_supply/BAT1") ~= nil,
-    qs = home .. "/.config/HyprV/quickshell/scripts",
+    is_laptop = exists("/sys/class/power_supply/BAT1"),
+    quickshell = quickshell,
+    qs = quickshell .. "/scripts",
 }
 
-return M
+_G.settings = M
 
 

@@ -1,4 +1,5 @@
 local hlc = require("hlc")
+local hyprv = require("helpers/hyprv")
 
 local BACKLIGHT = "/sys/class/leds/samsung-galaxybook::kbd_backlight/brightness"
 local STOPFILE = "/tmp/tilt-stop"
@@ -37,11 +38,11 @@ return function()
         hlc.d.exec_cmd("sudo modprobe -r intel_hid")
         refresh_stop()
         refresh_start()
-        hl.notification.create({ text = "Tilt mode ON", timeout = 3000, icon = "ok" })
+        hyprv.osd("Tilt Mode", "On", "#a6e3a1", "0xF0475", 2500)
     else
         refresh_stop()
         hlc.d.exec_cmd("sudo modprobe intel_hid")
-        hl.notification.create({ text = "Tilt mode OFF", timeout = 3000, icon = "ok" })
+        hyprv.osd("Tilt Mode", "Off", "#f38ba8", "0xF0475", 2500)
     end
 end
 

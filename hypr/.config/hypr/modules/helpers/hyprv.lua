@@ -10,7 +10,7 @@ local function resolve(path)
     return (result and result ~= "") and result or path
 end
 
-local QS = resolve(os.getenv("HOME") .. "/.config/HyprV/quickshell")
+local QS = resolve(settings.quickshell)
 
 local function ipc(target, func, ...)
     local cmd = "quickshell -p " .. QS .. " ipc call " .. target .. " " .. func

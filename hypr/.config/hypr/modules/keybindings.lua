@@ -1,4 +1,3 @@
-local s = require("settings")
 local hlc = require("hlc")
 
 local screenshot = require("helpers/screenshot")
@@ -6,50 +5,50 @@ local tilt_mode = require("helpers/tilt_mode")
 local touchscreen = require("helpers/touchscreen")
 local bitwarden = require("helpers/bitwarden")
 local hyprv = require("helpers/hyprv")
-local mod = s.mainMod
-local qs_scripts = os.getenv("HOME") .. "/.config/HyprV/quickshell/scripts"
+local mod = settings.main_mod
+local qs_scripts = settings.qs
 
 -- -------------------------
 -- Applications
 -- -------------------------
-hl.bind(mod .. " + Return", hl.dsp.exec_cmd(s.terminal))
-hl.bind(mod .. " + E", hl.dsp.exec_cmd("thunar"))
-hl.bind(mod .. " + B", hl.dsp.exec_cmd(s.browser))
+hl.bind(mod .. "Return", hl.dsp.exec_cmd(settings.terminal))
+hl.bind(mod .. "E", hl.dsp.exec_cmd(settings.file_manager))
+hl.bind(mod .. "B", hl.dsp.exec_cmd(settings.browser))
 hl.bind("ALT + Space", hl.dsp.exec_cmd("vicinae toggle"))
-hl.bind(mod .. " + V", hl.dsp.exec_cmd("vicinae vicinae://launch/clipboard/history"))
+hl.bind(mod .. "V", hl.dsp.exec_cmd("vicinae vicinae://launch/clipboard/history"))
 hl.bind("Print", screenshot)
-hl.bind(mod .. " + Print", hl.dsp.exec_cmd("hyprpicker | wl-copy"))
-hl.bind(mod .. " + F5", touchscreen)
+hl.bind(mod .. "Print", hl.dsp.exec_cmd("hyprpicker | wl-copy"))
+hl.bind(mod .. "F5", touchscreen)
 hl.bind("CTRL + SUPER + XF86TouchpadToggle", touchscreen)
-hl.bind(mod .. " + SHIFT + U", hl.dsp.exec_cmd("pkill quickshell; bash " .. qs_scripts .. "/launch.sh"))
-hl.bind(mod .. " + M", hl.dsp.exit())
+hl.bind(mod .. "SHIFT + U", hl.dsp.exec_cmd("pkill quickshell; bash " .. qs_scripts .. "/launch.sh"))
+hl.bind(mod .. "M", hl.dsp.exit())
 
-hl.bind(mod .. " + P", bitwarden)
+hl.bind(mod .. "P", bitwarden)
 
 -- -------------------------
 -- Window management
 -- -------------------------
-hl.bind(mod .. " + Q", hl.dsp.window.close())
-hl.bind(mod .. " + C", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mod .. " + F", hl.dsp.window.fullscreen_state({ internal = 2, client = 0, action = "toggle" }))
-hl.bind(mod .. " + SHIFT + F", hl.dsp.window.fullscreen())
-hl.bind(mod .. " + SHIFT + P", hl.dsp.window.pseudo())
+hl.bind(mod .. "Q", hl.dsp.window.close())
+hl.bind(mod .. "C", hl.dsp.window.float({ action = "toggle" }))
+hl.bind(mod .. "F", hl.dsp.window.fullscreen_state({ internal = 2, client = 0, action = "toggle" }))
+hl.bind(mod .. "SHIFT + F", hl.dsp.window.fullscreen())
+hl.bind(mod .. "SHIFT + P", hl.dsp.window.pseudo())
 
 -- Focus (hjkl)
-hl.bind(mod .. " + H", hl.dsp.focus({ direction = "left" }))
-hl.bind(mod .. " + J", hl.dsp.focus({ direction = "down" }))
-hl.bind(mod .. " + K", hl.dsp.focus({ direction = "up" }))
-hl.bind(mod .. " + L", hl.dsp.focus({ direction = "right" }))
+hl.bind(mod .. "H", hl.dsp.focus({ direction = "left" }))
+hl.bind(mod .. "J", hl.dsp.focus({ direction = "down" }))
+hl.bind(mod .. "K", hl.dsp.focus({ direction = "up" }))
+hl.bind(mod .. "L", hl.dsp.focus({ direction = "right" }))
 
 -- Move windows (hjkl)
-hl.bind(mod .. " + SHIFT + H", hl.dsp.window.move({ direction = "left" }))
-hl.bind(mod .. " + SHIFT + J", hl.dsp.window.move({ direction = "down" }))
-hl.bind(mod .. " + SHIFT + K", hl.dsp.window.move({ direction = "up" }))
-hl.bind(mod .. " + SHIFT + L", hl.dsp.window.move({ direction = "right" }))
+hl.bind(mod .. "SHIFT + H", hl.dsp.window.move({ direction = "left" }))
+hl.bind(mod .. "SHIFT + J", hl.dsp.window.move({ direction = "down" }))
+hl.bind(mod .. "SHIFT + K", hl.dsp.window.move({ direction = "up" }))
+hl.bind(mod .. "SHIFT + L", hl.dsp.window.move({ direction = "right" }))
 
 -- Move/resize windows with mainMod + LMB/RMB and dragging
-hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
-hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
+hl.bind(mod .. "mouse:272", hl.dsp.window.drag(), { mouse = true })
+hl.bind(mod .. "mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 -- Notify on submap change
 local submap_notif = nil
@@ -83,14 +82,14 @@ hl.define_submap("resize", function()
     hl.bind("right", right, { repeating = true })
 
     hl.bind("Escape", hl.dsp.submap("reset"))
-    hl.bind(mod .. " + R", hl.dsp.submap("reset"))
+    hl.bind(mod .. "R", hl.dsp.submap("reset"))
     hl.bind("catchall", hl.dsp.submap("reset"))
 end)
-hl.bind(mod .. " + R", hl.dsp.submap("resize"))
+hl.bind(mod .. "R", hl.dsp.submap("resize"))
 -- -------------------------
 -- Workspaces
 -- -------------------------
-if not s.is_laptop then
+if not settings.is_laptop then
     hl.workspace_rule({ workspace = "1", monitor = "HDMI-A-1" })
     hl.workspace_rule({ workspace = "2", monitor = "DP-2" })
 end
@@ -99,29 +98,29 @@ local numpad_key = { "KP_End", "KP_Down", "KP_Next", "KP_Left", "KP_Begin", "KP_
 
 for i = 1, 10 do
     local mod_i = i % 10
-    hl.bind(mod .. " + " .. mod_i, hl.dsp.focus({ workspace = i }))
-    hl.bind(mod .. " + SHIFT + " .. mod_i, hl.dsp.window.move({ workspace = tostring(i) }))
+    hl.bind(mod .. mod_i, hl.dsp.focus({ workspace = i }))
+    hl.bind(mod .. "SHIFT + " .. mod_i, hl.dsp.window.move({ workspace = tostring(i) }))
 
-    hl.bind(mod .. " + " .. numpad_key[i], hl.dsp.focus({ workspace = i }))
-    hl.bind(mod .. " + SHIFT + " .. numpad_key[i], hl.dsp.window.move({ workspace = tostring(i) }))
+    hl.bind(mod .. numpad_key[i], hl.dsp.focus({ workspace = i }))
+    hl.bind(mod .. "SHIFT + " .. numpad_key[i], hl.dsp.window.move({ workspace = tostring(i) }))
 end
 
 -- -- Scroll through workspaces on current monitor
--- hl.bind(mod .. " + Prior", hl.dsp.workspace("r+1"))
--- hl.bind(mod .. " + Next", hl.workspace("r-1"))
--- hl.bind(mod .. " + SHIFT + Prior", hl.dsp.window.move({ workspace = "r-1" }))
--- hl.bind(mod .. " + SHIFT + Next", hl.dsp.window.move({ workspace = "r+1" }))
--- hl.bind(mod .. " + mouse_down", hl.workspace("e+1"))
--- hl.bind(mod .. " + mouse_up", hl.workspace("e-1"))
+-- hl.bind(mod .. "Prior", hl.dsp.workspace("r+1"))
+-- hl.bind(mod .. "Next", hl.workspace("r-1"))
+-- hl.bind(mod .. "SHIFT + Prior", hl.dsp.window.move({ workspace = "r-1" }))
+-- hl.bind(mod .. "SHIFT + Next", hl.dsp.window.move({ workspace = "r+1" }))
+-- hl.bind(mod .. "mouse_down", hl.workspace("e+1"))
+-- hl.bind(mod .. "mouse_up", hl.workspace("e-1"))
 
 -- Special workspace (scratchpad)
--- hl.bind(mod .. " + S", hl.workspace({ special = "magic" }))
--- hl.bind(mod .. " + CTRL + S", hl.dsp.window.move({ workspace = "special:magic" }))
+-- hl.bind(mod .. "S", hl.workspace({ special = "magic" }))
+-- hl.bind(mod .. "CTRL + S", hl.dsp.window.move({ workspace = "special:magic" }))
 
 -- -------------------------
 -- Monitor focus / window move (desktop only)
 -- -------------------------
-if not s.is_laptop then
+if not settings.is_laptop then
     hl.bind("ALT + 1", hl.dsp.focus({ monitor = "HDMI-A-1" }))
     hl.bind("ALT + 2", hl.dsp.focus({ monitor = "DP-2" }))
 
@@ -157,16 +156,8 @@ end
 -- -------------------------
 hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd("loginctl lock-session"), { locked = true })
 
-hl.bind(
-    "XF86AudioRaiseVolume",
-    hyprv.control_volume_inc,
-    { locked = true, repeating = true }
-)
-hl.bind(
-    "XF86AudioLowerVolume",
-    hyprv.control_volume_dec,
-    { locked = true, repeating = true }
-)
+hl.bind("XF86AudioRaiseVolume", hyprv.control_volume_inc, { locked = true, repeating = true })
+hl.bind("XF86AudioLowerVolume", hyprv.control_volume_dec, { locked = true, repeating = true })
 hl.bind("XF86AudioMute", hyprv.control_volume_toggle, { locked = true, repeating = true })
 hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"), { locked = true, repeating = true })
 hl.bind("XF86MonBrightnessUp", hyprv.control_brightness_inc, { locked = true, repeating = true })
@@ -176,38 +167,39 @@ hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = tr
 hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
 
-hl.bind(mod .. " + SHIFT + A", function()
+hl.bind(mod .. "SHIFT + A", function()
     hlc.animations.enabled = not hlc.animations.enabled
     hlc.notify("animations: " .. (hlc.animations.enabled and "on" or "off"), 1500)
 end)
 
-hl.bind(mod .. " + SHIFT + R", function()
+hl.bind(mod .. "SHIFT + R", function()
     local cur = hlc.decoration.rounding
     hlc.decoration.rounding = cur == 0 and 19 or 0
     hlc.notify("rounding: " .. hlc.decoration.rounding, 1500)
 end)
 
-hl.bind(mod .. " + SHIFT + B", function()
+hl.bind(mod .. "SHIFT + B", function()
     hlc.decoration.blur.enabled = not hlc.decoration.blur.enabled
     hlc.notify("blur: " .. (hlc.decoration.blur.enabled and "on" or "off"), 1500)
 end)
 
-hl.bind(mod .. " + SHIFT + D", function()
+hl.bind(mod .. "SHIFT + D", function()
     local on = hlc.decoration.inactive_opacity < 1.0
     hlc.decoration.inactive_opacity = on and 1.0 or 0.8
     hlc.notify("dim: " .. (on and "off" or "on"), 1500)
 end)
 
-hl.bind(mod .. " + SHIFT + T", tilt_mode)
+hl.bind(mod .. "SHIFT + T", tilt_mode)
 
 hl.bind("ALT+TAB", hl.dsp.window.cycle_next())
 --
 -- hlc.input.touchpad.tap_to_click = false
 -- hlc.input.touchpad.tap_and_drag = false
 
-hl.bind(mod .. "+ x", function()
+hl.bind(mod .. "X", function()
     hlc.input.touchpad.tap_to_click = not hlc.input.touchpad.tap_to_click
     local tcc = hlc.input.touchpad.tap_to_click
     hyprv.osd("Tap Click", tcc and "On" or "Off", tcc and "#a6e3a1" or "#f38ba8", "0xF052F")
 end)
+
 
