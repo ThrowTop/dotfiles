@@ -107,6 +107,8 @@ Keep the shell compact and desktop-native:
 
 ## Refactor Priorities
 
+See `CLEANUP_PLAN.md` for the current tracked cleanup plan, status, attempted work, and proposed implementation order.
+
 1. Extract Wi-Fi status/actions into `features/network/NetworkController.qml`.
 2. Extract reusable `DevicePanel.qml` / `DeviceRow.qml` before building an audio device popup.
 3. Add `features/audio/AudioController.qml` and `features/audio/AudioPopup.qml`.

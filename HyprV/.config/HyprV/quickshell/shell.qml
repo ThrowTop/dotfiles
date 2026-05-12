@@ -70,6 +70,10 @@ ShellRoot {
     readonly property alias bluetoothAdapterObject: bluetoothController.adapterObject
     readonly property alias bluetoothDeviceObjects: bluetoothController.deviceObjects
     readonly property string brightnessScriptPath: configDir + "/quickshell/scripts/brightness.sh"
+    readonly property string audioVolumeScriptPath: configDir + "/quickshell/scripts/audio-volume.sh"
+    readonly property string iconThemeLocatorScriptPath: configDir + "/quickshell/scripts/icon-theme-locator.sh"
+    readonly property string mediaFocusScriptPath: configDir + "/quickshell/scripts/media-focus.sh"
+    readonly property string openManagerScriptPath: configDir + "/quickshell/scripts/open-manager.sh"
     readonly property int brightnessUiStepPercent: 2
     property int brightnessPercent: 50
     property bool dndEnabled: false
@@ -107,6 +111,11 @@ ShellRoot {
     property int _pendingBrightnessPercent: -1
     property int _pendingAudioVolumePercent: -1
     property bool _audioApplyPending: false
+    property int _audioStateMonitorRestartDelay: 1000
+    property int _wifiMonitorRestartDelay: 1000
+    property int _notificationWatcherRestartDelay: 1000
+    property int _powerProfileWatcherRestartDelay: 1000
+    readonly property int monitorRestartMaxDelay: 30000
     readonly property var pipewireTrackedObjects: {
         const objects = [];
         if (root.defaultAudioSink) {
@@ -1110,7 +1119,7 @@ ShellRoot {
     }
 
     function openWifiManager() {
-        runDetached(["sh", "-lc", "if command -v nm-connection-editor >/dev/null 2>&1; then exec nm-connection-editor; elif command -v iwgtk >/dev/null 2>&1; then exec iwgtk; else exec kitty --title nmtui -e nmtui; fi"]);
+        runDetached([openManagerScriptPath, "wifi"]);
     }
 
     function openWifiPanel() {
@@ -1124,7 +1133,7 @@ ShellRoot {
     }
 
     function openBluetoothManager() {
-        runDetached(["sh", "-lc", "if command -v blueman-manager >/dev/null 2>&1; then exec blueman-manager; elif command -v blueberry >/dev/null 2>&1; then exec blueberry; else exec kitty --title bluetoothctl -e bluetoothctl; fi"]);
+        runDetached([openManagerScriptPath, "bluetooth"]);
     }
 
     function refreshBluetoothStatus() {
@@ -1262,33 +1271,7 @@ ShellRoot {
         if (playerName.length === 0) {
             return;
         }
-
-        const focusScript =
-            "player=$1\n"
-            + "pid=\n"
-            + "if command -v busctl >/dev/null 2>&1; then\n"
-            + "    pid=$(busctl --user status \"org.mpris.MediaPlayer2.${player}\" 2>/dev/null | sed -n 's/^PID=//p' | head -n 1)\n"
-            + "fi\n"
-            + "case \"$pid\" in ''|*[!0-9]*) pid= ;; esac\n"
-            + "if [ -z \"$pid\" ]; then\n"
-            + "    case \"$player\" in *instance[0-9]*) pid=${player##*instance} ;; esac\n"
-            + "    case \"$pid\" in ''|*[!0-9]*) pid= ;; esac\n"
-            + "fi\n"
-            + "addr=\n"
-            + "if [ -n \"$pid\" ] && command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then\n"
-            + "    addr=$(hyprctl clients -j | jq -r --arg pid \"$pid\" '.[] | select((.pid | tostring) == $pid) | .address' | head -n 1)\n"
-            + "fi\n"
-            + "if [ -n \"$addr\" ] && [ \"$addr\" != null ]; then\n"
-            + "    hyprctl dispatch focuswindow \"address:$addr\" >/dev/null\n"
-            + "    exit 0\n"
-            + "fi\n"
-            + "case \"$player\" in\n"
-            + "    *cider*|*Cider*) hyprctl dispatch focuswindow 'class:^(Cider)$' >/dev/null ;;\n"
-            + "    *spotify*|*Spotify*) hyprctl dispatch focuswindow 'class:^(Spotify)$' >/dev/null ;;\n"
-            + "    *) exit 1 ;;\n"
-            + "esac\n";
-
-        runDetached(["sh", "-lc", focusScript, "focus-media-app", playerName]);
+        runDetached([mediaFocusScriptPath, playerName]);
     }
 
     function refreshPowerProfileStatus() {}
@@ -1297,7 +1280,7 @@ ShellRoot {
         id: fluentIconLocator
 
         running: true
-        command: ["sh", "-lc", "for base in \"$HOME/.local/share/icons\" /usr/local/share/icons /usr/share/icons; do [ -z \"$dark\" ] && [ -d \"$base/Fluent-dark\" ] && dark=\"$base/Fluent-dark\"; [ -z \"$base_theme\" ] && [ -d \"$base/Fluent\" ] && base_theme=\"$base/Fluent\"; done; printf 'dark=%s\\nbase=%s\\n' \"$dark\" \"$base_theme\""]
+        command: [root.iconThemeLocatorScriptPath]
         stdout: StdioCollector {
             id: fluentIconLocatorStdout
         }
@@ -1560,11 +1543,7 @@ ShellRoot {
                 return;
             }
             const nextValue = root._pendingAudioVolumePercent;
-            audioApplyProcess.command = [
-                "sh", "-lc",
-                (nextValue > 0 ? "wpctl set-mute @DEFAULT_AUDIO_SINK@ 0; " : "")
-                    + "wpctl set-volume --limit 1.0 @DEFAULT_AUDIO_SINK@ " + (nextValue / 100).toFixed(2)
-            ];
+            audioApplyProcess.command = [root.audioVolumeScriptPath, "set-percent", String(nextValue)];
             audioApplyProcess.running = true;
         }
     }
@@ -1595,24 +1574,29 @@ ShellRoot {
         id: audioStateMonitor
 
         running: true
-        command: [
-            "sh", "-lc",
-            "wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null || true; "
-                + "pactl subscribe 2>/dev/null | while IFS= read -r line; do "
-                + "case \"$line\" in *\"'change' on sink\"*|*\"'new' on sink\"*) wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null || true ;; esac; "
-                + "done"
-        ]
+        command: [root.audioVolumeScriptPath, "monitor"]
 
         stdout: SplitParser {
             splitMarker: "\n"
             onRead: function(line) {
+                root._audioStateMonitorRestartDelay = 1000;
                 root.updateAudioStateFromWpctl(line);
             }
         }
 
         onExited: function() {
-            Qt.callLater(function() { audioStateMonitor.running = true; });
+            audioStateMonitorRestartTimer.interval = root._audioStateMonitorRestartDelay;
+            root._audioStateMonitorRestartDelay = Math.min(root.monitorRestartMaxDelay, root._audioStateMonitorRestartDelay * 2);
+            audioStateMonitorRestartTimer.restart();
         }
+    }
+
+    Timer {
+        id: audioStateMonitorRestartTimer
+
+        interval: 1000
+        repeat: false
+        onTriggered: audioStateMonitor.running = true
     }
 
     PollCommand {
@@ -1639,14 +1623,25 @@ ShellRoot {
             onRead: function(line) {
                 const text = (line || "").trim();
                 if (text.length > 0) {
+                    root._wifiMonitorRestartDelay = 1000;
                     wifiMonitorRefreshDebounce.restart();
                 }
             }
         }
 
         onExited: function() {
-            Qt.callLater(function() { wifiMonitor.running = true; });
+            wifiMonitorRestartTimer.interval = root._wifiMonitorRestartDelay;
+            root._wifiMonitorRestartDelay = Math.min(root.monitorRestartMaxDelay, root._wifiMonitorRestartDelay * 2);
+            wifiMonitorRestartTimer.restart();
         }
+    }
+
+    Timer {
+        id: wifiMonitorRestartTimer
+
+        interval: 1000
+        repeat: false
+        onTriggered: wifiMonitor.running = true
     }
 
     // D-Bus watcher: fires instantly on notification count or DND changes
@@ -1667,6 +1662,7 @@ ShellRoot {
                 // Signal: SubscribeV2 (uint32 count, bool dnd, bool cc_open, bool inhibited)
                 const m = line.match(/SubscribeV2 \(uint32 (\d+), (true|false),/);
                 if (!m) return;
+                root._notificationWatcherRestartDelay = 1000;
                 const count = parseInt(m[1]);
                 const dnd = m[2] === "true";
                 root.dndEnabled = dnd;
@@ -1676,6 +1672,19 @@ ShellRoot {
             }
         }
         stderr: StdioCollector {}
+        onExited: function() {
+            notificationWatcherRestartTimer.interval = root._notificationWatcherRestartDelay;
+            root._notificationWatcherRestartDelay = Math.min(root.monitorRestartMaxDelay, root._notificationWatcherRestartDelay * 2);
+            notificationWatcherRestartTimer.restart();
+        }
+    }
+
+    Timer {
+        id: notificationWatcherRestartTimer
+
+        interval: 1000
+        repeat: false
+        onTriggered: notificationWatcher.running = true
     }
 
     TrayMenuPopup {
@@ -1773,10 +1782,26 @@ ShellRoot {
             onRead: function(line) {
                 // Line: /net/hadess/PowerProfiles: ...PropertiesChanged ('net.hadess.PowerProfiles', {'ActiveProfile': <'balanced'>}, ...)
                 const m = line.match(/'ActiveProfile':\s*<'([^']+)'>/);
-                if (m) root.powerProfile = m[1];
+                if (m) {
+                    root._powerProfileWatcherRestartDelay = 1000;
+                    root.powerProfile = m[1];
+                }
             }
         }
         stderr: StdioCollector {}
+        onExited: function() {
+            powerProfileWatcherRestartTimer.interval = root._powerProfileWatcherRestartDelay;
+            root._powerProfileWatcherRestartDelay = Math.min(root.monitorRestartMaxDelay, root._powerProfileWatcherRestartDelay * 2);
+            powerProfileWatcherRestartTimer.restart();
+        }
+    }
+
+    Timer {
+        id: powerProfileWatcherRestartTimer
+
+        interval: 1000
+        repeat: false
+        onTriggered: powerProfileWatcher.running = true
     }
 
     ControlPanelPopup {

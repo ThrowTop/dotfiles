@@ -1,10 +1,16 @@
 #!/bin/sh
 
-: "${HYPRV_NMCLI_BROKEN_MARKER:=/tmp/hyprv-nmcli-broken}"
+: "${HYPRV_RUNTIME_DIR:=${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}/hyprv}"
+: "${HYPRV_NMCLI_BROKEN_MARKER:=$HYPRV_RUNTIME_DIR/nmcli-broken}"
 : "${HYPRV_NMCLI_RETRY_SECONDS:=20}"
+
+ensure_runtime_dir() {
+    mkdir -p "$HYPRV_RUNTIME_DIR" 2>/dev/null || :
+}
 
 mark_nmcli_failed() {
     failed_at="$(date +%s 2>/dev/null || printf '0')"
+    ensure_runtime_dir
     printf '%s\n' "$failed_at" > "$HYPRV_NMCLI_BROKEN_MARKER" 2>/dev/null || :
 }
 
