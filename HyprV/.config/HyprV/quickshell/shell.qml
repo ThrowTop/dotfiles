@@ -5,17 +5,18 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
-import Quickshell.Services.Mpris
-import Quickshell.Services.Pipewire
 import Quickshell.Services.SystemTray
 import Quickshell.Services.UPower
 import Quickshell.Wayland
 import "bar"
+import "features/audio"
 import "features/bluetooth"
 import "features/network"
 import "features/power"
 import "features/control"
+import "features/media"
 import "features/quickadjust"
+import "features/notifications"
 import "features/system"
 import "features/tray"
 
@@ -57,8 +58,8 @@ ShellRoot {
     readonly property string bluetoothActionMessage: bluetoothController.actionMessage
     readonly property bool bluetoothActionBusy: bluetoothController.actionBusy
     readonly property bool _bluetoothStatusInitialized: bluetoothController.statusInitialized
-    property string notificationAlt: "none"
-    property string notificationTooltip: ""
+    readonly property string notificationAlt: notificationController.alt
+    readonly property string notificationTooltip: notificationController.tooltip
     property string fluentDarkIconDir: ""
     property string fluentBaseIconDir: ""
     property var trayMenuController: null
@@ -69,26 +70,25 @@ ShellRoot {
     readonly property alias bluetoothAdapterObject: bluetoothController.adapterObject
     readonly property alias bluetoothDeviceObjects: bluetoothController.deviceObjects
     readonly property string brightnessScriptPath: configDir + "/quickshell/scripts/brightness.sh"
-    readonly property string audioVolumeScriptPath: configDir + "/quickshell/scripts/audio-volume.sh"
     readonly property string iconThemeLocatorScriptPath: configDir + "/quickshell/scripts/icon-theme-locator.sh"
     readonly property string mediaFocusScriptPath: configDir + "/quickshell/scripts/media-focus.sh"
     readonly property string openManagerScriptPath: configDir + "/quickshell/scripts/open-manager.sh"
     readonly property int brightnessUiStepPercent: 2
     property int brightnessPercent: 50
-    property bool dndEnabled: false
+    readonly property bool dndEnabled: notificationController.dndEnabled
     property bool screenRecording: false
-    property string powerProfile: "balanced"
-    property bool preventSleepEnabled: false
-    readonly property var mediaPlayers: Array.from(Mpris.players.values || [])
-    readonly property var activeMediaPlayer: preferredMediaPlayer()
-    readonly property bool mediaAvailable: activeMediaPlayer !== null
-    readonly property bool mediaPlaying: activeMediaPlayer ? activeMediaPlayer.isPlaying : false
-    readonly property string mediaTitle: activeMediaPlayer ? activeMediaPlayer.trackTitle : ""
-    readonly property string mediaArtist: activeMediaPlayer ? activeMediaPlayer.trackArtist : ""
-    readonly property string mediaPlayerName: activeMediaPlayer ? (activeMediaPlayer.identity || activeMediaPlayer.dbusName || "") : ""
-    readonly property string mediaArtUrl: activeMediaPlayer ? activeMediaPlayer.trackArtUrl : ""
-    property real mediaPositionSeconds: activeMediaPlayer ? Math.max(0, activeMediaPlayer.position || 0) : 0
-    readonly property real mediaLengthSeconds: activeMediaPlayer ? Math.max(0, activeMediaPlayer.length || 0) : 0
+    readonly property string powerProfile: powerController.profile
+    readonly property bool preventSleepEnabled: powerController.preventSleepEnabled
+    readonly property var mediaPlayers: mediaController.players
+    readonly property var activeMediaPlayer: mediaController.activePlayer
+    readonly property bool mediaAvailable: mediaController.available
+    readonly property bool mediaPlaying: mediaController.playing
+    readonly property string mediaTitle: mediaController.title
+    readonly property string mediaArtist: mediaController.artist
+    readonly property string mediaPlayerName: mediaController.playerName
+    readonly property string mediaArtUrl: mediaController.artUrl
+    readonly property real mediaPositionSeconds: mediaController.positionSeconds
+    readonly property real mediaLengthSeconds: mediaController.lengthSeconds
     property bool audioSpectrumCavaAvailable: false
     property var audioSpectrumValues: []
     property var primaryBarWindow: null
@@ -108,22 +108,7 @@ ShellRoot {
     property bool _showQuickAdjustAfterBrightnessProbe: false
     property bool _brightnessProbeQueued: false
     property int _pendingBrightnessPercent: -1
-    property int _pendingAudioVolumePercent: -1
-    property bool _audioApplyPending: false
-    property int _audioStateMonitorRestartDelay: 1000
-    property int _notificationWatcherRestartDelay: 1000
-    property int _powerProfileWatcherRestartDelay: 1000
     readonly property int monitorRestartMaxDelay: 30000
-    readonly property var pipewireTrackedObjects: {
-        const objects = [];
-        if (root.defaultAudioSink) {
-            objects.push(root.defaultAudioSink);
-            if (root.defaultAudioSink.audio) {
-                objects.push(root.defaultAudioSink.audio);
-            }
-        }
-        return objects;
-    }
     readonly property bool networkConnected: defaultInterface.length > 0
     readonly property string activeNetworkType: networkTypeForInterface(defaultInterface)
     readonly property bool wifiConnectionActive: activeNetworkType === "wifi"
@@ -142,8 +127,26 @@ ShellRoot {
         id: bluetoothController
     }
 
-    PwObjectTracker {
-        objects: root.pipewireTrackedObjects
+    AudioController {
+        id: audioController
+    }
+
+    MediaController {
+        id: mediaController
+
+        shellRoot: root
+    }
+
+    NotificationController {
+        id: notificationController
+
+        shellRoot: root
+    }
+
+    PowerController {
+        id: powerController
+
+        shellRoot: root
     }
 
     readonly property real pillOpacity: 0.25
@@ -196,10 +199,12 @@ ShellRoot {
     }
     readonly property int activeWorkspaceId: Hyprland.focusedWorkspace?.id || 1
     readonly property string activeWindowTitle: Hyprland.activeToplevel?.title || ""
-    readonly property var defaultAudioSink: Pipewire.defaultAudioSink
-    property bool audioAvailable: false
-    property bool audioMuted: false
-    property int audioVolumePercent: 0
+    readonly property var defaultAudioSink: audioController.defaultOutputDevice
+    readonly property var audioOutputDevices: audioController.outputDevices
+    readonly property bool audioAvailable: audioController.available
+    readonly property bool audioMuted: audioController.muted
+    readonly property int audioVolumePercent: audioController.volumePercent
+    readonly property string audioOutputName: audioController.defaultOutputName
     readonly property var batteryDevice: UPower.displayDevice
     readonly property real batteryPercent: {
         const percent = batteryDevice?.percentage;
@@ -365,53 +370,6 @@ ShellRoot {
         root.islandOsdType      = "sidetext";
         root.islandOsdTrigger   = !root.islandOsdTrigger;
     }
-    onActiveMediaPlayerChanged: {
-        root.mediaPositionSeconds = root.activeMediaPlayer ? Math.max(0, root.activeMediaPlayer.position || 0) : 0;
-    }
-    onMediaPlayingChanged: {
-        root.mediaPositionSeconds = root.activeMediaPlayer ? Math.max(0, root.activeMediaPlayer.position || 0) : 0;
-    }
-
-    function preferredMediaPlayer() {
-        const players = root.mediaPlayers;
-        if (!players || players.length === 0) {
-            return null;
-        }
-
-        let fallback = null;
-        let paused = null;
-        let content = null;
-        let pausedContent = null;
-        for (let i = 0; i < players.length; i++) {
-            const player = players[i];
-            if (!player) {
-                continue;
-            }
-            if (!fallback) {
-                fallback = player;
-            }
-            if (player.isPlaying) {
-                return player;
-            }
-            if (!paused && player.playbackState === MprisPlaybackState.Paused) {
-                paused = player;
-            }
-            const hasContent = (player.trackTitle || "").length > 0
-                || (player.trackArtist || "").length > 0
-                || (player.trackArtUrl || "").length > 0;
-            if (hasContent) {
-                if (!content) {
-                    content = player;
-                }
-                if (!pausedContent && player.playbackState === MprisPlaybackState.Paused) {
-                    pausedContent = player;
-                }
-            }
-        }
-
-        return pausedContent || content || paused || fallback;
-    }
-
     function resetMediaState() {}
     function updateMediaState(output) {}
 
@@ -437,53 +395,23 @@ ShellRoot {
         return root.audioVolumePercent;
     }
 
-    function updateAudioStateFromWpctl(text) {
-        const line = (text || "").trim();
-        if (line.length === 0) {
-            return;
-        }
-        const match = line.match(/Volume:\s*([0-9.]+)/i);
-        if (!match) {
-            root.audioAvailable = false;
-            return;
-        }
-        if (audioAdjustmentSettleTimer.running) {
-            return;
-        }
-        root.audioAvailable = true;
-        root.audioMuted = /\[MUTED\]/i.test(line);
-        root.audioVolumePercent = Math.max(0, Math.min(100, Math.round(Number(match[1]) * 100)));
-    }
-
     function setAudioVolumePercent(value) {
-        const nextValue = Math.max(0, Math.min(100, Math.round(value)));
-        root._pendingAudioVolumePercent = nextValue;
-        root.audioAvailable = true;
-        if (nextValue > 0) {
-            root.audioMuted = false;
-        }
-        root.audioVolumePercent = nextValue;
-        root.triggerVolumeOsd(nextValue);
-        audioAdjustmentSettleTimer.restart();
-        audioApplyDebounce.restart();
+        audioController.setVolumePercent(value);
     }
 
     function adjustAudioVolume(delta) {
-        if (delta === 0) {
-            return;
-        }
-        const baseValue = root._pendingAudioVolumePercent >= 0 ? root._pendingAudioVolumePercent : root.audioVolumePercent;
-        root.setAudioVolumePercent(baseValue + delta);
+        audioController.adjustVolume(delta);
     }
 
     function toggleAudioMute() {
-        const nextMuted = !root.audioMuted;
-        root.runDetached(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"]);
-        root.audioAvailable = true;
-        root.audioMuted = nextMuted;
-        root.triggerVolumeOsd(nextMuted ? 0 : root.audioVolumePercent);
-        audioAdjustmentSettleTimer.restart();
+        audioController.toggleMute();
     }
+
+    function audioDeviceTitle(device) { return audioController.deviceTitle(device); }
+    function audioDeviceSubtitle(device) { return audioController.deviceSubtitle(device); }
+    function audioDeviceIcon(device) { return audioController.deviceIcon(device); }
+    function isDefaultAudioOutput(device) { return audioController.isDefaultOutput(device); }
+    function setDefaultAudioOutput(device) { audioController.setDefaultOutputDevice(device); }
     function isWifiInterfaceName(name) {
         const iface = (name || "").toLowerCase();
         return iface.startsWith("wl") || iface.startsWith("wlan") || iface.startsWith("wifi");
@@ -510,9 +438,9 @@ ShellRoot {
     readonly property string networkText: defaultInterface ? humanRate(networkRxRate + networkTxRate) : "nocon"
     readonly property bool wifiWidgetVisible: wifiCapabilityDetected || wifiDevicePresent || wifiNetworks.length > 0 || isWifiInterfaceName(defaultInterface)
     readonly property bool networkWidgetVisible: networkConnected || wifiWidgetVisible
-    readonly property bool notificationDoNotDisturb: dndEnabled || notificationAlt.indexOf("dnd") >= 0
-    readonly property bool notificationHasDot: notificationAlt.indexOf("notification") >= 0
-    readonly property string notificationIcon: notificationDoNotDisturb ? "󰂛" : ""
+    readonly property bool notificationDoNotDisturb: notificationController.doNotDisturb
+    readonly property bool notificationHasDot: notificationController.hasDot
+    readonly property string notificationIcon: notificationController.icon
     readonly property var sortedTrayItems: {
         const items = Array.from(SystemTray.items.values || []);
         const hideDedicatedWifiItems = root.networkWidgetVisible;
@@ -552,7 +480,7 @@ ShellRoot {
             } else if (line.startsWith("recording=")) {
                 root.screenRecording = line.slice(10).trim() === "true";
             } else if (line.startsWith("prevent_sleep=")) {
-                root.preventSleepEnabled = line.slice(14).trim() === "true";
+                powerController.updatePreventSleepEnabled(line.slice(14).trim() === "true");
             }
         }
     }
@@ -862,19 +790,7 @@ ShellRoot {
     }
 
     function updateNotificationState(raw) {
-        if (!raw) {
-            notificationAlt = "none";
-            notificationTooltip = "";
-            return;
-        }
-        try {
-            const data = JSON.parse(raw);
-            notificationAlt = data.alt || "none";
-            notificationTooltip = data.tooltip || "";
-        } catch (_) {
-            notificationAlt = "none";
-            notificationTooltip = "";
-        }
+        notificationController.updateFromJson(raw);
     }
 
     function trayItemPriority(item) {
@@ -1012,6 +928,10 @@ ShellRoot {
         trayOverflowPopup.closePopup();
     }
 
+    function openAudioPopup(sourceItem, parentWindow) {
+        audioPopup.toggleFor(sourceItem, parentWindow || primaryBarWindow);
+    }
+
     function openControlPanelPopup(sourceItem, parentWindow) {
         controlPanelPopup.toggleFor(sourceItem, parentWindow || primaryBarWindow);
     }
@@ -1059,6 +979,10 @@ ShellRoot {
     function bluetoothConnect(address, paired, label) { bluetoothController.connectDevice(address, paired, label); }
     function bluetoothDisconnect(address, label) { bluetoothController.disconnectDevice(address, label); }
     function bluetoothRemove(address, label) { bluetoothController.removeDevice(address, label); }
+    function toggleNotificationPanel() { notificationController.togglePanel(); }
+    function toggleDnd() { notificationController.toggleDnd(); }
+    function setPowerProfile(profile) { powerController.setProfile(profile); }
+    function togglePreventSleep() { powerController.togglePreventSleep(); }
 
     function runDetached(command) {
         if (!command || command.length === 0) {
@@ -1118,49 +1042,31 @@ ShellRoot {
     }
 
     function refreshMediaStatus() {
-        if (root.activeMediaPlayer) {
-            root.mediaPositionSeconds = Math.max(0, root.activeMediaPlayer.position || 0);
-        }
+        mediaController.refresh();
     }
 
     function seekMedia(positionSeconds) {
-        const rawTarget = Number(positionSeconds);
-        if (!isFinite(rawTarget) || !root.activeMediaPlayer) {
-            return;
-        }
-        const lengthSeconds = Number(mediaLengthSeconds);
-        const target = lengthSeconds > 0 ? Math.max(0, Math.min(lengthSeconds, rawTarget)) : Math.max(0, rawTarget);
-        mediaPositionSeconds = target;
-        root.activeMediaPlayer.position = target;
+        mediaController.seek(positionSeconds);
     }
 
     function previousMedia() {
-        if (root.activeMediaPlayer) {
-            root.activeMediaPlayer.previous();
-        }
+        mediaController.previous();
     }
 
     function toggleMediaPlayback() {
-        if (root.activeMediaPlayer) {
-            root.activeMediaPlayer.togglePlaying();
-        }
+        mediaController.togglePlayback();
     }
 
     function nextMedia() {
-        if (root.activeMediaPlayer) {
-            root.activeMediaPlayer.next();
-        }
+        mediaController.next();
     }
 
     function focusMediaApp() {
-        const playerName = root.activeMediaPlayer ? (root.activeMediaPlayer.dbusName || "").trim() : "";
-        if (playerName.length === 0) {
-            return;
-        }
-        runDetached([mediaFocusScriptPath, playerName]);
+        mediaController.focusApp();
     }
 
-    function refreshPowerProfileStatus() {}
+    function refreshPowerProfileStatus() { powerController.refreshProfile(); }
+    function refreshPreventSleepStatus() { powerController.refreshPreventSleep(); }
 
     Process {
         id: fluentIconLocator
@@ -1367,130 +1273,6 @@ ShellRoot {
         stderr: StdioCollector {}
     }
 
-    Timer {
-        id: mediaPositionTimer
-
-        interval: 1000
-        repeat: true
-        running: root.mediaAvailable && root.mediaPlaying
-        onTriggered: if (root.activeMediaPlayer) {
-            root.mediaPositionSeconds = Math.max(0, root.activeMediaPlayer.position || root.mediaPositionSeconds + 1);
-        }
-    }
-
-    Timer {
-        id: audioApplyDebounce
-
-        interval: 45
-        repeat: false
-        onTriggered: {
-            if (root._pendingAudioVolumePercent < 0) {
-                return;
-            }
-            if (audioApplyProcess.running) {
-                root._audioApplyPending = true;
-                return;
-            }
-            const nextValue = root._pendingAudioVolumePercent;
-            audioApplyProcess.command = [root.audioVolumeScriptPath, "set-percent", String(nextValue)];
-            audioApplyProcess.running = true;
-        }
-    }
-
-    Timer {
-        id: audioAdjustmentSettleTimer
-
-        interval: 220
-        repeat: false
-    }
-
-    Process {
-        id: audioApplyProcess
-
-        running: false
-        stdout: StdioCollector {}
-        stderr: StdioCollector {}
-
-        onExited: {
-            if (root._audioApplyPending) {
-                root._audioApplyPending = false;
-                audioApplyDebounce.restart();
-            }
-        }
-    }
-
-    Process {
-        id: audioStateMonitor
-
-        running: true
-        command: [root.audioVolumeScriptPath, "monitor"]
-
-        stdout: SplitParser {
-            splitMarker: "\n"
-            onRead: function(line) {
-                root._audioStateMonitorRestartDelay = 1000;
-                root.updateAudioStateFromWpctl(line);
-            }
-        }
-
-        onExited: function() {
-            audioStateMonitorRestartTimer.interval = root._audioStateMonitorRestartDelay;
-            root._audioStateMonitorRestartDelay = Math.min(root.monitorRestartMaxDelay, root._audioStateMonitorRestartDelay * 2);
-            audioStateMonitorRestartTimer.restart();
-        }
-    }
-
-    Timer {
-        id: audioStateMonitorRestartTimer
-
-        interval: 1000
-        repeat: false
-        onTriggered: audioStateMonitor.running = true
-    }
-
-    // D-Bus watcher: fires instantly on notification count or DND changes
-    Process {
-        id: notificationWatcher
-
-        running: true
-        command: [
-            "stdbuf", "-oL",
-            "gdbus", "monitor",
-            "--session",
-            "--dest", "org.erikreider.swaync",
-            "--object-path", "/org/erikreider/swaync/cc"
-        ]
-        stdout: SplitParser {
-            splitMarker: "\n"
-            onRead: function(line) {
-                // Signal: SubscribeV2 (uint32 count, bool dnd, bool cc_open, bool inhibited)
-                const m = line.match(/SubscribeV2 \(uint32 (\d+), (true|false),/);
-                if (!m) return;
-                root._notificationWatcherRestartDelay = 1000;
-                const count = parseInt(m[1]);
-                const dnd = m[2] === "true";
-                root.dndEnabled = dnd;
-                root.notificationAlt = count > 0 ? "notification" : "none";
-                root.notificationTooltip = count === 0 ? ""
-                    : count + " notification" + (count !== 1 ? "s" : "");
-            }
-        }
-        stderr: StdioCollector {}
-        onExited: function() {
-            notificationWatcherRestartTimer.interval = root._notificationWatcherRestartDelay;
-            root._notificationWatcherRestartDelay = Math.min(root.monitorRestartMaxDelay, root._notificationWatcherRestartDelay * 2);
-            notificationWatcherRestartTimer.restart();
-        }
-    }
-
-    Timer {
-        id: notificationWatcherRestartTimer
-
-        interval: 1000
-        repeat: false
-        onTriggered: notificationWatcher.running = true
-    }
-
     TrayMenuPopup {
         id: trayMenuPopup
 
@@ -1533,83 +1315,14 @@ ShellRoot {
         }
     }
 
-    // One-shot: read initial swaync state — returns (dnd, cc_open, uint32 count, inhibited)
-    Process {
-        id: notificationInitProbe
-
-        running: true
-        command: [
-            "gdbus", "call", "--session",
-            "--dest", "org.erikreider.swaync",
-            "--object-path", "/org/erikreider/swaync/cc",
-            "--method", "org.erikreider.swaync.cc.GetSubscribeData"
-        ]
-        stdout: StdioCollector { id: notificationInitStdout }
-        onExited: function() {
-            const text = (notificationInitStdout.text || "").trim();
-            const m = text.match(/\((\w+), \w+, uint32 (\d+),/);
-            if (m) {
-                root.dndEnabled = m[1] === "true";
-                const count = parseInt(m[2]);
-                root.notificationAlt = count > 0 ? "notification" : "none";
-            }
-        }
-    }
-
-    // One-shot: read current profile on startup
-    Process {
-        id: powerProfileInitProbe
-
-        running: true
-        command: ["powerprofilesctl", "get"]
-        stdout: StdioCollector { id: powerProfileInitStdout }
-        onExited: function() {
-            const profile = (powerProfileInitStdout.text || "").trim();
-            if (profile.length > 0) root.powerProfile = profile;
-        }
-    }
-
-    // Persistent D-Bus watcher: fires on every profile change
-    Process {
-        id: powerProfileWatcher
-
-        running: true
-        command: [
-            "stdbuf", "-oL",
-            "gdbus", "monitor",
-            "--system",
-            "--dest", "net.hadess.PowerProfiles",
-            "--object-path", "/net/hadess/PowerProfiles"
-        ]
-        stdout: SplitParser {
-            splitMarker: "\n"
-            onRead: function(line) {
-                // Line: /net/hadess/PowerProfiles: ...PropertiesChanged ('net.hadess.PowerProfiles', {'ActiveProfile': <'balanced'>}, ...)
-                const m = line.match(/'ActiveProfile':\s*<'([^']+)'>/);
-                if (m) {
-                    root._powerProfileWatcherRestartDelay = 1000;
-                    root.powerProfile = m[1];
-                }
-            }
-        }
-        stderr: StdioCollector {}
-        onExited: function() {
-            powerProfileWatcherRestartTimer.interval = root._powerProfileWatcherRestartDelay;
-            root._powerProfileWatcherRestartDelay = Math.min(root.monitorRestartMaxDelay, root._powerProfileWatcherRestartDelay * 2);
-            powerProfileWatcherRestartTimer.restart();
-        }
-    }
-
-    Timer {
-        id: powerProfileWatcherRestartTimer
-
-        interval: 1000
-        repeat: false
-        onTriggered: powerProfileWatcher.running = true
-    }
-
     ControlPanelPopup {
         id: controlPanelPopup
+
+        shellRoot: root
+    }
+
+    AudioPopup {
+        id: audioPopup
 
         shellRoot: root
     }

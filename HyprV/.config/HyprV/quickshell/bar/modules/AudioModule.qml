@@ -4,6 +4,7 @@ Item {
     id: module
 
     required property var shellRoot
+    required property var parentWindow
 
     implicitWidth: 28
     implicitHeight: shellRoot.barHeight
@@ -24,9 +25,9 @@ Item {
         cursorShape: Qt.PointingHandCursor
         onClicked: function(mouse) {
             if (mouse.button === Qt.LeftButton) {
-                module.shellRoot.toggleAudioMute();
+                module.shellRoot.openAudioPopup(module, module.parentWindow);
             } else {
-                module.shellRoot.runDetached(["pavucontrol"]);
+                module.shellRoot.toggleAudioMute();
             }
         }
     }

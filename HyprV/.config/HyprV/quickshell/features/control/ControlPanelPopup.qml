@@ -169,8 +169,7 @@ Item {
     }
 
     function toggleDnd() {
-        shellRoot.dndEnabled = !shellRoot.dndEnabled;
-        runAndRefresh(["swaync-client", "-d", "-sw"]);
+        shellRoot.toggleDnd();
     }
 
     function toggleRecording() {
@@ -184,8 +183,8 @@ Item {
     }
 
     function togglePreventSleep() {
-        shellRoot.preventSleepEnabled = !shellRoot.preventSleepEnabled;
-        runAndRefresh([shellRoot.configDir + "/quickshell/scripts/prevent-sleep.sh", "toggle"]);
+        shellRoot.togglePreventSleep();
+        controlPanelRefreshTimer.restart();
     }
 
     function toggleWifiExpanded() {
@@ -235,8 +234,7 @@ Item {
         if (!profile) {
             return;
         }
-        shellRoot.powerProfile = profile;
-        shellRoot.runDetached(["powerprofilesctl", "set", profile]);
+        shellRoot.setPowerProfile(profile);
         powerProfileFollowupRefresh.restart();
     }
 
@@ -397,7 +395,7 @@ Item {
                 width: parent.width
                 shellRoot: popupRoot.shellRoot
 
-                onCloseRequested: popupRoot.showMainPage()
+                onCloseRequested: popupRoot.closePopup()
             }
         }
     }

@@ -1,4 +1,3 @@
-local hlc = require("hlc")
 local M = {}
 
 -- Resolve symlinks so the path matches what launch.sh passed to quickshell -p
@@ -12,12 +11,17 @@ end
 
 local QS = resolve(settings.quickshell)
 
+local function shell_quote(value)
+    return "'" .. tostring(value):gsub("'", "'\\''") .. "'"
+end
+
 local function ipc(target, func, ...)
-    local cmd = "quickshell -p " .. QS .. " ipc call " .. target .. " " .. func
+    local cmd = "quickshell -p " .. shell_quote(QS)
+        .. " ipc call " .. shell_quote(target) .. " " .. shell_quote(func)
     for _, v in ipairs({...}) do
-        cmd = cmd .. ' "' .. tostring(v) .. '"'
+        cmd = cmd .. " " .. shell_quote(v)
     end
-    hlc.d.exec_cmd("bash -c '" .. cmd .. "'")
+    hl.exec_cmd(cmd)
 end
 
 -- OSD: show a sidetext notification in the Dynamic Island.

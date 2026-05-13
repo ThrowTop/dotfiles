@@ -30,21 +30,18 @@ Recent completed cleanup:
 
 ## Phase 1: Stop Process And Command Fragility
 
-Status: `Working`
+Status: `Done`
 
 Goal: make process execution less brittle before deeper refactors.
 
 Tasks:
 
 - [x] Add restart backoff for long-running monitors in `shell.qml`.
-  - Targets: `audioStateMonitor`, `wifiMonitor`, notification watcher, power profile watcher.
+  - Targets: Wi-Fi monitor, notification watcher, and power profile watcher.
   - Problem: immediate `Qt.callLater()` restart can spin if a dependency exits quickly.
 - [x] Move embedded shell fragments out of QML into scripts.
   - Targets: Wi-Fi manager launcher, Bluetooth manager launcher, media app focus helper, Fluent icon locator, audio volume apply.
   - Problem: shell-in-QML is hard to lint and easy to break with quoting.
-- [ ] Replace broad recorder `pkill` stop behavior with tracked PID control.
-  - Target: control center screen recording action.
-  - Problem: current stop command can kill recorder processes not started by HyprV.
 - [x] Move transient marker files out of global `/tmp`.
   - Target: `HYPRV_NMCLI_BROKEN_MARKER`.
   - Preferred: `$XDG_RUNTIME_DIR/hyprv/` for session state or `$XDG_STATE_HOME/hyprv/` for persistent state.
@@ -67,14 +64,18 @@ Tasks:
 - [x] Extract `features/network/NetworkController.qml`.
   - Move Wi-Fi status parsing, cached network handling, action process state, action messages, and refresh timers out of `shell.qml`.
   - Keep compatibility aliases/methods in `shell.qml` during the transition.
-- [ ] Extract `features/audio/AudioController.qml`.
-  - Move volume state, mute state, audio apply debounce, `wpctl`/monitor process handling, and spectrum availability handling.
-- [ ] Extract `features/media/MediaController.qml`.
+- [x] Extract `features/audio/AudioController.qml`.
+  - Move output volume, mute state, default output selection, and Pipewire output device snapshots out of `shell.qml`.
+  - Keep compatibility aliases/methods in `shell.qml` during the transition.
+  - Added a small `features/audio/AudioPopup.qml` for default output selection from the bar audio module.
+- [x] Extract `features/media/MediaController.qml`.
   - Move active player selection, media position timer, media commands, and focus-app helper.
-- [ ] Extract `features/power/PowerController.qml` if battery and power profile logic continues to grow.
-  - Move battery parsing helpers, charge limit status, power profile watch/apply.
-- [ ] Extract `features/notifications/NotificationController.qml`.
+- [x] Extract `features/power/PowerController.qml`.
+  - Move power profile watch/apply and prevent-sleep state/actions.
+  - Battery parsing and charge-limit UI stay in the battery popup for now.
+- [x] Extract `features/notifications/NotificationController.qml`.
   - Move swaync monitor, initial probe, DND state, notification count/dot state.
+  - Bar and control-center actions call controller-backed root compatibility methods.
 
 Verification:
 
@@ -223,12 +224,15 @@ Reason this is later:
   - Done: added monitor restart backoff for audio, Wi-Fi, notifications, and power profile watchers.
   - Done: moved the nmcli failure marker under a HyprV runtime directory instead of bare `/tmp`.
   - Verified: `bash -n`, focused `qmllint`, `git diff --check`, Quickshell reload, and clean runtime `log.log`.
-  - Pending: tracked PID control for screen recording. The configured external recorder helper was not readable/present from this checkout, so this needs either that script path or a new owned recorder wrapper.
 - Network controller extraction: `Done`.
   - Moved Wi-Fi state, cached network handling, status polling, action process state, follow-up refresh, and `nmcli monitor` ownership into `features/network/NetworkController.qml`.
   - Kept `shell.qml` compatibility aliases and wrapper methods for current UI consumers.
   - Fixed follow-up regression: the bar network icon must stay visible even before/without positive `networkWidgetVisible` state.
   - Verified: focused `qmllint`, `bash -n`, Quickshell reload, clean runtime `log.log`, residual grep for old root Wi-Fi internals, and screenshot confirmation of the right-side bar icon.
+- Audio controller extraction and basic output picker: `Done`.
+  - Moved output volume/mute/default sink state to `features/audio/AudioController.qml` using native Quickshell Pipewire APIs.
+  - Added reusable `components/DeviceRow.qml` and `features/audio/AudioPopup.qml`.
+  - Kept existing root audio compatibility properties and methods for bar, quick-adjust, control panel, and island consumers.
 - `shellRoot` null-guard cleanup: `Done`.
   - Result: reload succeeded.
   - Follow-up: remove leftover impossible checks such as `enabled: shellRoot !== null` where found.
@@ -239,12 +243,11 @@ Reason this is later:
 
 ## Suggested Work Order
 
-1. Phase 1 process and command fragility.
-2. Shared popup host for simple popups.
-3. Wi-Fi popup split.
-4. Audio controller and audio popup.
-5. Dynamic Island split.
-6. Hardware assumption cleanup.
-7. Lint-noise reduction.
+1. Phase 3 popup lifecycle extraction for simple popups.
+2. Wi-Fi popup split.
+3. Dynamic Island split.
+4. Battery detail logic cleanup behind `PowerController` if it grows.
+5. Hardware assumption cleanup.
+6. Lint-noise reduction.
 
 This order attacks the highest-risk runtime behavior first, then reduces file size and duplicated UI state after the system is easier to supervise.

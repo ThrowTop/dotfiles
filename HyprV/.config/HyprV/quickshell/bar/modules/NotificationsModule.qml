@@ -41,9 +41,9 @@ Item {
 
         onClicked: function(mouse) {
             if (mouse.button === Qt.LeftButton) {
-                module.shellRoot.runDetached(["swaync-client", "-t", "-sw"]);
+                module.shellRoot.toggleNotificationPanel();
             } else if (mouse.button === Qt.RightButton) {
-                module.shellRoot.runDetached(["swaync-client", "-d", "-sw"]);
+                module.shellRoot.toggleDnd();
             }
         }
     }

@@ -140,6 +140,7 @@ PanelWindow {
 
                 AudioModule {
                     shellRoot: barWindow.shellRoot
+                    parentWindow: barWindow
                 }
 
                 Item {
