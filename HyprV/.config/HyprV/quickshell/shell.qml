@@ -12,6 +12,7 @@ import Quickshell.Services.UPower
 import Quickshell.Wayland
 import "bar"
 import "features/bluetooth"
+import "features/network"
 import "features/power"
 import "features/control"
 import "features/quickadjust"
@@ -36,21 +37,19 @@ ShellRoot {
     property var memoryHistory: []
     property var networkHistory: []
     property var cpuCoreUsages: []
-    property bool wifiDevicePresent: false
-    property bool wifiRadioEnabled: false
-    property bool wifiHardwareEnabled: true
-    property bool wifiConnected: false
-    property real wifiSignalStrength: 0
-    property string wifiInterface: ""
-    property string wifiSsid: ""
-    property bool wifiSecure: false
-    property var wifiNetworks: []
-    property bool wifiCapabilityDetected: false
-    property string wifiActionMessage: ""
-    property bool wifiActionBusy: false
-    property bool _wifiStatusInitialized: false
-    property var _cachedWifiNetworks: []
-    property double _cachedWifiNetworksTimestamp: 0
+    property alias wifiDevicePresent: networkController.devicePresent
+    property alias wifiRadioEnabled: networkController.radioEnabled
+    property alias wifiHardwareEnabled: networkController.hardwareEnabled
+    property alias wifiConnected: networkController.connected
+    property alias wifiSignalStrength: networkController.signalStrength
+    property alias wifiInterface: networkController.iface
+    property alias wifiSsid: networkController.ssid
+    property alias wifiSecure: networkController.secure
+    property alias wifiNetworks: networkController.networks
+    property alias wifiCapabilityDetected: networkController.capabilityDetected
+    property alias wifiActionMessage: networkController.actionMessage
+    property alias wifiActionBusy: networkController.actionBusy
+    readonly property alias _wifiStatusInitialized: networkController.statusInitialized
     readonly property bool bluetoothPresent: bluetoothController.present
     readonly property bool bluetoothDiscovering: bluetoothController.discovering
     readonly property bool bluetoothPairable: bluetoothController.pairable
@@ -64,7 +63,7 @@ ShellRoot {
     property string fluentBaseIconDir: ""
     property var trayMenuController: null
 
-    property bool wifiEnabled: true
+    property alias wifiEnabled: networkController.radioEnabled
     readonly property bool bluetoothEnabled: bluetoothController.powered
     property alias bluetoothShowUnnamedDevices: bluetoothController.showUnnamedDevices
     readonly property alias bluetoothAdapterObject: bluetoothController.adapterObject
@@ -112,7 +111,6 @@ ShellRoot {
     property int _pendingAudioVolumePercent: -1
     property bool _audioApplyPending: false
     property int _audioStateMonitorRestartDelay: 1000
-    property int _wifiMonitorRestartDelay: 1000
     property int _notificationWatcherRestartDelay: 1000
     property int _powerProfileWatcherRestartDelay: 1000
     readonly property int monitorRestartMaxDelay: 30000
@@ -879,106 +877,6 @@ ShellRoot {
         }
     }
 
-    function resetWifiStatus() {
-        wifiDevicePresent = false;
-        wifiRadioEnabled = false;
-        wifiHardwareEnabled = true;
-        wifiConnected = false;
-        wifiInterface = "";
-        wifiSsid = "";
-        wifiSecure = false;
-        wifiSignalStrength = 0;
-        wifiNetworks = [];
-    }
-
-    function cloneWifiNetworks(networks) {
-        if (!Array.isArray(networks)) {
-            return [];
-        }
-        return networks.map(network => ({
-            active: !!network.active,
-            ssid: network.ssid || "",
-            signal: Number(network.signal) || 0,
-            security: network.security || "",
-            bars: network.bars || "",
-            secure: !!network.secure,
-            known: !!network.known,
-            enterprise: !!network.enterprise
-        }));
-    }
-
-    function resolveWifiNetworks(data) {
-        const nextNetworks = Array.isArray(data.networks) ? data.networks : [];
-        if (nextNetworks.length > 0) {
-            _cachedWifiNetworks = cloneWifiNetworks(nextNetworks);
-            _cachedWifiNetworksTimestamp = Date.now();
-            return nextNetworks;
-        }
-
-        const cacheAgeMs = Date.now() - _cachedWifiNetworksTimestamp;
-        const shouldReuseCachedNetworks = !!data.present
-            && data.hardwareEnabled !== false
-            && (!!data.enabled || !!data.connected)
-            && _cachedWifiNetworks.length > 0
-            && cacheAgeMs < 30000;
-
-        if (shouldReuseCachedNetworks) {
-            return cloneWifiNetworks(_cachedWifiNetworks);
-        }
-
-        if (!data.present || data.hardwareEnabled === false || !data.enabled) {
-            _cachedWifiNetworks = [];
-            _cachedWifiNetworksTimestamp = 0;
-        }
-
-        return [];
-    }
-
-    function applyWifiStatus(data) {
-        const devicePresent = !!data.present;
-        const iface = data.iface || "";
-
-        resetWifiStatus();
-        wifiHardwareEnabled = data.hardwareEnabled !== false;
-        wifiDevicePresent = devicePresent;
-        if (devicePresent || iface.length > 0) {
-            wifiCapabilityDetected = true;
-        }
-
-        if (!devicePresent) {
-            _cachedWifiNetworks = [];
-            _cachedWifiNetworksTimestamp = 0;
-            _wifiStatusInitialized = true;
-            return;
-        }
-
-        wifiRadioEnabled = !!data.enabled;
-        wifiEnabled = wifiRadioEnabled;
-        wifiConnected = !!data.connected;
-        wifiInterface = iface;
-        wifiSsid = data.ssid || "";
-        wifiSecure = (data.security || "").trim().length > 0;
-        wifiSignalStrength = wifiConnected ? Math.max(0, Math.min(1, (Number(data.signal) || 0) / 100)) : 0;
-        wifiNetworks = resolveWifiNetworks(data);
-        _wifiStatusInitialized = true;
-    }
-
-    function updateWifiStatus(raw) {
-        if (!raw) {
-            if (!_wifiStatusInitialized) {
-                resetWifiStatus();
-            }
-            return;
-        }
-        try {
-            applyWifiStatus(JSON.parse(raw));
-        } catch (_) {
-            if (!_wifiStatusInitialized) {
-                resetWifiStatus();
-            }
-        }
-    }
-
     function trayItemPriority(item) {
         const id = (item?.id || "").toLowerCase();
         const title = (item?.title || "").toLowerCase();
@@ -1129,7 +1027,7 @@ ShellRoot {
     }
 
     function refreshWifiStatus() {
-        wifiStatusPoll.refresh();
+        networkController.refresh();
     }
 
     function openBluetoothManager() {
@@ -1140,32 +1038,20 @@ ShellRoot {
         bluetoothController.syncFromModel();
     }
 
-    function startWifiAction(command, pendingMessage, successMessage) {
-        if (!command || command.length === 0 || wifiActionRunner.running) {
-            return;
-        }
-        wifiActionBusy = true;
-        wifiActionMessage = pendingMessage || "";
-        _wifiActionSuccessMessage = successMessage || "";
-        wifiActionRunner.command = command;
-        wifiActionRunner.running = true;
-    }
-
     function wifiSetRadio(enabled) {
-        startWifiAction([root.configDir + "/quickshell/scripts/wifi.sh", "toggle", enabled ? "on" : "off"], enabled ? "Turning Wi-Fi on..." : "Turning Wi-Fi off...", enabled ? "Wi-Fi enabled" : "Wi-Fi disabled");
+        networkController.setRadio(enabled);
     }
 
     function wifiRescan() {
-        startWifiAction([root.configDir + "/quickshell/scripts/wifi.sh", "rescan"], "Scanning for networks...", "Scan started");
+        networkController.rescan();
     }
 
     function wifiDisconnect() {
-        startWifiAction([root.configDir + "/quickshell/scripts/wifi.sh", "disconnect"], "Disconnecting...", "Disconnected");
+        networkController.disconnect();
     }
 
     function wifiConnect(ssid, password, security) {
-        const command = [root.configDir + "/quickshell/scripts/wifi.sh", "connect", ssid || "", password || "", security || ""];
-        startWifiAction(command, "Connecting to " + (ssid || "network") + "...", "Connection requested for " + (ssid || "network"));
+        networkController.connect(ssid, password, security);
     }
 
     function bluetoothSetPower(enabled) { bluetoothController.setPower(enabled); }
@@ -1307,33 +1193,6 @@ ShellRoot {
         running: false
     }
 
-    property string _wifiActionSuccessMessage: ""
-
-    Process {
-        id: wifiActionRunner
-
-        running: false
-        stdout: StdioCollector {
-            id: wifiActionStdout
-        }
-        stderr: StdioCollector {
-            id: wifiActionStderr
-        }
-
-        onExited: function(exitCode) {
-            const stdout = (wifiActionStdout.text || "").trim();
-            const stderr = (wifiActionStderr.text || "").trim();
-            wifiActionBusy = false;
-            if (exitCode === 0) {
-                wifiActionMessage = stdout.length > 0 ? stdout : _wifiActionSuccessMessage;
-            } else {
-                wifiActionMessage = stderr.length > 0 ? stderr : (stdout.length > 0 ? stdout : "Wi-Fi action failed");
-            }
-            wifiStatusPoll.refresh();
-            wifiFollowupRefresh.restart();
-        }
-    }
-
     Process {
         id: quickAdjustBrightnessProbe
 
@@ -1379,22 +1238,6 @@ ShellRoot {
         interval: 90
         repeat: false
         onTriggered: root.refreshBrightnessStatus(false)
-    }
-
-    Timer {
-        id: wifiFollowupRefresh
-
-        interval: 1500
-        repeat: false
-        onTriggered: wifiStatusPoll.refresh()
-    }
-
-    Timer {
-        id: wifiMonitorRefreshDebounce
-
-        interval: 350
-        repeat: false
-        onTriggered: root.refreshWifiStatus()
     }
 
     Timer {
@@ -1464,6 +1307,12 @@ ShellRoot {
 
     SystemStatsController {
         id: systemStatsController
+
+        shellRoot: root
+    }
+
+    NetworkController {
+        id: networkController
 
         shellRoot: root
     }
@@ -1597,51 +1446,6 @@ ShellRoot {
         interval: 1000
         repeat: false
         onTriggered: audioStateMonitor.running = true
-    }
-
-    PollCommand {
-        id: wifiStatusPoll
-
-        scheduled: false
-        interval: 8000
-        command: [root.configDir + "/quickshell/scripts/wifi.sh", "status"]
-        onUpdated: function(output, exitCode) {
-            if (exitCode === 0) {
-                root.updateWifiStatus(output);
-            }
-        }
-    }
-
-    Process {
-        id: wifiMonitor
-
-        running: true
-        command: ["nmcli", "monitor"]
-
-        stdout: SplitParser {
-            splitMarker: "\n"
-            onRead: function(line) {
-                const text = (line || "").trim();
-                if (text.length > 0) {
-                    root._wifiMonitorRestartDelay = 1000;
-                    wifiMonitorRefreshDebounce.restart();
-                }
-            }
-        }
-
-        onExited: function() {
-            wifiMonitorRestartTimer.interval = root._wifiMonitorRestartDelay;
-            root._wifiMonitorRestartDelay = Math.min(root.monitorRestartMaxDelay, root._wifiMonitorRestartDelay * 2);
-            wifiMonitorRestartTimer.restart();
-        }
-    }
-
-    Timer {
-        id: wifiMonitorRestartTimer
-
-        interval: 1000
-        repeat: false
-        onTriggered: wifiMonitor.running = true
     }
 
     // D-Bus watcher: fires instantly on notification count or DND changes

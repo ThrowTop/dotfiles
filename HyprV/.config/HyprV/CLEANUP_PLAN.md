@@ -58,22 +58,22 @@ Verification:
 
 ## Phase 2: Split ShellRoot Into Controllers
 
-Status: `Todo`
+Status: `Working`
 
 Goal: reduce `shell.qml` from god object to composition root plus compatibility wiring.
 
 Tasks:
 
-- Extract `features/network/NetworkController.qml`.
+- [x] Extract `features/network/NetworkController.qml`.
   - Move Wi-Fi status parsing, cached network handling, action process state, action messages, and refresh timers out of `shell.qml`.
   - Keep compatibility aliases/methods in `shell.qml` during the transition.
-- Extract `features/audio/AudioController.qml`.
+- [ ] Extract `features/audio/AudioController.qml`.
   - Move volume state, mute state, audio apply debounce, `wpctl`/monitor process handling, and spectrum availability handling.
-- Extract `features/media/MediaController.qml`.
+- [ ] Extract `features/media/MediaController.qml`.
   - Move active player selection, media position timer, media commands, and focus-app helper.
-- Extract `features/power/PowerController.qml` if battery and power profile logic continues to grow.
+- [ ] Extract `features/power/PowerController.qml` if battery and power profile logic continues to grow.
   - Move battery parsing helpers, charge limit status, power profile watch/apply.
-- Extract `features/notifications/NotificationController.qml`.
+- [ ] Extract `features/notifications/NotificationController.qml`.
   - Move swaync monitor, initial probe, DND state, notification count/dot state.
 
 Verification:
@@ -224,6 +224,11 @@ Reason this is later:
   - Done: moved the nmcli failure marker under a HyprV runtime directory instead of bare `/tmp`.
   - Verified: `bash -n`, focused `qmllint`, `git diff --check`, Quickshell reload, and clean runtime `log.log`.
   - Pending: tracked PID control for screen recording. The configured external recorder helper was not readable/present from this checkout, so this needs either that script path or a new owned recorder wrapper.
+- Network controller extraction: `Done`.
+  - Moved Wi-Fi state, cached network handling, status polling, action process state, follow-up refresh, and `nmcli monitor` ownership into `features/network/NetworkController.qml`.
+  - Kept `shell.qml` compatibility aliases and wrapper methods for current UI consumers.
+  - Fixed follow-up regression: the bar network icon must stay visible even before/without positive `networkWidgetVisible` state.
+  - Verified: focused `qmllint`, `bash -n`, Quickshell reload, clean runtime `log.log`, residual grep for old root Wi-Fi internals, and screenshot confirmation of the right-side bar icon.
 - `shellRoot` null-guard cleanup: `Done`.
   - Result: reload succeeded.
   - Follow-up: remove leftover impossible checks such as `enabled: shellRoot !== null` where found.
@@ -235,12 +240,11 @@ Reason this is later:
 ## Suggested Work Order
 
 1. Phase 1 process and command fragility.
-2. Network controller extraction.
-3. Shared popup host for simple popups.
-4. Wi-Fi popup split.
-5. Audio controller and audio popup.
-6. Dynamic Island split.
-7. Hardware assumption cleanup.
-8. Lint-noise reduction.
+2. Shared popup host for simple popups.
+3. Wi-Fi popup split.
+4. Audio controller and audio popup.
+5. Dynamic Island split.
+6. Hardware assumption cleanup.
+7. Lint-noise reduction.
 
 This order attacks the highest-risk runtime behavior first, then reduces file size and duplicated UI state after the system is easier to supervise.

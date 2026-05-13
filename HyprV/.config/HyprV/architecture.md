@@ -49,6 +49,7 @@ quickshell/
     media/
       ControlPanelMediaCard.qml
     network/
+      NetworkController.qml
       WifiFallback.qml
       WifiIconWithFallback.qml
       WifiIndicator.qml
@@ -140,11 +141,11 @@ Bar module click
 Implemented controllers:
 
 - `features/bluetooth/BluetoothController.qml`: owns Bluetooth adapter state, device snapshots, connect/disconnect/pair/remove/scan actions, action messages, timeouts, and model signal watchers.
+- `features/network/NetworkController.qml`: owns Wi-Fi status polling, cached network snapshots, radio/connect/disconnect/scan actions, action messages, and the `nmcli monitor` refresh path.
 - `features/system/SystemStatsController.qml`: parses `/proc` snapshots and updates CPU, memory, temperature, network rates, core usage, and history arrays.
 
 Still to extract:
 
-- Network/Wi-Fi controller: `shell.qml` still owns Wi-Fi status parsing, cached network list handling, and action process state.
 - Audio controller: volume status exists today, but default device management and microphone controls should be a dedicated audio feature.
 - Power controller: battery parsing is mostly root-owned and should move behind a power controller if it grows.
 - Media controller: media parsing/actions remain in `shell.qml` and can be extracted later.

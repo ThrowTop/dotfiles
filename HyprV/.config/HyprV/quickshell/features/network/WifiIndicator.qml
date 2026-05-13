@@ -1,27 +1,16 @@
 import QtQuick
+import "../../components"
 
-Item {
+BarButton {
     id: root
 
-    required property var shellRoot
     property string iconSource: ""
     property string fallbackLabel: "󰖩"
     property bool available: true
 
-    signal leftClicked()
-    signal rightClicked()
-
     visible: available
     implicitWidth: available ? 30 : 0
     implicitHeight: 37
-
-    Rectangle {
-        anchors.fill: parent
-        radius: 10
-        color: mouseArea.containsMouse
-            ? root.shellRoot.withAlpha(root.shellRoot.activeWorkspaceBackground, 0.18)
-            : "transparent"
-    }
 
     WifiIconWithFallback {
         anchors.centerIn: parent
@@ -30,23 +19,5 @@ Item {
         iconSource: root.iconSource
         fallbackLabel: root.fallbackLabel
         fallbackPixelSize: 24
-    }
-
-    MouseArea {
-        id: mouseArea
-
-        anchors.fill: parent
-        enabled: root.available
-        hoverEnabled: true
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-        cursorShape: Qt.PointingHandCursor
-
-        onClicked: function(mouse) {
-            if (mouse.button === Qt.LeftButton) {
-                root.leftClicked();
-            } else if (mouse.button === Qt.RightButton) {
-                root.rightClicked();
-            }
-        }
     }
 }

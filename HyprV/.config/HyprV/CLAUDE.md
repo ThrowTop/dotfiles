@@ -64,6 +64,7 @@ There is intentionally no top-level `popups/` directory. A popup belongs to its 
 | `quickshell/DynamicIsland.qml` | Center island UI and animation/state layout |
 | `quickshell/features/control/ControlPanelPopup.qml` | Main control panel and page switching |
 | `quickshell/features/bluetooth/BluetoothController.qml` | Bluetooth adapter/device state and actions |
+| `quickshell/features/network/NetworkController.qml` | Wi-Fi status/action state, polling, and monitor refresh |
 | `quickshell/features/system/SystemStatsController.qml` | CPU/memory/network/temp parsing and history |
 | `quickshell/features/network/WifiFallback.qml` | Wi-Fi tray indicator and popup UI |
 | `quickshell/components/ActionChip.qml` | Shared compact action button used by Wi-Fi/Bluetooth/control UI |
@@ -74,7 +75,7 @@ Bluetooth is mostly extracted from `shell.qml`: state, actions, timers, and devi
 
 System stats parsing is extracted into `SystemStatsController.qml`, while `shell.qml` still exposes `cpuUsage`, `memoryUsage`, network rates, histories, and core usage for bar/popup consumers.
 
-Wi-Fi is only partially modular. UI lives in `features/network/`, but status parsing, action process state, and cached network list logic still live in `shell.qml`. The next expected extraction is `features/network/NetworkController.qml`.
+Wi-Fi is partially modular. `features/network/NetworkController.qml` owns status polling, action process state, cached network lists, and monitor-triggered refreshes. The current Wi-Fi UI still consumes root compatibility aliases and methods, so a later pass can wire the UI directly to the controller.
 
 Audio is currently limited to output volume status/actions and media playback. A future audio popup should become `features/audio/AudioController.qml` plus `features/audio/AudioPopup.qml`, with support for default sink/source selection and microphone volume/mute.
 
@@ -109,7 +110,7 @@ Keep the shell compact and desktop-native:
 
 See `CLEANUP_PLAN.md` for the current tracked cleanup plan, status, attempted work, and proposed implementation order.
 
-1. Extract Wi-Fi status/actions into `features/network/NetworkController.qml`.
+1. Extract `features/audio/AudioController.qml` for volume status/actions and audio monitor ownership.
 2. Extract reusable `DevicePanel.qml` / `DeviceRow.qml` before building an audio device popup.
-3. Add `features/audio/AudioController.qml` and `features/audio/AudioPopup.qml`.
+3. Add `features/audio/AudioPopup.qml`.
 4. Reduce `shell.qml` to global composition, shared helpers, and compatibility wiring.

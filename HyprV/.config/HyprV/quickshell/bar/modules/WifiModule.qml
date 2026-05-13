@@ -15,7 +15,6 @@ Item {
         id: wifiIndicator
 
         anchors.fill: parent
-        visible: module.shellRoot.networkWidgetVisible
         shellRoot: module.shellRoot
         parentWindow: module.parentWindow
 

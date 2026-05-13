@@ -11,11 +11,12 @@ ensure_runtime_dir() {
 mark_nmcli_failed() {
     failed_at="$(date +%s 2>/dev/null || printf '0')"
     ensure_runtime_dir
+    [ -d "$HYPRV_RUNTIME_DIR" ] || return 0
     printf '%s\n' "$failed_at" > "$HYPRV_NMCLI_BROKEN_MARKER" 2>/dev/null || :
 }
 
 clear_nmcli_failed() {
-    rm -f "$HYPRV_NMCLI_BROKEN_MARKER"
+    rm -f "$HYPRV_NMCLI_BROKEN_MARKER" 2>/dev/null || :
 }
 
 nmcli_allowed() {

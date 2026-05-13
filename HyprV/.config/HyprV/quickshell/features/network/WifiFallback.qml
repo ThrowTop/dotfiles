@@ -77,7 +77,7 @@ WifiIndicator {
         return "Not connected";
     }
 
-    available: shellRoot.networkWidgetVisible
+    available: true
     iconSource: trayIconUrl
     fallbackLabel: shellRoot.networkTrayGlyph()
 
