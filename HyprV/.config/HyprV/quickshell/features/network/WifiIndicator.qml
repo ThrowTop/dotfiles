@@ -4,20 +4,21 @@ import "../../components"
 BarButton {
     id: root
 
-    property string iconSource: ""
-    property string fallbackLabel: "󰖩"
+    property string icon: shellRoot.icons.wifi
     property bool available: true
+    property color iconColor: shellRoot.primaryText
 
     visible: available
     implicitWidth: available ? 30 : 0
     implicitHeight: 37
 
-    WifiIconWithFallback {
+    Text {
         anchors.centerIn: parent
-        shellRoot: root.shellRoot
-        iconSize: 24
-        iconSource: root.iconSource
-        fallbackLabel: root.fallbackLabel
-        fallbackPixelSize: 24
+        text: root.icon
+        color: root.iconColor
+        font.family: root.shellRoot.iconFont
+        font.pixelSize: 17
+        font.weight: Font.Bold
+        renderType: Text.NativeRendering
     }
 }

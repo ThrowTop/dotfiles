@@ -10,7 +10,7 @@ GroupPill {
         id: cpuTrigger
 
         shellRoot: pill.shellRoot
-        label: " " + Math.round(pill.shellRoot.cpuUsage) + "%"
+        label: pill.shellRoot.icons.cpu + " " + Math.round(pill.shellRoot.cpuUsage) + "%"
         interactive: true
         paddingLeft: 12
         paddingRight: 4
@@ -22,7 +22,7 @@ GroupPill {
         id: memoryTrigger
 
         shellRoot: pill.shellRoot
-        label: " " + Math.round(pill.shellRoot.memoryUsage) + "%"
+        label: pill.shellRoot.icons.memory + " " + Math.round(pill.shellRoot.memoryUsage) + "%"
         interactive: true
         paddingLeft: 6
         paddingRight: 4

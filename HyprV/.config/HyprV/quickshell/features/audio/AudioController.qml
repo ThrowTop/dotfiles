@@ -4,6 +4,8 @@ import Quickshell.Services.Pipewire
 Item {
     id: root
 
+    required property var shellRoot
+
     readonly property var defaultOutputDevice: Pipewire.defaultAudioSink
     property var outputDevices: []
     readonly property bool available: !!defaultOutputDevice && !!defaultOutputDevice.audio
@@ -102,18 +104,18 @@ Item {
         const props = device?.properties || {};
         const icon = String(props["device.icon-name"] || props["node.icon-name"] || device?.name || "").toLowerCase();
         if (icon.indexOf("headset") >= 0 || icon.indexOf("headphone") >= 0) {
-            return "󰋋";
+            return root.shellRoot.icons.headphones;
         }
         if (icon.indexOf("bluetooth") >= 0 || icon.indexOf("bluez") >= 0) {
-            return "󰂯";
+            return root.shellRoot.icons.bluetooth;
         }
         if (icon.indexOf("hdmi") >= 0 || icon.indexOf("display") >= 0) {
-            return "󰍹";
+            return root.shellRoot.icons.display;
         }
         if (icon.indexOf("speaker") >= 0) {
-            return "󰓃";
+            return root.shellRoot.icons.speaker;
         }
-        return "";
+        return root.shellRoot.icons.volumeHigh;
     }
 
     function setDefaultOutputDevice(device) {

@@ -17,7 +17,7 @@ Rectangle {
 
     Text {
         anchors.centerIn: parent
-        text: ""
+        text: badge.shellRoot.icons.lock
         color: badge.shellRoot.withAlpha(badge.shellRoot.primaryText, 0.82)
         font.family: badge.shellRoot.iconFont
         font.pixelSize: 11

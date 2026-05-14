@@ -252,7 +252,7 @@ Item {
         Text {
             anchors.centerIn: parent
             visible: !albumArt.visible
-            text: ""
+            text: island.shellRoot.icons.music
             color: island.accentColor
             font.family: island.shellRoot.iconFont
             font.pixelSize: Math.round(Math.min(parent.width, parent.height) * 0.46)
@@ -525,7 +525,7 @@ Item {
                 anchors.left: parent.left
                 anchors.leftMargin: 14
                 anchors.verticalCenter: parent.verticalCenter
-                text: island.osdType === "brightness" ? "󰃟" : (island.shellRoot.volumeIcon)
+                text: island.osdType === "brightness" ? island.shellRoot.icons.brightness : (island.shellRoot.volumeIcon)
                 color: island.osdType === "brightness"
                     ? (island.shellRoot.brightnessColor)
                     : island.accentColor
@@ -864,20 +864,20 @@ Item {
 
             MediaGlyphButton {
                 anchors.verticalCenter: parent.verticalCenter
-                glyph: "\u{f04ae}"
+                glyph: island.shellRoot.icons.mediaPrevious
                 onClicked: island.previousClicked()
             }
 
             MediaGlyphButton {
                 anchors.verticalCenter: parent.verticalCenter
-                glyph: island.mediaPlaying ? "\u{f03e4}" : "\u{f040a}"
+                glyph: island.mediaPlaying ? island.shellRoot.icons.mediaPause : island.shellRoot.icons.mediaPlay
                 primary: true
                 onClicked: island.playPauseClicked()
             }
 
             MediaGlyphButton {
                 anchors.verticalCenter: parent.verticalCenter
-                glyph: "\u{f04ad}"
+                glyph: island.shellRoot.icons.mediaNext
                 onClicked: island.nextClicked()
             }
         }

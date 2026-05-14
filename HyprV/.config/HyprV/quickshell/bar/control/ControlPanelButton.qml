@@ -20,18 +20,17 @@ GroupPill {
         implicitWidth: 38
         implicitHeight: 38
 
-        Image {
+        Text {
             id: controlPanelIcon
 
             anchors.centerIn: parent
-            width: 16
-            height: 16
-            source: Qt.resolvedUrl("../../assets/bar/control-panel-dark.svg")
-            fillMode: Image.PreserveAspectFit
-            smooth: true
-            mipmap: true
-            sourceSize.width: 32
-            sourceSize.height: 32
+            anchors.verticalCenterOffset: -1
+            text: pill.shellRoot.icons.controlCenter
+            color: pill.shellRoot.primaryText
+            font.family: pill.shellRoot.iconFont
+            font.pixelSize: 18
+            font.weight: Font.Bold
+            renderType: Text.NativeRendering
         }
 
         MouseArea {

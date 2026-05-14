@@ -25,7 +25,7 @@ Item {
         anchors.right: parent.right
         anchors.topMargin: 4
         anchors.rightMargin: 2
-        text: ""
+        text: module.shellRoot.icons.notificationDot
         visible: module.shellRoot.notificationHasDot
         color: "#ff0000"
         font.family: module.shellRoot.iconFont

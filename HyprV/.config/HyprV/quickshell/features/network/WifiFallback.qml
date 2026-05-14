@@ -54,7 +54,6 @@ WifiIndicator {
     readonly property real fixedSpacingHeight: Math.max(0, fixedSectionCount - 1) * panelSectionSpacing
     readonly property real networkListTopSpacing: root.networks.length > 0 ? panelSectionSpacing : 0
     readonly property real maxNetworkListHeight: Math.max(0, panelMaxHeight - panelVerticalPadding - fixedSectionHeight - fixedSpacingHeight - networkListTopSpacing)
-    readonly property string trayIconUrl: shellRoot.networkTrayIconSource()
     readonly property string connectionSummary: {
         if (wiredConnectedState) {
             return "Ethernet connected";
@@ -78,8 +77,8 @@ WifiIndicator {
     }
 
     available: true
-    iconSource: trayIconUrl
-    fallbackLabel: shellRoot.networkTrayGlyph()
+    icon: shellRoot.icons.wifi
+    iconColor: shellRoot.primaryText
 
     function updatePopupAnchor() {
         if (popup.visible) {
@@ -493,15 +492,17 @@ WifiIndicator {
                         anchors.margins: root.innerPadding
                         implicitHeight: Math.max(statusInfo.implicitHeight, statusIcon.implicitHeight, statusPill.implicitHeight)
 
-                        WifiIconWithFallback {
+                        Text {
                             id: statusIcon
 
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
-                            shellRoot: root.shellRoot
-                            iconSource: root.trayIconUrl
-                            fallbackLabel: root.shellRoot.networkTrayGlyph()
-                            iconSize: 24
+                            text: root.shellRoot.networkTrayGlyph()
+                            color: root.shellRoot.primaryText
+                            font.family: root.shellRoot.iconFont
+                            font.pixelSize: 24
+                            font.weight: Font.Bold
+                            renderType: Text.NativeRendering
                         }
 
                         ActionChip {
@@ -727,15 +728,17 @@ WifiIndicator {
                                         width: parent.width
                                         implicitHeight: Math.max(networkInfo.implicitHeight, connectChip.implicitHeight, networkIcon.implicitHeight)
 
-                                        WifiIconWithFallback {
+                                        Text {
                                             id: networkIcon
 
                                             anchors.left: parent.left
                                             anchors.verticalCenter: parent.verticalCenter
-                                            shellRoot: root.shellRoot
-                                            iconSource: root.shellRoot.wifiListIconSource(networkCard.modelData.signal, networkCard.modelData.secure)
-                                            fallbackLabel: root.shellRoot.wifiSignalGlyph(networkCard.modelData.signal)
-                                            iconSize: 24
+                                            text: root.shellRoot.wifiSignalGlyph(networkCard.modelData.signal)
+                                            color: root.shellRoot.primaryText
+                                            font.family: root.shellRoot.iconFont
+                                            font.pixelSize: 24
+                                            font.weight: Font.Bold
+                                            renderType: Text.NativeRendering
                                         }
 
                                         ActionChip {

@@ -222,12 +222,12 @@ Item {
 
     function powerProfileIcon(profile) {
         if (profile === "power-saver") {
-            return "󰾆";
+            return shellRoot.icons.powerSaver;
         }
         if (profile === "performance") {
-            return "󰓅";
+            return shellRoot.icons.powerPerformance;
         }
-        return "󰾅";
+        return shellRoot.icons.powerBalanced;
     }
 
     function setPowerProfile(profile) {
@@ -420,7 +420,7 @@ Item {
                         height: popupRoot.moduleSize
 
                         shellRoot: popupRoot.shellRoot
-                        icon: active ? "󰤨" : "󰤭"
+                        icon: active ? popupRoot.shellRoot.icons.wifiStrong : popupRoot.shellRoot.icons.wifiDisconnected
                         title: popupRoot.currentWifiTitle()
                         subtitle: popupRoot.currentWifiSubtitle()
                         active: popupRoot.shellRoot.wifiRadioEnabled
@@ -434,7 +434,7 @@ Item {
                         height: popupRoot.moduleSize
 
                         shellRoot: popupRoot.shellRoot
-                        icon: active ? "󰂯" : "󰂲"
+                        icon: active ? popupRoot.shellRoot.icons.bluetooth : popupRoot.shellRoot.icons.bluetoothOff
                         title: popupRoot.currentBluetoothTitle()
                         subtitle: popupRoot.currentBluetoothSubtitle()
                         active: popupRoot.shellRoot.bluetoothEnabled
@@ -453,7 +453,7 @@ Item {
                             height: popupRoot.moduleSize
     
                             shellRoot: popupRoot.shellRoot
-                            icon: "󰻃"
+                            icon: popupRoot.shellRoot.icons.screenRecord
                             iconOnly: true
                             label: "Screen\nrecord"
                             active: popupRoot.shellRoot.screenRecording
@@ -465,7 +465,7 @@ Item {
                             height: popupRoot.moduleSize
     
                             shellRoot: popupRoot.shellRoot
-                            icon: active ? "" : ""
+                            icon: active ? popupRoot.shellRoot.icons.preventSleep : popupRoot.shellRoot.icons.preventSleepOff
                             iconOnly: true
                             label: "Prevent\nsleep"
                             active: popupRoot.shellRoot.preventSleepEnabled
@@ -583,7 +583,7 @@ Item {
                             height: popupRoot.moduleSize
 
                             shellRoot: popupRoot.shellRoot
-                            icon: "󰂛"
+                            icon: popupRoot.shellRoot.icons.bellOff
                             iconOnly: true
                             label: "No\ndisturb"
                             active: popupRoot.shellRoot.dndEnabled
@@ -596,7 +596,7 @@ Item {
                         height: popupRoot.moduleSize
 
                         shellRoot: popupRoot.shellRoot
-                        icon: "󰐥"
+                        icon: popupRoot.shellRoot.icons.power
                         title: "Session"
                         subtitle: "Lock · Shutdown"
                         active: false
@@ -697,7 +697,7 @@ Item {
                     shellRoot: popupRoot.shellRoot
                     width: parent.width
                     height: popupRoot.moduleSize
-                    icon: "󰃟"
+                    icon: popupRoot.shellRoot.icons.brightness
                     label: "Brightness"
                     value: popupRoot.shellRoot.brightnessPercent
                     accentColor: popupRoot.shellRoot.brightnessColor

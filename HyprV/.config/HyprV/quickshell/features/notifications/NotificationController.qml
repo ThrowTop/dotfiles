@@ -14,7 +14,7 @@ Item {
 
     readonly property bool doNotDisturb: dndEnabled || alt.indexOf("dnd") >= 0
     readonly property bool hasDot: alt.indexOf("notification") >= 0
-    readonly property string icon: doNotDisturb ? "󰂛" : ""
+    readonly property string icon: doNotDisturb ? shellRoot.icons.bellOff : shellRoot.icons.bell
 
     Process {
         id: watcher

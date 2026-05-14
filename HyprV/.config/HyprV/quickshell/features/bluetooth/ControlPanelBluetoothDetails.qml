@@ -127,27 +127,27 @@ Rectangle {
     function deviceGlyph(device) {
         const icon = (device.icon || "").toLowerCase();
         if (icon.indexOf("audio-headset") >= 0 || icon.indexOf("audio-headphones") >= 0 || icon.indexOf("audio-card") >= 0 || icon.indexOf("audio-speakers") >= 0) {
-            return "󰋋";
+            return root.shellRoot.icons.headphones;
         }
         if (icon.indexOf("input-mouse") >= 0) {
-            return "󰍽";
+            return root.shellRoot.icons.mouse;
         }
         if (icon.indexOf("input-keyboard") >= 0) {
-            return "󰌌";
+            return root.shellRoot.icons.keyboard;
         }
         if (icon.indexOf("phone") >= 0) {
-            return "󰏲";
+            return root.shellRoot.icons.phone;
         }
         if (icon.indexOf("camera") >= 0) {
-            return "󰄀";
+            return root.shellRoot.icons.camera;
         }
         if (icon.indexOf("printer") >= 0) {
-            return "󰐪";
+            return root.shellRoot.icons.printer;
         }
         if (icon.indexOf("computer") >= 0) {
-            return "󰌢";
+            return root.shellRoot.icons.computer;
         }
-        return bluetoothEnabled ? "󰂯" : "󰂲";
+        return bluetoothEnabled ? root.shellRoot.icons.bluetooth : root.shellRoot.icons.bluetoothOff;
     }
 
     function deviceMeta(device) {
@@ -313,7 +313,7 @@ Rectangle {
 
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
-                    text: root.bluetoothEnabled ? "󰂯" : "󰂲"
+                    text: root.bluetoothEnabled ? root.shellRoot.icons.bluetooth : root.shellRoot.icons.bluetoothOff
                     color: root.shellRoot.primaryText
                     font.family: root.shellRoot.iconFont
                     font.pixelSize: 24

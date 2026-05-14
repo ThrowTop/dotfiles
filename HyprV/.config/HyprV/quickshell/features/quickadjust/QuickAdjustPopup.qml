@@ -169,7 +169,7 @@ Item {
                 shellRoot: popupRoot.shellRoot
                 icon: popupRoot.mode === "volume"
                     ? (popupRoot.shellRoot.volumeIcon)
-                    : "󰃟"
+                    : popupRoot.shellRoot.icons.brightness
                 iconClickable: popupRoot.mode === "volume"
                 label: popupRoot.mode === "volume" ? "Volume" : "Brightness"
                 value: popupRoot.mode === "volume"

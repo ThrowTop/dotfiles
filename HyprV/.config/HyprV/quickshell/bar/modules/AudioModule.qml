@@ -14,7 +14,7 @@ Item {
         text: module.shellRoot.volumeIcon
         color: module.shellRoot.launchColor
         font.family: module.shellRoot.iconFont
-        font.pixelSize: 14
+        font.pixelSize: 17
         font.weight: Font.Bold
         renderType: Text.NativeRendering
     }

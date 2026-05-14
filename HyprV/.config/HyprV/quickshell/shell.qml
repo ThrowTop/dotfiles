@@ -60,8 +60,6 @@ ShellRoot {
     readonly property bool _bluetoothStatusInitialized: bluetoothController.statusInitialized
     readonly property string notificationAlt: notificationController.alt
     readonly property string notificationTooltip: notificationController.tooltip
-    property string fluentDarkIconDir: ""
-    property string fluentBaseIconDir: ""
     property var trayMenuController: null
 
     property alias wifiEnabled: networkController.radioEnabled
@@ -70,7 +68,6 @@ ShellRoot {
     readonly property alias bluetoothAdapterObject: bluetoothController.adapterObject
     readonly property alias bluetoothDeviceObjects: bluetoothController.deviceObjects
     readonly property string brightnessScriptPath: configDir + "/quickshell/scripts/brightness.sh"
-    readonly property string iconThemeLocatorScriptPath: configDir + "/quickshell/scripts/icon-theme-locator.sh"
     readonly property string mediaFocusScriptPath: configDir + "/quickshell/scripts/media-focus.sh"
     readonly property string openManagerScriptPath: configDir + "/quickshell/scripts/open-manager.sh"
     readonly property int brightnessUiStepPercent: 2
@@ -122,6 +119,7 @@ ShellRoot {
     }
 
     Colors { id: colors }
+    Icons { id: iconSet }
 
     BluetoothController {
         id: bluetoothController
@@ -129,6 +127,8 @@ ShellRoot {
 
     AudioController {
         id: audioController
+
+        shellRoot: root
     }
 
     MediaController {
@@ -175,6 +175,7 @@ ShellRoot {
     readonly property color systemChartAccent: "#d7a26a"
     readonly property int screenCornerShadeSize: 29
     readonly property color screenCornerShadeColor: colors.black
+    readonly property alias icons: iconSet
     readonly property string baseFont: "JetBrainsMono Nerd Font"
     readonly property string iconFont: "JetBrainsMono Nerd Font"
     readonly property int trayMenuTextPixelSize: 14
@@ -222,7 +223,7 @@ ShellRoot {
         }
         const rounded = Math.round(batteryPercent);
         if (batteryCharging || batteryPlugged) {
-            return " " + rounded + "%";
+            return icons.batteryCharging + " " + rounded + "%";
         }
         return batteryGlyph(rounded) + " " + rounded + "%";
     }
@@ -300,18 +301,18 @@ ShellRoot {
     readonly property string volumeIcon: {
         const percent = audioVolumePercent;
         if (!audioAvailable) {
-            return "";
+            return icons.volumeLow;
         }
         if (audioMuted) {
-            return "";
+            return icons.volumeMuted;
         }
         if (percent <= 20) {
-            return "";
+            return icons.volumeLow;
         }
         if (percent <= 50) {
-            return "";
+            return icons.volumeMedium;
         }
-        return "";
+        return icons.volumeHigh;
     }
 
     onAudioVolumePercentChanged: {
@@ -431,9 +432,9 @@ ShellRoot {
     }
     readonly property string networkIcon: {
         if (!defaultInterface) {
-            return "󰤮";
+            return icons.wifiOff;
         }
-        return isWifiInterfaceName(defaultInterface) ? "󰖩" : "󰈀";
+        return isWifiInterfaceName(defaultInterface) ? icons.wifi : icons.wired;
     }
     readonly property string networkText: defaultInterface ? humanRate(networkRxRate + networkTxRate) : "nocon"
     readonly property bool wifiWidgetVisible: wifiCapabilityDetected || wifiDevicePresent || wifiNetworks.length > 0 || isWifiInterfaceName(defaultInterface)
@@ -548,43 +549,6 @@ ShellRoot {
         return "100";
     }
 
-    function fluentWifiIconSource(iconName) {
-        const themeDir = fluentDarkIconDir || fluentBaseIconDir;
-        if (!themeDir || !iconName) {
-            return "";
-        }
-        const relativePath = "symbolic/status/" + iconName + "-symbolic.svg";
-        return fileUrl(themeDir + "/" + relativePath);
-    }
-
-    function wifiTrayIconSource(enabled, hardwareEnabled, connected, strength, secure) {
-        const signalPercent = Math.round((strength || 0) * 100);
-        if (!hardwareEnabled) {
-            return fluentWifiIconSource("network-wireless-hardware-disabled");
-        }
-        if (!enabled) {
-            return fluentWifiIconSource("network-wireless-disabled");
-        }
-        if (!connected) {
-            return fluentWifiIconSource("network-wireless-disconnected");
-        }
-        return fluentWifiIconSource("nm-signal-" + wifiSignalBucket(signalPercent) + (secure ? "-secure" : ""));
-    }
-
-    function wiredTrayIconSource(connected) {
-        return fluentWifiIconSource(connected ? "network-wired" : "network-wired-disconnected");
-    }
-
-    function networkTrayIconSource() {
-        if (wiredConnectionActive || otherConnectionActive) {
-            return wiredTrayIconSource(true);
-        }
-        if (wifiConnectionActive) {
-            return wifiTrayIconSource(true, wifiHardwareEnabled, true, wifiSignalStrength, wifiSecure);
-        }
-        return wifiTrayIconSource(wifiRadioEnabled, wifiHardwareEnabled, wifiConnected, wifiSignalStrength, wifiSecure);
-    }
-
     function humanRate(bytesPerSecond) {
         const value = Math.max(0, bytesPerSecond || 0);
         if (value < 1024) {
@@ -639,9 +603,9 @@ ShellRoot {
     }
 
     function batteryGlyph(percent) {
-        const icons = ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"];
-        const index = Math.max(0, Math.min(icons.length - 1, Math.round(percent / 10)));
-        return icons[index];
+        const levels = icons.batteryLevels;
+        const index = Math.max(0, Math.min(levels.length - 1, Math.round(percent / 10)));
+        return levels[index];
     }
 
     function currentBatteryInfo() {
@@ -749,39 +713,35 @@ ShellRoot {
         return null;
     }
 
-    function wifiListIconSource(signalPercent, secure) {
-        return fluentWifiIconSource("nm-signal-" + wifiSignalBucket(signalPercent) + (secure ? "-secure" : ""));
-    }
-
     function wifiSignalGlyph(signalPercent) {
         if (signalPercent < 20) {
-            return "󰤯";
+            return icons.wifiOff;
         }
         if (signalPercent < 40) {
-            return "󰤟";
+            return icons.wifiWeak;
         }
         if (signalPercent < 60) {
-            return "󰤢";
+            return icons.wifiMedium;
         }
         if (signalPercent < 80) {
-            return "󰤥";
+            return icons.wifiMedium;
         }
-        return "󰤨";
+        return icons.wifiStrong;
     }
 
     function wifiTrayGlyph(enabled, connected, strength) {
         if (!enabled) {
-            return "󰤭";
+            return icons.wifiDisconnected;
         }
         if (!connected) {
-            return "󰤮";
+            return icons.wifiOff;
         }
         return wifiSignalGlyph(Math.round((strength || 0) * 100));
     }
 
     function networkTrayGlyph() {
         if (wiredConnectionActive || otherConnectionActive) {
-            return "󰈀";
+            return icons.wired;
         }
         if (wifiConnectionActive) {
             return wifiTrayGlyph(true, true, wifiSignalStrength);
@@ -1067,31 +1027,6 @@ ShellRoot {
 
     function refreshPowerProfileStatus() { powerController.refreshProfile(); }
     function refreshPreventSleepStatus() { powerController.refreshPreventSleep(); }
-
-    Process {
-        id: fluentIconLocator
-
-        running: true
-        command: [root.iconThemeLocatorScriptPath]
-        stdout: StdioCollector {
-            id: fluentIconLocatorStdout
-        }
-
-        onExited: function(exitCode) {
-            if (exitCode !== 0) {
-                return;
-            }
-            const lines = (fluentIconLocatorStdout.text || "").trim().split("\n");
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                if (line.startsWith("dark=")) {
-                    root.fluentDarkIconDir = line.slice(5).trim();
-                } else if (line.startsWith("base=")) {
-                    root.fluentBaseIconDir = line.slice(5).trim();
-                }
-            }
-        }
-    }
 
     Process {
         id: detachedRunner

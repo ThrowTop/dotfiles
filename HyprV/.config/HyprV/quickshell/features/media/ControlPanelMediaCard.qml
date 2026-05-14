@@ -146,7 +146,7 @@ Rectangle {
             Text {
                 anchors.centerIn: parent
                 visible: !albumArt.visible
-                text: ""
+                text: card.shellRoot.icons.music
                 color: card.mutedColor
                 font.family: card.shellRoot.iconFont
                 font.pixelSize: Math.round(card.artSize * 0.42)
@@ -183,25 +183,24 @@ Rectangle {
             spacing: card.controlSpacing
 
             MediaButton {
-                glyph: "\u{f04ae}"
+                glyph: card.shellRoot.icons.mediaPrevious
                 buttonEnabled: card.available
                 onTapped: card.previousClicked()
             }
 
             MediaButton {
-                glyph: card.playing ? "\u{f03e4}" : "\u{f040a}"
+                glyph: card.playing ? card.shellRoot.icons.mediaPause : card.shellRoot.icons.mediaPlay
                 primary: true
                 buttonEnabled: card.available
                 onTapped: card.playPauseClicked()
             }
 
             MediaButton {
-                glyph: "\u{f04ad}"
+                glyph: card.shellRoot.icons.mediaNext
                 buttonEnabled: card.available
                 onTapped: card.nextClicked()
             }
         }
     }
 }
-
 
