@@ -1,23 +1,24 @@
 # HyprV Architecture
 
-HyprV is a custom Hyprland desktop shell built with Quickshell, QML, and small shell/Python helper scripts. The goal is a compact, glassy top bar with first-class controls for system state: workspaces, active window, media, network, Bluetooth, power, tray apps, notifications, and quick adjustment overlays.
+HyprV is a custom Hyprland desktop shell built with Quickshell, QML, and small shell helper scripts. The goal is a compact, Apple-inspired floating top bar with first-class controls for system state: workspaces, active window, media, network, Bluetooth, power, tray apps, notifications, and quick-adjustment overlays.
 
-The project is moving toward feature-owned modules. Generic UI primitives live in `components/`; domain state, controllers, and feature-specific popups live under `features/`; the bar only owns always-visible bar layout.
+The project moves toward feature-owned modules. Generic UI primitives live in `components/`; domain state, controllers, and feature-specific popups live under `features/`; the bar only owns always-visible bar layout.
 
 ## Current Structure
 
 ```text
 quickshell/
   shell.qml                  # ShellRoot composition root and global wiring
-  Colors.qml                 # Catppuccin-derived color palette
+  Colors.qml                 # Catppuccin Mocha palette — single source of truth
+  Icons.qml                  # Nerd Font glyph strings (MDI family)
   PollCommand.qml            # Reusable polling command wrapper
-  DynamicIsland.qml          # Center island UI
+  DynamicIsland.qml          # Center island UI (idle clock, media, OSD)
   AnimatedGlassPanel.qml     # Shared glass popup chrome
   AnimatedReveal.qml
   ExpandableSection.qml
   ScreenCornerShade.qml
   TrayButton.qml
-  WifiNative.qml             # Legacy loader entrypoint for network tray item
+  WifiNative.qml
 
   bar/
     BarWindow.qml
@@ -27,13 +28,15 @@ quickshell/
     modules/NotificationsModule.qml
     modules/SystemTrayModule.qml
     modules/WifiModule.qml
-    status/StatusPill.qml
-    system/SystemResourcesPill.qml
-    window/WindowTitlePill.qml
+    status/StatusPill.qml          # temp · keyboard layout · battery pill
+    system/SystemResourcesPill.qml # CPU · memory · network speed
+    window/WindowTitlePill.qml     # active window, floats between left and center
     workspaces/WorkspacesPill.qml
 
   components/
     ActionChip.qml
+    BarButton.qml
+    BatteryPill.qml            # iPhone-style solid colored rect with number inside
     ControlPanelSlider.qml
     ControlPanelSplitTile.qml
     ControlPanelToggle.qml
@@ -92,15 +95,49 @@ quickshell/
 
 ## Ownership Rules
 
-`shell.qml` is the composition root. It should create long-lived services/controllers, wire bar modules to feature popups, expose shared colors/helpers, and own only state that is genuinely global.
+`shell.qml` is the composition root. It creates long-lived services/controllers, wires bar modules to feature popups, exposes shared colors/helpers, and owns only state that is genuinely global.
 
-Feature folders own domain behavior. A feature can contain its controller, popup/window UI, rows, badges, and helper components when they are not broadly reusable. Example: Bluetooth state and actions belong in `features/bluetooth/BluetoothController.qml`; Bluetooth detail UI belongs next to it.
+Feature folders own domain behavior. A feature contains its controller, popup/window UI, rows, badges, and helper components when they are not broadly reusable.
 
-`components/` is only for reusable UI primitives with no domain assumptions. `ActionChip.qml`, `DeviceRow.qml`, sliders, toggles, split tiles, and pill primitives belong here. Domain-specific names should not live in `components/`.
+`components/` is only for reusable UI primitives with no domain assumptions. `ActionChip.qml`, `DeviceRow.qml`, `BatteryPill.qml`, sliders, toggles, split tiles, and pill primitives belong here.
 
-`bar/` owns visible bar composition only. Bar modules should mostly call root methods like `openBatteryInfoPopup()` or read already-exposed state. They should not parse command output or own feature controllers.
+`bar/` owns visible bar composition only. Bar modules should call root methods like `openBatteryInfoPopup()` or read already-exposed state. They should not parse command output or own feature controllers.
 
-There is no separate top-level `popups/` directory. Popups are feature UI unless they become generic primitives. Do not force all popups into an identical layout: reuse low-level primitives such as `AnimatedGlassPanel`, `ActionChip`, and `DeviceRow`, while leaving each feature free to own the layout that fits its purpose.
+## Typography
+
+All UI text uses the SF Pro font family (already installed system-wide). Three tokens are defined in `shell.qml`:
+
+| Token | Font | Use |
+|---|---|---|
+| `baseFont` | SF Pro Text | Bar labels, popup body, all text ≤ 17 px |
+| `displayFont` | SF Pro Display | Headlines ≥ 18 px (island clock, media title) |
+| `iconFont` | JetBrainsMono Nerd Font | Glyph strings from `Icons.qml` only |
+
+**Critical rule**: never put an `Icons.qml` glyph and a value string in the same `Text` element. Font fallback for the glyph changes the logical advance width and causes text to overlap or clip. Always split them into separate elements. Use `paintedWidth` (ink rect) — not `implicitWidth` (logical rect) — to size the icon's container.
+
+Reference implementation: `bar/system/SystemResourcesPill.qml` `networkTrigger`.
+
+## Bar Layout
+
+```text
+BarWindow
+  left:    SystemResourcesPill  WorkspacesPill
+  center:  IslandHost (DynamicIsland)
+  float:   WindowTitlePill (between left and center)
+  right:   StatusPill  |  GroupPill(Wifi Audio)  |  GroupPill(Tray Notifications)  |  ControlPanelButton
+```
+
+### StatusPill (right)
+
+Contains three items in a single `GroupPill`:
+
+1. **Temperature** — icon + °C, opens btop on click
+2. **Keyboard layout** — current layout name (e.g. `ENG`)
+3. **BatteryPill** — iPhone-style solid colored rectangle, 32 × 18 px, `radius: 6`, number inside (no % sign). Color encodes state: green → yellow (≤ 30 %) → red (≤ 15 %) → green + bolt (charging). Hides when no `batteryDevice`.
+
+### SystemResourcesPill (left)
+
+Contains CPU %, memory %, and network speed. The network module splits the icon and speed text into separate items so each uses the correct font — the icon uses `iconFont` sized via `paintedWidth`, the speed text uses `baseFont`.
 
 ## Runtime Flow
 
@@ -114,29 +151,9 @@ shell.qml
 BarWindow
   ├─ left: system resources, workspaces
   ├─ center: DynamicIsland via IslandHost
-  ├─ middle/right: active window title
-  └─ right: status, explicit grouped modules, control button
-```
+  ├─ float: active window title
+  └─ right: status, grouped connectivity modules, control button
 
-Bar grouping is intentionally owned by `BarWindow.qml`:
-
-```qml
-GroupPill {
-  WifiModule {}
-  AudioModule {}
-}
-
-GroupPill {
-  SystemTrayModule {}
-  NotificationsModule {}
-}
-```
-
-Individual modules should represent one behavior/display unit. `GroupPill` should stay a visual grouping primitive, not a place where unrelated domain modules are hardcoded together.
-
-Feature popup flow:
-
-```text
 Bar module click
   -> shell.qml open/toggle function
   -> feature popup instance
@@ -146,66 +163,43 @@ Bar module click
 
 ## Controllers
 
-Implemented controllers:
+Implemented:
 
-- `features/bluetooth/BluetoothController.qml`: owns Bluetooth adapter state, device snapshots, connect/disconnect/pair/remove/scan actions, action messages, timeouts, and model signal watchers.
-- `features/network/NetworkController.qml`: owns Wi-Fi status polling, cached network snapshots, radio/connect/disconnect/scan actions, action messages, and the `nmcli monitor` refresh path.
-- `features/audio/AudioController.qml`: owns native Pipewire output devices, default sink selection, output volume, and mute state.
-- `features/media/MediaController.qml`: owns MPRIS player selection, media metadata, playback state, position ticking, seek/playback actions, and app focus.
-- `features/notifications/NotificationController.qml`: owns swaync initial state, D-Bus monitoring, DND state, notification dot/tooltip state, and notification panel/DND actions.
-- `features/power/PowerController.qml`: owns power profile probing/monitoring/actions and prevent-sleep state/actions.
-- `features/system/SystemStatsController.qml`: parses `/proc` snapshots and updates CPU, memory, temperature, network rates, core usage, and history arrays.
+- `features/bluetooth/BluetoothController.qml`: Bluetooth adapter state, device snapshots, connect/disconnect/pair/remove/scan, action messages, timeouts, signal watchers.
+- `features/network/NetworkController.qml`: Wi-Fi status polling, cached network snapshots, radio/connect/disconnect/scan, action messages, `nmcli monitor` refresh path.
+- `features/audio/AudioController.qml`: native Pipewire output devices, default sink selection, output volume, mute state.
+- `features/media/MediaController.qml`: MPRIS player selection, media metadata, playback state, position ticking, seek/playback actions, app focus.
+- `features/notifications/NotificationController.qml`: swaync initial state, D-Bus monitoring, DND state, notification dot/tooltip, panel/DND actions.
+- `features/power/PowerController.qml`: power profile probe/monitor/actions, prevent-sleep state/actions.
+- `features/system/SystemStatsController.qml`: parses `/proc` snapshots; updates CPU, memory, temperature, network rates, core usage, and history arrays.
 
 Still to extract:
 
-- Battery detail logic: battery parsing and charge-limit status remain partly root/popup-owned and can move behind `PowerController` if it grows.
-
-## Wi-Fi, Bluetooth, And Future Audio
-
-Wi-Fi, Bluetooth, and audio now share small UI primitives such as `ActionChip` and `DeviceRow`, but their panel layouts are still largely separate. This is acceptable short-term because their connection models differ.
-
-Recommended next reusable pieces:
-
-```text
-components/
-  DevicePanel.qml       # header, status card, action row, scrollable list shell
-
-features/network/
-  NetworkController.qml
-  WifiPopup.qml or WifiMenu.qml
-
-features/bluetooth/
-  BluetoothController.qml
-  BluetoothDeviceRow.qml
-
-features/audio/
-  AudioController.qml
-  AudioPopup.qml
-```
-
-Audio should keep using Quickshell's Pipewire service instead of `wpctl` scripts where native state/actions are available. The current popup is intentionally small: output device selection only. Future audio work can add capture devices, microphone volume/mute, and stream routing behind the same feature-owned controller.
+- Battery detail logic (parsing, charge-limit status) remains partly root/popup-owned; can move behind `PowerController`.
 
 ## Scripts
-
-Scripts are feature-oriented and process-based. Public script entrypoints live directly under `quickshell/scripts/` with the feature name in the filename. Shared helper implementations live in `quickshell/scripts/lib/`. Prefer native Quickshell services, event streams, and Hyprland Lua IPC over polling scripts or shell helpers whenever the integration exists.
 
 | Script | Primary caller | Purpose |
 |---|---|---|
 | `audio-spectrum.sh` | `shell.qml` | Audio spectrum data for the island |
-| `brightness.sh` | `shell.qml` / quick adjust | Backlight get/set and brightness IPC feedback |
-| `wifi.sh` | `shell.qml` / Wi-Fi popup | Wi-Fi status, scan, connect, disconnect, radio toggle |
+| `brightness.sh` | `shell.qml` / quick-adjust | Backlight get/set and brightness IPC feedback |
+| `wifi.sh` | Wi-Fi popup | Wi-Fi status, scan, connect, disconnect, radio toggle |
 | `battery.sh` | battery popup | Battery charge limit actions |
 | `osd.sh` | external scripts / IPC | OSD trigger helper |
 | `prevent-sleep.sh` | control panel | Sleep inhibition toggle |
-| `power-profile.sh` | power controller | Direct `ActiveProfile` reads and change monitoring through `busctl` |
-| `system-status.sh` | control panel open/action refresh | Batch status for brightness, recording, and prevent-sleep state |
+| `system-status.sh` | control panel / refresh | Batch status for brightness, recording, prevent-sleep |
 
 ## Design Direction
 
-HyprV should feel like a dense desktop shell, not a web dashboard. Keep visual language compact, consistent, and utilitarian:
+HyprV should feel like a dense, native desktop bar — compact, Apple-inspired, not a web dashboard.
 
 - Glass surfaces are framed by `AnimatedGlassPanel`.
-- Bar modules use pill primitives.
-- Feature actions use icon/text chips and compact rows.
-- Popups should be anchored, keyboard dismissible, and behaviorally stable.
+- Bar modules use `GroupPill` + `TextModule` / inline items.
+- Feature actions use `ActionChip` and compact `DeviceRow` rows.
+- Popups should be anchored, keyboard-dismissible, and behaviorally stable.
 - Avoid adding new global state to `shell.qml` unless several features need it.
+- Use `qmllint` on every modified file before reloading.
+- The bar has no guardrails for hypothetical external reuse — keep it lean.
+- **Always prefer the most robust and proper approach.** Event-driven and native Quickshell service integrations are the default. Polling via `PollCommand` or shell scripts is only acceptable for state Quickshell cannot expose natively (sampled `/proc` values, on-demand probes, external tool output).
+
+

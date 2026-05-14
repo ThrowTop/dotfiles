@@ -1,55 +1,56 @@
 import QtQuick
-
 // Nerd Font glyphs, kept to one Material Design Icons style family where possible.
 QtObject {
-    readonly property string wifi: ""
-    readonly property string wifiOff: "󰤮"
-    readonly property string wifiDisconnected: "󰤭"
-    readonly property string wifiWeak: "󰤟"
-    readonly property string wifiMedium: "󰤥"
-    readonly property string wifiStrong: "󰤥"
-    readonly property string wired: "󰈀"
+    readonly property string wifi: ""           // nf-fa-wifi
+    readonly property string wifiOff: "󰤮"        // nf-md-wifi_strength_off
+    readonly property string wifiDisconnected: "󰤭" // nf-md-wifi_strength_off_outline
+    readonly property string wifiWeak: "󰤟"      // nf-md-wifi_strength_1
+    readonly property string wifiMedium: "󰤥"    // nf-md-wifi_strength_2
+    readonly property string wifiStrong: "󰤥"    // nf-md-wifi_strength_4
+    readonly property string wired: "󰈀"         // nf-md-ethernet
 
-    readonly property string volumeMuted: "󰝟"
-    readonly property string volumeLow: "󰕿"
-    readonly property string volumeMedium: "󰖀"
-    readonly property string volumeHigh: "󰕾"
+    readonly property string volumeMuted: "󰝟"   // nf-md-volume_off
+    readonly property string volumeLow: "󰕿"     // nf-md-volume_low
+    readonly property string volumeMedium: "󰖀"  // nf-md-volume_medium
+    readonly property string volumeHigh: "󰕾"    // nf-md-volume_high
 
-    readonly property string bell: "󰂚"
-    readonly property string bellOff: "󰂛"
-    readonly property string notificationDot: "󰇙"
+    readonly property string bell: "󰂚"          // nf-md-bell
+    readonly property string bellOff: "󰂛"       // nf-md-bell_off
+    readonly property string notificationDot: "󰇙" // nf-md-circle_medium
 
-    readonly property string bluetooth: "󰂯"
-    readonly property string bluetoothOff: "󰂲"
-    readonly property string brightness: "󰃠"
-    readonly property string controlCenter: "󰘮"
-    readonly property string cpu: "󰘚"
-    readonly property string memory: "󰍛"
-    readonly property string screenRecord: "󰻃"
-    readonly property string preventSleep: "󰒲"
-    readonly property string preventSleepOff: "󰒳"
-    readonly property string power: "󰐥"
+    readonly property string bluetooth: "󰂯"     // nf-md-bluetooth
+    readonly property string bluetoothOff: "󰂲"  // nf-md-bluetooth_off
+    readonly property string brightness: "󰃠"    // nf-md-brightness_7
+    readonly property string controlCenter: "󰘮"  // nf-md-dots_grid
+    readonly property string cpu: "󰘚"           // nf-md-cpu_64_bit
+    readonly property string memory: "󰍛"        // nf-md-memory
+    readonly property string screenRecord: "󰻃"  // nf-md-record_circle
+    readonly property string preventSleep: "󰒲"  // nf-md-sleep
+    readonly property string preventSleepOff: "󰒳" // nf-md-sleep_off
+    readonly property string power: "󰐥"         // nf-md-power_standby
 
-    readonly property string powerSaver: "󰾆"
-    readonly property string powerBalanced: "󰾅"
-    readonly property string powerPerformance: "󰓅"
+    readonly property string powerSaver: "󰾆"    // nf-md-leaf
+    readonly property string powerBalanced: "󰾅"  // nf-md-sine_wave
+    readonly property string powerPerformance: "󰓅" // nf-md-speedometer
 
-    readonly property string headphones: "󰋋"
-    readonly property string speaker: "󰓃"
-    readonly property string display: "󰍹"
-    readonly property string mouse: "󰍽"
-    readonly property string keyboard: "󰌌"
-    readonly property string phone: "󰏲"
-    readonly property string camera: "󰄀"
-    readonly property string printer: "󰐪"
-    readonly property string computer: "󰌢"
-    readonly property string lock: "󰌾"
-    readonly property string music: "󰝚"
-    readonly property string mediaPrevious: "󰒮"
-    readonly property string mediaPlay: "󰐊"
-    readonly property string mediaPause: "󰏤"
-    readonly property string mediaNext: "󰒭"
+    readonly property string headphones: "󰋋"    // nf-md-headphones
+    readonly property string speaker: "󰓃"       // nf-md-speaker
+    readonly property string display: "󰍹"       // nf-md-monitor
+    readonly property string mouse: "󰍽"         // nf-md-mouse
+    readonly property string keyboard: "󰌌"      // nf-md-keyboard
+    readonly property string phone: "󰏲"         // nf-md-phone
+    readonly property string camera: "󰄀"        // nf-md-camera
+    readonly property string printer: "󰐪"       // nf-md-printer
+    readonly property string computer: "󰌢"      // nf-md-laptop
+    readonly property string lock: "󰌾"          // nf-md-lock
+    readonly property string music: "󰝚"         // nf-md-music
+    readonly property string mediaPrevious: "󰒮" // nf-md-skip_previous
+    readonly property string mediaPlay: "󰐊"     // nf-md-play
+    readonly property string mediaPause: "󰏤"    // nf-md-pause
+    readonly property string mediaNext: "󰒭"     // nf-md-skip_next
 
-    readonly property string batteryCharging: "󰂄"
-    readonly property var batteryLevels: ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"]
+    readonly property string batteryCharging: "󰂄" // nf-md-battery_charging_50
+    readonly property var batteryLevels: ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"] // nf-md-battery_0 through nf-md-battery_10
 }
+
+

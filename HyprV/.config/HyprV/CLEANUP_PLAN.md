@@ -17,71 +17,49 @@ Keep this file blunt and current: when a task is started, finished, abandoned, o
 - `shell.qml` is still too large and owns too many unrelated responsibilities.
 - Several QML files are too large to be maintainable as single components.
 - Popup positioning and animation state are duplicated across features.
-- Several process monitors and polling loops are fragile.
 - Some shell scripts or shell fragments are embedded directly in QML.
 - Hardware-specific assumptions still exist in brightness and system stats.
 
-Recent completed cleanup:
+Recent completed work:
 
-- `shellRoot` is now treated as required in the main component tree.
-- Control center layout was rebalanced.
-- Script paths were flattened under `quickshell/scripts/` with one `lib/` folder.
-- Quickshell reload passed after the last cleanup cycle.
+- Controller extraction: Bluetooth, Network, Audio, Media, Notifications, Power, SystemStats — all done.
+- Script flattening under `quickshell/scripts/` with one `lib/` folder — done.
+- Control center layout rebalanced — done.
+- Bar polish pass: SF Pro font split, BatteryPill component, icon/text font separation — done.
 
 ## Phase 1: Stop Process And Command Fragility
 
 Status: `Done`
 
-Goal: make process execution less brittle before deeper refactors.
-
-Tasks:
-
-- [x] Add restart backoff for long-running monitors in `shell.qml`.
-  - Targets: Wi-Fi monitor, notification watcher, and power profile watcher.
-  - Problem: immediate `Qt.callLater()` restart can spin if a dependency exits quickly.
+- [x] Add restart backoff for long-running monitors.
 - [x] Move embedded shell fragments out of QML into scripts.
-  - Targets: Wi-Fi manager launcher, Bluetooth manager launcher, media app focus helper, Fluent icon locator, audio volume apply.
-  - Problem: shell-in-QML is hard to lint and easy to break with quoting.
-- [x] Move transient marker files out of global `/tmp`.
-  - Target: `HYPRV_NMCLI_BROKEN_MARKER`.
-  - Preferred: `$XDG_RUNTIME_DIR/hyprv/` for session state or `$XDG_STATE_HOME/hyprv/` for persistent state.
-
-Verification:
-
-- `bash -n quickshell/scripts/*.sh quickshell/scripts/lib/*.sh`
-- `./quickshell/scripts/reload.sh`
-- Inspect newest `log.log` and `log.qslog`.
-- Confirm monitor crashes do not create tight restart loops.
+- [x] Move transient marker files out of `/tmp` into `$XDG_RUNTIME_DIR/hyprv/`.
 
 ## Phase 2: Split ShellRoot Into Controllers
 
-Status: `Working`
-
-Goal: reduce `shell.qml` from god object to composition root plus compatibility wiring.
-
-Tasks:
+Status: `Done`
 
 - [x] Extract `features/network/NetworkController.qml`.
-  - Move Wi-Fi status parsing, cached network handling, action process state, action messages, and refresh timers out of `shell.qml`.
-  - Keep compatibility aliases/methods in `shell.qml` during the transition.
-- [x] Extract `features/audio/AudioController.qml`.
-  - Move output volume, mute state, default output selection, and Pipewire output device snapshots out of `shell.qml`.
-  - Keep compatibility aliases/methods in `shell.qml` during the transition.
-  - Added a small `features/audio/AudioPopup.qml` for default output selection from the bar audio module.
+- [x] Extract `features/audio/AudioController.qml` + `AudioPopup.qml`.
 - [x] Extract `features/media/MediaController.qml`.
-  - Move active player selection, media position timer, media commands, and focus-app helper.
 - [x] Extract `features/power/PowerController.qml`.
-  - Move power profile watch/apply and prevent-sleep state/actions.
-  - Battery parsing and charge-limit UI stay in the battery popup for now.
 - [x] Extract `features/notifications/NotificationController.qml`.
-  - Move swaync monitor, initial probe, DND state, notification count/dot state.
-  - Bar and control-center actions call controller-backed root compatibility methods.
+- [x] Extract `features/system/SystemStatsController.qml`.
 
-Verification:
+Remaining: battery parsing and charge-limit logic still partly root/popup-owned. Can move behind `PowerController` in a later pass.
 
-- Each controller extraction should preserve existing root property names until consumers are migrated.
-- Reload after each controller extraction.
-- Check bar modules, control center, Dynamic Island, and popups still receive live state.
+## Phase 2b: Bar Polish
+
+Status: `Done`
+
+Goal: Apple-inspired bar aesthetic, coherent typography, clean battery widget.
+
+- [x] Switch `baseFont` to SF Pro Text, add `displayFont` = SF Pro Display. `iconFont` stays JetBrainsMono Nerd Font.
+- [x] Apply `displayFont` to large labels (≥ 18 px) in `DynamicIsland.qml` (clock, media title).
+- [x] Create `components/BatteryPill.qml` — iPhone-style solid colored rect (32 × 18, radius 6) with number inside. No fill-level bar; color encodes state.
+- [x] Wire `BatteryPill` into `bar/status/StatusPill.qml`; remove old `TextModule` battery block.
+- [x] Fix network icon/text overlap in `SystemResourcesPill.qml` by splitting icon and speed into separate items; size icon container via `paintedWidth` to avoid nerd font logical-advance undercount.
+- [x] Bump keyboard layout label in `StatusPill` from 13 → 16 px to match temperature label.
 
 ## Phase 3: Make One Popup Host
 
@@ -89,36 +67,16 @@ Status: `Todo`
 
 Goal: delete duplicated popup state machines.
 
-Problem:
-
 Many popups carry the same state under different local names:
-
-- `sourceItem`
-- `parentWindow`
-- `positionTimer`
-- `popupOpenTimer`
-- `popupRequested`
-- `animatingClose`
-- `openAnimationPending`
-- `mapToGlobal()` placement
-- implicit-height retry loops
+`sourceItem`, `parentWindow`, `positionTimer`, `popupOpenTimer`, `popupRequested`, `animatingClose`, `openAnimationPending`, `mapToGlobal()` placement, implicit-height retry loops.
 
 Tasks:
 
-- Create a shared popup host/chrome component.
-  - Candidate: `components/AnchoredPopup.qml` or `components/PopupSurface.qml`.
-  - It should own anchoring, screen clamping, open/close lifecycle, animation timing, and escape/outside-click behavior.
-- Migrate simple popups first.
-  - Suggested order: `TrayOverflowPopup`, `BatteryInfoPopup`, `SystemStatsPopup`.
-- Migrate harder popups later.
-  - Suggested order: `ControlPanelPopup`, `TrayMenuPopup`, `WifiFallback`.
+- [ ] Create `components/AnchoredPopup.qml` or `components/PopupSurface.qml` owning anchoring, screen clamping, open/close lifecycle, animation timing, and escape/outside-click behavior.
+- [ ] Migrate simple popups first: `TrayOverflowPopup`, `BatteryInfoPopup`, `SystemStatsPopup`.
+- [ ] Migrate harder popups: `ControlPanelPopup`, `TrayMenuPopup`, `WifiFallback`.
 
-Verification:
-
-- Test anchor placement on left, center, and right bar items.
-- Test open/close spam clicking.
-- Test keyboard escape.
-- Test monitor changes if possible.
+Verification: anchor placement on left/center/right items; open/close spam; keyboard escape; monitor changes.
 
 ## Phase 4: Break Up Giant QML Files
 
@@ -128,126 +86,64 @@ Goal: make feature files small enough to reason about.
 
 Targets:
 
-- `features/network/WifiFallback.qml`
-  - Split into indicator, popup shell, status card, action row, network list, network row, password row.
-- `DynamicIsland.qml`
-  - Split into island shell, idle view, media view, OSD view, media controls, progress/seek control.
-- `features/control/ControlPanelPopup.qml`
-  - Split into popup shell, main grid, Wi-Fi tile, Bluetooth tile, power section, session section, sliders.
-- `features/bluetooth/ControlPanelBluetoothDetails.qml`
-  - Split status card, action row, device list, device row.
-- `features/tray/TrayMenuPopup.qml`
-  - Split menu model/hydration behavior from visual row rendering.
+- `features/network/WifiFallback.qml` — split into indicator, popup shell, status card, action row, network list, network row, password row.
+- `DynamicIsland.qml` — split into island shell, idle view, media view, OSD view, media controls, seek control.
+- `features/control/ControlPanelPopup.qml` — split into popup shell, main grid, Wi-Fi tile, Bluetooth tile, power section, session section, sliders.
+- `features/bluetooth/ControlPanelBluetoothDetails.qml` — split status card, action row, device list, device row.
+- `features/tray/TrayMenuPopup.qml` — split menu model/hydration from visual row rendering.
 
-Rule:
-
-- Extract view subcomponents first.
-- Do not move business logic and UI in the same patch unless the file is already failing and the move is the fix.
-
-Verification:
-
-- Reload after each file split.
-- Use focused `qmllint` on touched files, but treat Quickshell type warnings as secondary to runtime logs.
+Rule: extract view subcomponents first. Do not move business logic and UI in the same patch unless the file is already failing.
 
 ## Phase 5: Replace Hardware-Specific Assumptions
 
 Status: `Todo`
 
-Goal: keep the config personal, but stop hardcoding fragile hardware details in core logic.
-
-Tasks:
-
-- Replace hardcoded thermal zone read in system stats.
-  - Current issue: `/sys/class/thermal/thermal_zone1/temp`.
-  - Better: configurable preferred zone with auto-detected fallback.
-- Replace hardcoded brightness max.
-  - Current issue: `brightness.sh` uses `MAX=400`.
-  - Better: read max from `brightnessctl m` or `/sys/class/backlight/*/max_brightness`, then apply the perceptual curve.
-- Audit scripts for implicit machine assumptions.
-  - `record-script.sh` path from Hypr config.
-  - icon theme names.
-  - terminal fallback assumptions like `kitty`.
-
-Verification:
-
-- Check brightness get/set across low and high values.
-- Check system stats if thermal zone is missing.
-- Reload logs should not show missing-file noise.
+- [ ] Thermal zone: currently hardcoded `/sys/class/thermal/thermal_zone1/temp`. Better: configurable preferred zone with auto-detected fallback.
+- [ ] Brightness max: `brightness.sh` uses `MAX=400`. Better: read from `brightnessctl m` or `/sys/class/backlight/*/max_brightness`.
+- [ ] Audit scripts for implicit machine assumptions (terminal fallback, icon theme names, record script path).
 
 ## Phase 6: Improve Script Quality
 
 Status: `Todo`
 
-Goal: scripts should be boring, lintable, and predictable.
-
-Tasks:
-
-- Add `shellcheck` pass when available.
-- Normalize shell style.
-  - Prefer one shell dialect per script: POSIX `sh` or Bash, not accidental mixing.
-  - Keep public entrypoints small.
-  - Put parsing-heavy helpers under `scripts/lib/`.
-- Reduce dependency chains where possible.
-  - Wi-Fi status currently depends on `nmcli`, `iw`, `awk`, temp files, and `jq`.
-  - This is acceptable short term, but should be isolated behind one stable output contract.
-- Add script usage output for every public script.
-
-Verification:
-
-- `bash -n` for Bash scripts.
-- `sh -n` for POSIX scripts.
-- `shellcheck` if installed.
-- Run key scripts directly and confirm output contract.
+- [ ] `shellcheck` pass on all scripts.
+- [ ] Normalize to one dialect per script (POSIX `sh` or Bash, not mixed).
+- [ ] Add usage output to every public script.
+- [ ] Reduce Wi-Fi status dependency chain (`nmcli`, `iw`, `awk`, temp files, `jq`) behind a stable output contract.
 
 ## Phase 7: Reduce Static QML Noise
 
 Status: `Later`
 
-Goal: make `qmllint` more useful by shrinking known-warning noise.
-
-Tasks:
-
-- Add `pragma ComponentBehavior: Bound` where it fits and does not break behavior.
+- `pragma ComponentBehavior: Bound` where it fits.
 - Qualify easy unqualified accesses in smaller files first.
 - Fix dead defensive checks left after `required shellRoot`.
-- Decide whether Quickshell-specific `PanelWindow is not creatable` warnings are acceptable noise or need local lint config.
-
-Reason this is later:
-
-- Runtime correctness matters more right now.
-- The current lint output is noisy but not the main source of architectural risk.
 
 ## Tried / Notes
 
-- Phase 1 process/command cleanup: `Working`.
-  - Done: added helper script targets for manager launch, media focus, icon theme lookup, and audio volume.
-  - Done: added monitor restart backoff for audio, Wi-Fi, notifications, and power profile watchers.
-  - Done: moved the nmcli failure marker under a HyprV runtime directory instead of bare `/tmp`.
-  - Verified: `bash -n`, focused `qmllint`, `git diff --check`, Quickshell reload, and clean runtime `log.log`.
+- Phase 1 process/command cleanup: `Done`.
+  - Done: helper scripts for manager launch, media focus, icon theme lookup, audio volume.
+  - Done: monitor restart backoff for audio, Wi-Fi, notifications, power profile.
+  - Done: nmcli failure marker moved to HyprV runtime dir instead of bare `/tmp`.
 - Network controller extraction: `Done`.
-  - Moved Wi-Fi state, cached network handling, status polling, action process state, follow-up refresh, and `nmcli monitor` ownership into `features/network/NetworkController.qml`.
-  - Kept `shell.qml` compatibility aliases and wrapper methods for current UI consumers.
-  - Fixed follow-up regression: the bar network icon must stay visible even before/without positive `networkWidgetVisible` state.
-  - Verified: focused `qmllint`, `bash -n`, Quickshell reload, clean runtime `log.log`, residual grep for old root Wi-Fi internals, and screenshot confirmation of the right-side bar icon.
-- Audio controller extraction and basic output picker: `Done`.
-  - Moved output volume/mute/default sink state to `features/audio/AudioController.qml` using native Quickshell Pipewire APIs.
-  - Added reusable `components/DeviceRow.qml` and `features/audio/AudioPopup.qml`.
-  - Kept existing root audio compatibility properties and methods for bar, quick-adjust, control panel, and island consumers.
+  - Moved Wi-Fi state, cached networks, status polling, action process state, follow-up refresh, `nmcli monitor` ownership.
+  - Kept `shell.qml` compatibility aliases/wrappers.
+- Audio controller extraction: `Done`.
+  - Native Pipewire output via `Quickshell.Services.Pipewire`.
+  - Added `components/DeviceRow.qml` and `features/audio/AudioPopup.qml`.
 - `shellRoot` null-guard cleanup: `Done`.
-  - Result: reload succeeded.
-  - Follow-up: remove leftover impossible checks such as `enabled: shellRoot !== null` where found.
-- Script flattening: `Done`.
-  - Result: old nested script paths removed; public scripts now live directly under `quickshell/scripts/`.
-- Control center layout rebalance: `Done`.
-  - Result: Power moved to the left column; right column is less overloaded.
+- Icon audit (MDI-outline pass): `Tried, abandoned`.
+  - Attempted to replace filled glyphs with `-outline` variants by computing codepoints arithmetically. The approach was wrong — glyph codepoints cannot be computed from names without the actual font charmap. Would need to reference the nerdfont cheatsheet directly. Reverted to original. Leave for a future pass with a proper lookup source.
+- Bar polish (SF Pro + BatteryPill): `Done`.
+  - Font split to SF Pro Text/Display for UI, Nerd Font for glyphs only.
+  - BatteryPill component: solid colored rect, number inside, tip nub.
+  - Network icon/text split using `paintedWidth` for correct ink-rect sizing.
+  - Keyboard layout font bumped to 16 px for visual consistency.
 
 ## Suggested Work Order
 
-1. Phase 3 popup lifecycle extraction for simple popups.
+1. Phase 3 popup lifecycle extraction (simple popups first).
 2. Wi-Fi popup split.
 3. Dynamic Island split.
-4. Battery detail logic cleanup behind `PowerController` if it grows.
+4. Battery detail logic behind `PowerController`.
 5. Hardware assumption cleanup.
-6. Lint-noise reduction.
-
-This order attacks the highest-risk runtime behavior first, then reduces file size and duplicated UI state after the system is easier to supervise.

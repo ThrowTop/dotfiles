@@ -176,7 +176,8 @@ ShellRoot {
     readonly property int screenCornerShadeSize: 29
     readonly property color screenCornerShadeColor: colors.black
     readonly property alias icons: iconSet
-    readonly property string baseFont: "JetBrainsMono Nerd Font"
+    readonly property string baseFont: "SF Pro Text"
+    readonly property string displayFont: "SF Pro Display"
     readonly property string iconFont: "JetBrainsMono Nerd Font"
     readonly property int trayMenuTextPixelSize: 14
     readonly property int trayButtonWidth: 18

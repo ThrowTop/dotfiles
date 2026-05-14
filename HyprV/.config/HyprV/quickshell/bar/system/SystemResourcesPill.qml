@@ -30,14 +30,47 @@ GroupPill {
         onRightClicked: pill.shellRoot.runDetached(["kitty", "-t", "btop", "-o", "window.startup_mode=Fullscreen", "-e", "btop"])
     }
 
-    TextModule {
+    Item {
         id: networkTrigger
 
-        shellRoot: pill.shellRoot
-        label: (pill.shellRoot.networkIcon) + " " + (pill.shellRoot.networkText)
-        interactive: true
-        paddingLeft: 6
-        paddingRight: 12
-        onLeftClicked: pill.shellRoot.openSystemStatsPopup(networkTrigger, pill.parentWindow)
+        implicitWidth: netIconItem.implicitWidth + netSpeed.implicitWidth
+        implicitHeight: pill.shellRoot.barHeight
+
+        Item {
+            id: netIconItem
+
+            implicitWidth: netIconText.paintedWidth + 12
+            implicitHeight: pill.shellRoot.barHeight
+
+            Text {
+                id: netIconText
+
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.leftMargin: 6
+                text: pill.shellRoot.networkIcon
+                color: pill.shellRoot.primaryText
+                font.family: pill.shellRoot.iconFont
+                font.pixelSize: 16
+                font.weight: Font.Bold
+                renderType: Text.NativeRendering
+            }
+        }
+
+        TextModule {
+            id: netSpeed
+
+            anchors.left: netIconItem.right
+            shellRoot: pill.shellRoot
+            label: pill.shellRoot.networkText
+            paddingLeft: 0
+            paddingRight: 12
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: pill.shellRoot.openSystemStatsPopup(networkTrigger, pill.parentWindow)
+        }
     }
 }

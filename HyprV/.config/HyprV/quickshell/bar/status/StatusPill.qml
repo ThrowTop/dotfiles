@@ -22,30 +22,33 @@ GroupPill {
         textColor: pill.shellRoot.subtext
         paddingLeft: 5
         paddingRight: 5
-        fontPixelSize: 13
+        fontPixelSize: 16
     }
 
     Item {
         id: batteryTrigger
 
-        width: batteryModule.implicitWidth
-        height: batteryModule.implicitHeight
-        implicitWidth: batteryModule.implicitWidth
-        implicitHeight: batteryModule.implicitHeight
+        visible: !!pill.shellRoot.batteryDevice
+        anchors.verticalCenter: parent.verticalCenter
+        implicitWidth: visible ? batteryPill.implicitWidth + 14 : 0
+        implicitHeight: pill.shellRoot.barHeight
 
-        TextModule {
-            id: batteryModule
+        BatteryPill {
+            id: batteryPill
 
-            anchors.fill: parent
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.left: parent.left
+            anchors.leftMargin: 7
             shellRoot: pill.shellRoot
-            label: pill.shellRoot.batteryText
-            textColor: pill.shellRoot.batteryCritical && !pill.shellRoot.batteryCharging
-                ? pill.shellRoot.criticalColor
-                : (pill.shellRoot.batteryColor)
-            interactive: pill.shellRoot.batteryText.length > 0
-            paddingLeft: 5
-            paddingRight: 12
-            onLeftClicked: pill.shellRoot.openBatteryInfoPopup(batteryTrigger, pill.parentWindow)
+            percent: pill.shellRoot.batteryPercent
+            charging: pill.shellRoot.batteryCharging
+            critical: pill.shellRoot.batteryCritical
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: pill.shellRoot.openBatteryInfoPopup(batteryTrigger, pill.parentWindow)
         }
     }
 }

@@ -404,7 +404,7 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: Qt.formatTime(island.now, "hh:mm")
                     color: island.textColor
-                    font.family: island.shellRoot.baseFont
+                    font.family: island.shellRoot.displayFont
                     font.pixelSize: 20
                     font.weight: Font.Bold
                     horizontalAlignment: Text.AlignHCenter
@@ -706,7 +706,7 @@ Item {
                     width: parent.width
                     text: island.displayTitle()
                     color: island.textColor
-                    font.family: island.shellRoot.baseFont
+                    font.family: island.shellRoot.displayFont
                     font.pixelSize: 18
                     font.weight: Font.Bold
                     elide: Text.ElideRight

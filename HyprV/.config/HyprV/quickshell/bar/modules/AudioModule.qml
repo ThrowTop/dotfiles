@@ -12,7 +12,7 @@ Item {
     Text {
         anchors.centerIn: parent
         text: module.shellRoot.volumeIcon
-        color: module.shellRoot.launchColor
+        color: module.shellRoot.primaryText
         font.family: module.shellRoot.iconFont
         font.pixelSize: 17
         font.weight: Font.Bold
