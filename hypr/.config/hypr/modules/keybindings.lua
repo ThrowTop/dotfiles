@@ -8,6 +8,12 @@ local hyprv = require("helpers/hyprv")
 local mod = settings.main_mod
 local qs_scripts = settings.qs
 
+hl.bind("SUPER + SHIFT + G", function()
+    hlc.notify("async: started")
+    hlc.exec_async("brightnessctl get", function(result)
+        hlc.notify("async: brightness = " .. (result.stdout or "?") .. " (code " .. result.code .. ")")
+    end)
+end)
 -- -------------------------
 -- Applications
 -- -------------------------
