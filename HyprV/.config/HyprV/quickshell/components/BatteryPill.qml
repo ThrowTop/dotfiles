@@ -21,7 +21,7 @@ Item {
     Rectangle {
         id: body
 
-        width: 32
+        width: 33
         height: 18
         radius: 6
         color: root.fillColor
@@ -30,14 +30,31 @@ Item {
             ColorAnimation { duration: 300 }
         }
 
-        Text {
+        Row {
             anchors.centerIn: parent
-            text: root.charging ? root.shellRoot.icons.batteryCharging : Math.round(root.percent).toString()
-            font.family: root.charging ? root.shellRoot.iconFont : root.shellRoot.baseFont
-            font.pixelSize: 15
-            font.weight: Font.Bold
-            color: "#1e1e2e"
-            renderType: Text.NativeRendering
+            anchors.horizontalCenterOffset: root.charging ? 1 : 0
+            spacing: 0
+
+            Text {
+                text: Math.round(root.percent).toString()
+                font.family: root.shellRoot.baseFont
+                font.pixelSize: 13
+                font.weight: Font.Bold
+                color: "#1e1e2e"
+                renderType: Text.NativeRendering
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            Text {
+                visible: root.charging
+                text: root.shellRoot.icons.bolt
+                font.family: root.shellRoot.iconFont
+                font.pixelSize: 11
+                font.weight: Font.Bold
+                color: "#1e1e2e"
+                renderType: Text.NativeRendering
+                anchors.verticalCenter: parent.verticalCenter
+            }
         }
     }
 

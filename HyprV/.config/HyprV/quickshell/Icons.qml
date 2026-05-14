@@ -50,6 +50,7 @@ QtObject {
     readonly property string mediaNext: "󰒭"     // nf-md-skip_next
 
     readonly property string batteryCharging: "󰂄" // nf-md-battery_charging_50
+    readonly property string bolt: "󱐋"            // nf-md-lightning_bolt
     readonly property var batteryLevels: ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"] // nf-md-battery_0 through nf-md-battery_10
 }
 

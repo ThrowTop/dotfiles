@@ -14,7 +14,7 @@ QtObject {
     readonly property color overlay: "#6c7086"   // inactive / overlay text
 
     // ── Status / accents ─────────────────────────────────────
-    readonly property color green:   "#a6e3a1"   // success, on, charging, battery
+    readonly property color green:   "#30D158"   // success, on, charging, battery
     readonly property color red:     "#f38ba8"   // error, off, critical
     readonly property color blue:    "#89b4fa"   // launch, wifi, links, info
     readonly property color yellow:  "#f2d36b"   // warning, medium usage
