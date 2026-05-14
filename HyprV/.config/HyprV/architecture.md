@@ -129,15 +129,23 @@ BarWindow
 
 ### StatusPill (right)
 
-Contains three items in a single `GroupPill`:
+Contains two items in a single `GroupPill`:
 
-1. **Temperature** — icon + °C, opens btop on click
-2. **Keyboard layout** — current layout name (e.g. `ENG`)
-3. **BatteryPill** — iPhone-style solid colored rectangle, 32 × 18 px, `radius: 6`, number inside (no % sign). Color encodes state: green → yellow (≤ 30 %) → red (≤ 15 %) → green + bolt (charging). Hides when no `batteryDevice`.
+1. **Keyboard layout** — current layout name (e.g. `ENG`)
+2. **BatteryPill** — iPhone-style solid colored rectangle, 32 × 18 px, `radius: 6`, number inside (no % sign). Color encodes state: green → yellow (≤ 30 %) → red (≤ 15 %) → green + bolt (charging). Hides when no `batteryDevice`.
 
 ### SystemResourcesPill (left)
 
-Contains CPU %, memory %, and network speed. The network module splits the icon and speed text into separate items so each uses the correct font — the icon uses `iconFont` sized via `paintedWidth`, the speed text uses `baseFont`.
+Contains four color-coded modules in a single `GroupPill`. Each module is two separate `Text` items — icon in `iconFont`, value in `baseFont` — sized via `paintedWidth` to avoid nerd font advance-width undercount.
+
+| Module | Format | Color thresholds |
+|---|---|---|
+| CPU | icon + `23%` | ≥ 80% red · ≥ 60% yellow · else white |
+| RAM | icon + `61%` | ≥ 80% red · ≥ 60% yellow · else white |
+| Temp | icon + `52°C` | ≥ 80°C red · ≥ 65°C yellow · else white |
+| Network | icon + `1.2 MB/s` | always white |
+
+Left-click any module → system stats popup (anchored to left edge). Right-click → btop fullscreen.
 
 ## Runtime Flow
 
@@ -171,11 +179,9 @@ Implemented:
 - `features/media/MediaController.qml`: MPRIS player selection, media metadata, playback state, position ticking, seek/playback actions, app focus.
 - `features/notifications/NotificationController.qml`: swaync initial state, D-Bus monitoring, DND state, notification dot/tooltip, panel/DND actions.
 - `features/power/PowerController.qml`: power profile probe/monitor/actions, prevent-sleep state/actions.
-- `features/system/SystemStatsController.qml`: parses `/proc` snapshots; updates CPU, memory, temperature, network rates, core usage, and history arrays.
+- `features/system/SystemStatsController.qml`: parses `/proc` snapshots; updates CPU (aggregate + per-core), memory (usage + GB used/total), temperature, network rates, load avg, CPU freq, and history arrays. Light command when popup closed, full command when open.
 
-Still to extract:
-
-- Battery detail logic (parsing, charge-limit status) remains partly root/popup-owned; can move behind `PowerController`.
+Battery power tracking uses `batteryRatePoll` in `shell.qml` (not a controller): reads sysfs `current_now × voltage_now` at 2s when battery popup open, 10s otherwise, stopped on AC. Feeds `batteryCurrentW` and `powerDrawHistory` for rolling average. `BatteryInfoPopup` reads health % and cycle count once per open.
 
 ## Scripts
 

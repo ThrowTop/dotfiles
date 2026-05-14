@@ -78,8 +78,8 @@ Never mix `iconFont` and `baseFont` in the same `Text` element. When a bar modul
 | `quickshell/Icons.qml` | Nerd Font glyph strings — MDI family |
 | `quickshell/PollCommand.qml` | Timer-based command polling primitive |
 | `quickshell/bar/BarWindow.qml` | Top bar PanelWindow layout |
-| `quickshell/bar/status/StatusPill.qml` | Right-side status pill: temp, keyboard layout, battery |
-| `quickshell/bar/system/SystemResourcesPill.qml` | Left-side resources: CPU, memory, network |
+| `quickshell/bar/status/StatusPill.qml` | Right-side status pill: keyboard layout, battery |
+| `quickshell/bar/system/SystemResourcesPill.qml` | Left-side resources: CPU, RAM, temperature, network — all color-coded |
 | `quickshell/bar/window/WindowTitlePill.qml` | Active window title, floats between left and center |
 | `quickshell/components/BatteryPill.qml` | iPhone-style battery indicator: solid colored rect + number + tip nub |
 | `quickshell/components/GroupPill.qml` | Shared pill container used by all bar groups |
@@ -90,7 +90,9 @@ Never mix `iconFont` and `baseFont` in the same `Text` element. When a bar modul
 | `quickshell/features/audio/AudioPopup.qml` | Output device picker opened from the bar audio module |
 | `quickshell/features/bluetooth/BluetoothController.qml` | Bluetooth adapter/device state and actions |
 | `quickshell/features/network/NetworkController.qml` | Wi-Fi status/action state, polling, and monitor refresh |
-| `quickshell/features/system/SystemStatsController.qml` | CPU/memory/network/temp parsing and history |
+| `quickshell/features/system/SystemStatsController.qml` | CPU/memory/network/temp parsing and history; popup-gated per-core, load, freq |
+| `quickshell/features/system/SystemStatsPopup.qml` | System stats popup: CPU (per-core grid), RAM, temperature, network with trend charts |
+| `quickshell/features/power/BatteryInfoPopup.qml` | Battery popup: live power draw, rolling avg, health %, cycle count, charge limit |
 | `quickshell/features/network/WifiFallback.qml` | Wi-Fi tray indicator and popup UI |
 | `quickshell/components/ActionChip.qml` | Shared compact action button used by Wi-Fi/Bluetooth/control UI |
 
@@ -109,7 +111,9 @@ The battery is rendered by `components/BatteryPill.qml`. It is a solid colored r
 
 Bluetooth is mostly extracted from `shell.qml`: state, actions, timers, and device signal watchers live in `BluetoothController.qml`. `shell.qml` still exposes compatibility properties and methods like `bluetoothEnabled`, `bluetoothDevices`, `bluetoothScan()`, and `bluetoothConnect()` so existing UI can remain stable.
 
-System stats parsing is extracted into `SystemStatsController.qml`, while `shell.qml` still exposes `cpuUsage`, `memoryUsage`, network rates, histories, and core usage for bar/popup consumers.
+System stats parsing is in `SystemStatsController.qml`. The poll command switches between a lightweight snapshot (head of `/proc/stat` + meminfo + temp + net) when the popup is closed, and a full snapshot (all CPU cores, loadavg, cpufreq) when open. `shell.qml` exposes `cpuUsage`, `memoryUsage`, `memoryUsedGB`, `memoryTotalGB`, `temperatureC`, network rates, histories, per-core usages, CPU model/cores/freq, and RAM speed for bar/popup consumers.
+
+Battery power is tracked event-driven via a `batteryRatePoll` PollCommand in `shell.qml`: 2s interval when the battery popup is open, 10s otherwise, stopped entirely when plugged in. This feeds `batteryCurrentW` (live) and `powerDrawHistory` (rolling average). `BatteryInfoPopup` reads static facts (health %, cycle count) once per open from sysfs.
 
 Wi-Fi is partially modular. `features/network/NetworkController.qml` owns status polling, action process state, cached network lists, and monitor-triggered refreshes. The current Wi-Fi UI still consumes root compatibility aliases and methods.
 
@@ -136,7 +140,7 @@ Keep the shell compact, desktop-native, and Apple-flavored:
 - Wi-Fi status/actions are handled through `wifi.sh`.
 - Media state is handled reactively through `Quickshell.Services.Mpris`.
 - Audio output device, volume, and mute state/actions are handled reactively through `Quickshell.Services.Pipewire`.
-- Battery state is handled through `Quickshell.Services.UPower`; charge limit actions go through `battery.sh`.
+- Battery state is handled through `Quickshell.Services.UPower`; charge limit actions go through `battery.sh`. Live power draw is read from `/sys/class/power_supply/BAT1/current_now` × `voltage_now` via `batteryRatePoll` — not polled when on AC.
 - Long-running status that needs QML updates should prefer native Quickshell services, event streams, or Hyprland Lua IPC. Use scripts and `PollCommand` only for integrations Quickshell does not expose natively.
 - Hyprland keybinds call Quickshell IPC through Lua in `~/.config/hypr/modules/helpers/hyprv.lua`.
 

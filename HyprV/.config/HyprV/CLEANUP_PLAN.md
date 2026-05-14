@@ -46,7 +46,7 @@ Status: `Done`
 - [x] Extract `features/notifications/NotificationController.qml`.
 - [x] Extract `features/system/SystemStatsController.qml`.
 
-Remaining: battery parsing and charge-limit logic still partly root/popup-owned. Can move behind `PowerController` in a later pass.
+Remaining: charge-limit logic is still partly popup-owned (`BatteryInfoPopup` calls `battery.sh` directly). Could move behind `PowerController` in a later pass, but low priority.
 
 ## Phase 2b: Bar Polish
 
@@ -60,6 +60,20 @@ Goal: Apple-inspired bar aesthetic, coherent typography, clean battery widget.
 - [x] Wire `BatteryPill` into `bar/status/StatusPill.qml`; remove old `TextModule` battery block.
 - [x] Fix network icon/text overlap in `SystemResourcesPill.qml` by splitting icon and speed into separate items; size icon container via `paintedWidth` to avoid nerd font logical-advance undercount.
 - [x] Bump keyboard layout label in `StatusPill` from 13 → 16 px to match temperature label.
+
+## Phase 2c: System Stats & Battery Revamp
+
+Status: `Done`
+
+Goal: Unified system resources bar module, rich popup, production-quality battery monitoring.
+
+- [x] Rewrite `SystemResourcesPill` — 4 color-coded modules (CPU, RAM, Temp, Network); temperature moved from `StatusPill`.
+- [x] Rewrite `SystemStatsPopup` — cards with trend charts, per-core grid, CPU model/clock, RAM GB/speed, load avg; geometry matches WiFi widget (`cardRadius 9 + padding 10 = panel 19`).
+- [x] Popup-gate heavy poll data: light command (head of `/proc/stat` only) when popup closed; full command (all cores, loadavg, cpufreq) when open.
+- [x] One-shot CPU info (model, cores, threads) and RAM speed (from `/run/udev/data/+dmi:id`) fetched at startup — no root or dmidecode required.
+- [x] Battery popup: live power draw from sysfs (`current_now × voltage_now`), rolling average, battery health %, cycle count.
+- [x] `batteryRatePoll`: 2s when battery popup open, 10s when closed, stopped on AC — event-driven, no UPower polling hack.
+- [x] Remove battery stats from system stats popup (duplicate; dedicated panel exists).
 
 ## Phase 3: Make One Popup Host
 
@@ -139,11 +153,16 @@ Status: `Later`
   - BatteryPill component: solid colored rect, number inside, tip nub.
   - Network icon/text split using `paintedWidth` for correct ink-rect sizing.
   - Keyboard layout font bumped to 16 px for visual consistency.
+- System stats & battery revamp: `Done`.
+  - SystemResourcesPill: 4 color-coded modules (CPU, RAM, Temp, Network); temperature moved out of StatusPill.
+  - SystemStatsPopup: card layout with trend charts, per-core grid, CPU model/clock, RAM GB/speed, load avg; geometry coherent with WiFi widget.
+  - Battery popup: live sysfs power draw, rolling average, health %, cycle count; adaptive poll rate (2s open / 10s closed / off on AC).
+  - RAM speed sourced from `/run/udev/data/+dmi:id` — no root, no dmidecode.
 
 ## Suggested Work Order
 
 1. Phase 3 popup lifecycle extraction (simple popups first).
 2. Wi-Fi popup split.
 3. Dynamic Island split.
-4. Battery detail logic behind `PowerController`.
-5. Hardware assumption cleanup.
+4. Hardware assumption cleanup (thermal zone, brightness max).
+5. Script quality pass (shellcheck, dialect normalization).
