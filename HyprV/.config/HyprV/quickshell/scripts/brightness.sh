@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 
-# ── Tune these ───────────────────────────────────────────────────────────────
-STEP=3   # Percentage points per keypress
-MIN=1    # Minimum raw value — 1 = right before the screen turns off
-MAX=400
-# ─────────────────────────────────────────────────────────────────────────────
+STEP=10  # Percentage points per keypress
+MIN=1   # Minimum raw value — 1 = right before the screen turns off
+MAX=$(brightnessctl m 2>/dev/null)
+if [[ -z "$MAX" || ! "$MAX" =~ ^[0-9]+$ ]]; then
+    MAX=$(cat /sys/class/backlight/*/max_brightness 2>/dev/null | head -1)
+fi
+: "${MAX:=400}"
 
 QS_CONFIG_DIR="$(readlink -f "$HOME/.config/HyprV/quickshell")"
 
@@ -80,3 +82,5 @@ case "$1" in
         exit 1
         ;;
 esac
+
+

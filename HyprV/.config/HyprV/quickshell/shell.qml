@@ -93,7 +93,7 @@ ShellRoot {
     readonly property string brightnessScriptPath: configDir + "/quickshell/scripts/brightness.sh"
     readonly property string mediaFocusScriptPath: configDir + "/quickshell/scripts/media-focus.sh"
     readonly property string openManagerScriptPath: configDir + "/quickshell/scripts/open-manager.sh"
-    readonly property int brightnessUiStepPercent: 2
+    readonly property int brightnessUiStepPercent: 10
     property int brightnessPercent: 50
     readonly property bool dndEnabled: notificationController.dndEnabled
     property bool screenRecording: false
@@ -134,6 +134,8 @@ ShellRoot {
     readonly property bool wifiConnectionActive: activeNetworkType === "wifi"
     readonly property bool wiredConnectionActive: activeNetworkType === "wired"
     readonly property bool otherConnectionActive: activeNetworkType === "other"
+    property string thermalZonePath: "/sys/class/thermal/thermal_zone0/temp"
+    property string batteryDevPath: "/sys/class/power_supply/BAT1"
 
     Component.onCompleted: {
         root.refreshWifiStatus();
@@ -141,6 +143,8 @@ ShellRoot {
         root.refreshBrightnessStatus(false);
         cpuInfoSnapshot.refresh();
         ramInfoSnapshot.refresh();
+        thermalZoneDetect.refresh();
+        batteryPathDetect.refresh();
     }
 
     Colors { id: colors }
@@ -1171,8 +1175,8 @@ ShellRoot {
 
         interval: root.batteryPlugged ? 1000 : 3000
         command: root.systemStatsPopupOpen
-            ? ["sh", "-lc", "printf '__STAT__\\n'; cat /proc/stat; printf '\\n__MEM__\\n'; cat /proc/meminfo; printf '\\n__TEMP__\\n'; cat /sys/class/thermal/thermal_zone1/temp; printf '\\n__ROUTE__\\n'; cat /proc/net/route; printf '\\n__NET__\\n'; cat /proc/net/dev; printf '\\n__LOAD__\\n'; cat /proc/loadavg; printf '\\n__FREQ__\\n'; cat /sys/devices/system/cpu/cpufreq/policy*/scaling_cur_freq"]
-            : ["sh", "-lc", "printf '__STAT__\\n'; head -1 /proc/stat; printf '\\n__MEM__\\n'; cat /proc/meminfo; printf '\\n__TEMP__\\n'; cat /sys/class/thermal/thermal_zone1/temp; printf '\\n__ROUTE__\\n'; cat /proc/net/route; printf '\\n__NET__\\n'; cat /proc/net/dev"]
+            ? ["sh", "-lc", "printf '__STAT__\\n'; cat /proc/stat; printf '\\n__MEM__\\n'; cat /proc/meminfo; printf '\\n__TEMP__\\n'; cat " + root.thermalZonePath + "; printf '\\n__ROUTE__\\n'; cat /proc/net/route; printf '\\n__NET__\\n'; cat /proc/net/dev; printf '\\n__LOAD__\\n'; cat /proc/loadavg; printf '\\n__FREQ__\\n'; cat /sys/devices/system/cpu/cpufreq/policy*/scaling_cur_freq"]
+            : ["sh", "-lc", "printf '__STAT__\\n'; head -1 /proc/stat; printf '\\n__MEM__\\n'; cat /proc/meminfo; printf '\\n__TEMP__\\n'; cat " + root.thermalZonePath + "; printf '\\n__ROUTE__\\n'; cat /proc/net/route; printf '\\n__NET__\\n'; cat /proc/net/dev"]
         onUpdated: function(output, exitCode) {
             if (exitCode === 0 && output.length > 0) {
                 systemStatsController.updateFromSnapshot(output);
@@ -1202,12 +1206,34 @@ ShellRoot {
     }
 
     PollCommand {
+        id: thermalZoneDetect
+
+        scheduled: false
+        command: [root.configDir + "/quickshell/scripts/lib/detect-thermal-zone.sh"]
+        onUpdated: function(output, exitCode) {
+            const path = output.trim();
+            if (exitCode === 0 && path.length > 0) root.thermalZonePath = path;
+        }
+    }
+
+    PollCommand {
+        id: batteryPathDetect
+
+        scheduled: false
+        command: [root.configDir + "/quickshell/scripts/lib/detect-battery-path.sh"]
+        onUpdated: function(output, exitCode) {
+            const path = output.trim();
+            if (exitCode === 0 && path.length > 0) root.batteryDevPath = path;
+        }
+    }
+
+    PollCommand {
         id: batteryRatePoll
 
         active: root.batteryDischarging
         scheduled: true
         interval: root.batteryPopupOpen ? 2000 : 10000
-        command: ["sh", "-c", "cat /sys/class/power_supply/BAT1/current_now /sys/class/power_supply/BAT1/voltage_now 2>/dev/null"]
+        command: ["sh", "-c", "cat " + root.batteryDevPath + "/current_now " + root.batteryDevPath + "/voltage_now 2>/dev/null"]
         onUpdated: function(output) {
             const lines = output.trim().split("\n");
             if (lines.length < 2) return;

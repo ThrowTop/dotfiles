@@ -2,6 +2,22 @@
 
 set -euo pipefail
 
+_open_terminal() {
+    local title="$1"; shift
+    for term in foot kitty alacritty ghostty xterm; do
+        command -v "$term" >/dev/null 2>&1 || continue
+        case "$term" in
+            foot)      exec foot --title "$title" -- "$@" ;;
+            kitty)     exec kitty --title "$title" -e "$@" ;;
+            alacritty) exec alacritty --title "$title" -e "$@" ;;
+            ghostty)   exec ghostty --title "$title" -e "$@" ;;
+            xterm)     exec xterm -title "$title" -e "$@" ;;
+        esac
+    done
+    printf 'open-manager: no terminal emulator found\n' >&2
+    exit 1
+}
+
 case "${1:-}" in
     wifi)
         if command -v nm-connection-editor >/dev/null 2>&1; then
@@ -9,7 +25,7 @@ case "${1:-}" in
         elif command -v iwgtk >/dev/null 2>&1; then
             exec iwgtk
         else
-            exec kitty --title nmtui -e nmtui
+            _open_terminal nmtui nmtui
         fi
         ;;
     bluetooth)
@@ -18,7 +34,7 @@ case "${1:-}" in
         elif command -v blueberry >/dev/null 2>&1; then
             exec blueberry
         else
-            exec kitty --title bluetoothctl -e bluetoothctl
+            _open_terminal bluetoothctl bluetoothctl
         fi
         ;;
     *)

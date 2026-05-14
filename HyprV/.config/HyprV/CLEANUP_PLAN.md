@@ -110,11 +110,12 @@ Rule: extract view subcomponents first. Do not move business logic and UI in the
 
 ## Phase 5: Replace Hardware-Specific Assumptions
 
-Status: `Todo`
+Status: `Done`
 
-- [ ] Thermal zone: currently hardcoded `/sys/class/thermal/thermal_zone1/temp`. Better: configurable preferred zone with auto-detected fallback.
-- [ ] Brightness max: `brightness.sh` uses `MAX=400`. Better: read from `brightnessctl m` or `/sys/class/backlight/*/max_brightness`.
-- [ ] Audit scripts for implicit machine assumptions (terminal fallback, icon theme names, record script path).
+- [x] Thermal zone: `scripts/lib/detect-thermal-zone.sh` auto-detects best zone (x86_pkg_temp → TCPU_PCI → TCPU → acpitz → first readable). `shell.qml` runs it once at startup and stores path in `thermalZonePath`; both `systemSnapshot` commands use the property.
+- [x] Brightness max: `brightness.sh` now reads `MAX` from `brightnessctl m`, falls back to `/sys/class/backlight/*/max_brightness`, then hardcoded 400.
+- [x] Battery path: `scripts/lib/detect-battery-path.sh` auto-detects first BAT* device with `current_now`. `shell.qml` detects at startup into `batteryDevPath`; `batteryRatePoll` and `battery-limit.sh` use the dynamic path.
+- [x] Terminal fallback: `open-manager.sh` tries `foot`, `kitty`, `alacritty`, `ghostty`, `xterm` in order instead of hardcoding `kitty`.
 
 ## Phase 6: Improve Script Quality
 

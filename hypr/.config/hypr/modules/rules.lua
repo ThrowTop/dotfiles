@@ -29,6 +29,8 @@ hl.layer_rule({
 })
 
 -- Main bar (PanelWindow with namespace "hyprv-quickshell")
+-- All popup/overlay panels (shell:hyprv-tray-menu, shell:hyprv-battery-info, etc.)
+-- Dark surfaces render at 0.07-0.11 alpha so threshold must be below that
 hl.layer_rule({
     name = "quickshell-bar",
     match = { namespace = "hyprv-quickshell" },
@@ -37,8 +39,6 @@ hl.layer_rule({
     ignore_alpha = 0.15,
 })
 
--- All popup/overlay panels (shell:hyprv-tray-menu, shell:hyprv-battery-info, etc.)
--- Dark surfaces render at 0.07-0.11 alpha so threshold must be below that
 hl.layer_rule({
     name = "quickshell-shell-popups",
     match = { namespace = "shell:.*" },
