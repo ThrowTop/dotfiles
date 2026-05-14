@@ -37,7 +37,28 @@ ShellRoot {
     property var cpuHistory: []
     property var memoryHistory: []
     property var networkHistory: []
+    property var temperatureHistory: []
+    property var powerDrawHistory: []
+    readonly property bool batteryDischarging: !!batteryDevice && !batteryPlugged
+    readonly property real avgPowerW: {
+        const h = powerDrawHistory;
+        if (!h || h.length === 0) return 0;
+        let sum = 0;
+        for (let i = 0; i < h.length; i++) sum += h[i];
+        return sum / h.length;
+    }
     property var cpuCoreUsages: []
+    property real memoryUsedGB: 0
+    property real memoryTotalGB: 0
+    property real loadAvg1m: 0
+    property real loadAvg5m: 0
+    property real loadAvg15m: 0
+    property real cpuFreqGHz: 0
+    property string cpuModelShort: ""
+    property int cpuCores: 0
+    property int cpuThreads: 0
+    property string ramSpeedText: ""
+    readonly property bool systemStatsPopupOpen: systemStatsPopup.popupRequested || systemStatsPopup.animatingClose
     property alias wifiDevicePresent: networkController.devicePresent
     property alias wifiRadioEnabled: networkController.radioEnabled
     property alias wifiHardwareEnabled: networkController.hardwareEnabled
@@ -116,6 +137,8 @@ ShellRoot {
         root.refreshWifiStatus();
         root.refreshControlPanelStatus();
         root.refreshBrightnessStatus(false);
+        cpuInfoSnapshot.refresh();
+        ramInfoSnapshot.refresh();
     }
 
     Colors { id: colors }
@@ -874,7 +897,7 @@ ShellRoot {
     }
 
     function openSystemStatsPopup(sourceItem, parentWindow) {
-        systemStatsPopup.toggleFor(null, parentWindow || primaryBarWindow);
+        systemStatsPopup.toggleFor(sourceItem, parentWindow || primaryBarWindow);
     }
 
     function openBatteryInfoPopup(sourceItem, parentWindow) {
@@ -1138,12 +1161,35 @@ ShellRoot {
     PollCommand {
         id: systemSnapshot
 
-        interval: 1000
-        command: ["sh", "-lc", "printf '__STAT__\\n'; cat /proc/stat; printf '\\n__MEM__\\n'; cat /proc/meminfo; printf '\\n__TEMP__\\n'; cat /sys/class/thermal/thermal_zone1/temp; printf '\\n__ROUTE__\\n'; cat /proc/net/route; printf '\\n__NET__\\n'; cat /proc/net/dev"]
+        interval: root.batteryPlugged ? 1000 : 3000
+        command: root.systemStatsPopupOpen
+            ? ["sh", "-lc", "printf '__STAT__\\n'; cat /proc/stat; printf '\\n__MEM__\\n'; cat /proc/meminfo; printf '\\n__TEMP__\\n'; cat /sys/class/thermal/thermal_zone1/temp; printf '\\n__ROUTE__\\n'; cat /proc/net/route; printf '\\n__NET__\\n'; cat /proc/net/dev; printf '\\n__LOAD__\\n'; cat /proc/loadavg; printf '\\n__FREQ__\\n'; cat /sys/devices/system/cpu/cpufreq/policy*/scaling_cur_freq"]
+            : ["sh", "-lc", "printf '__STAT__\\n'; head -1 /proc/stat; printf '\\n__MEM__\\n'; cat /proc/meminfo; printf '\\n__TEMP__\\n'; cat /sys/class/thermal/thermal_zone1/temp; printf '\\n__ROUTE__\\n'; cat /proc/net/route; printf '\\n__NET__\\n'; cat /proc/net/dev"]
         onUpdated: function(output, exitCode) {
             if (exitCode === 0 && output.length > 0) {
                 systemStatsController.updateFromSnapshot(output);
             }
+        }
+    }
+
+    PollCommand {
+        id: cpuInfoSnapshot
+
+        scheduled: false
+        command: ["sh", "-c", "grep -m1 'model name' /proc/cpuinfo; printf '__CORES__\\n'; grep -m1 'cpu cores' /proc/cpuinfo; printf '__THREADS__\\n'; grep -c '^processor' /proc/cpuinfo"]
+        onUpdated: function(output) {
+            systemStatsController.updateCpuStaticInfo(output);
+        }
+    }
+
+    PollCommand {
+        id: ramInfoSnapshot
+
+        scheduled: false
+        command: ["sh", "-c", "grep '^E:MEMORY_DEVICE_0_TYPE=\\|^E:MEMORY_DEVICE_0_CONFIGURED_SPEED_MTS=' /run/udev/data/+dmi:id"]
+        onUpdated: function(output, exitCode) {
+            if (exitCode !== 0 || output.trim().length === 0) return;
+            systemStatsController.updateRamStaticInfo(output);
         }
     }
 

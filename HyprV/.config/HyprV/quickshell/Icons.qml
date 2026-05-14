@@ -24,6 +24,7 @@ QtObject {
     readonly property string controlCenter: "󰘮"  // nf-md-dots_grid
     readonly property string cpu: "󰘚"           // nf-md-cpu_64_bit
     readonly property string memory: "󰍛"        // nf-md-memory
+    readonly property string thermometer: "󰔏"   // nf-md-thermometer
     readonly property string screenRecord: "󰻃"  // nf-md-record_circle
     readonly property string preventSleep: "󰒲"  // nf-md-sleep
     readonly property string preventSleepOff: "󰒳" // nf-md-sleep_off

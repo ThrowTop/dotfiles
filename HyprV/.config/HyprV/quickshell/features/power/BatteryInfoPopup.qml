@@ -27,6 +27,23 @@ Item {
     property bool openAnimationPending: false
     property int chargeLimitIndex: 0
 
+    property var _powerSamples: []
+    property real _livePowerW: 0
+    property real _avgPowerW: 0
+    readonly property int _maxPowerSamples: 15
+
+    readonly property string _livePowerText: {
+        const w = _livePowerW;
+        if (w <= 0) return root.batteryPowerDetailText;
+        const abs = Math.abs(w);
+        return (abs >= 10 ? abs.toFixed(1) : abs.toFixed(2)) + " W";
+    }
+    readonly property string _avgPowerText: {
+        if (_powerSamples.length < 2) return root.batteryPowerDetailText;
+        const abs = Math.abs(_avgPowerW);
+        return (abs >= 10 ? abs.toFixed(1) : abs.toFixed(2)) + " W (avg " + _powerSamples.length + "s)";
+    }
+
     function openFor(source, window) {
         if (!source || !window) {
             return;
@@ -35,6 +52,9 @@ Item {
         parentWindow = window;
         popupRequested = true;
         animatingClose = false;
+        _powerSamples = [];
+        _livePowerW = 0;
+        _avgPowerW = 0;
         chargeLimitPoll.refresh();
         positionTimer.restart();
         if (popupWindow.visible) {
@@ -111,6 +131,31 @@ Item {
                 else batteryPopupRoot.chargeLimitIndex = 0;
                 root.chargeLimit = val;
             }
+        }
+    }
+
+    PollCommand {
+        id: batteryPowerPoll
+
+        active: popupWindow.visible
+        scheduled: true
+        interval: 2000
+        command: ["sh", "-c", "cat /sys/class/power_supply/BAT1/current_now /sys/class/power_supply/BAT1/voltage_now 2>/dev/null"]
+        onUpdated: function(output) {
+            const lines = output.split("\n");
+            if (lines.length < 2) return;
+            const currentUa = parseInt(lines[0]) || 0;
+            const voltageUv = parseInt(lines[1]) || 0;
+            if (currentUa <= 0 || voltageUv <= 0) return;
+            const watts = (currentUa * voltageUv) / 1e12;
+            batteryPopupRoot._livePowerW = watts;
+            const samples = batteryPopupRoot._powerSamples.slice();
+            samples.push(watts);
+            if (samples.length > batteryPopupRoot._maxPowerSamples) samples.shift();
+            batteryPopupRoot._powerSamples = samples;
+            let sum = 0;
+            for (let i = 0; i < samples.length; i++) sum += samples[i];
+            batteryPopupRoot._avgPowerW = sum / samples.length;
         }
     }
 
@@ -409,7 +454,7 @@ Item {
                     shellRoot: root
                     width: parent.width
                     title: "Current power"
-                    value: root.batteryPowerDetailText
+                    value: batteryPopupRoot._livePowerText
                     valueColor: root.batteryDetailAccentColor
                 }
 
@@ -417,7 +462,7 @@ Item {
                     shellRoot: root
                     width: parent.width
                     title: "Avg power"
-                    value: root.batteryAveragePowerDetailText
+                    value: batteryPopupRoot._avgPowerText
                 }
 
                 BatteryInfoLine {

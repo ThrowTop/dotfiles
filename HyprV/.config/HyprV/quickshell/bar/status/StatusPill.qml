@@ -8,19 +8,9 @@ GroupPill {
 
     TextModule {
         shellRoot: pill.shellRoot
-        label: (pill.shellRoot.temperatureC >= 70 ? " " : " ") + Math.round(pill.shellRoot.temperatureC) + "°C"
-        textColor: pill.shellRoot.temperatureC >= 70 ? pill.shellRoot.criticalColor : pill.shellRoot.primaryText
-        interactive: true
-        paddingLeft: 10
-        paddingRight: 5
-        onLeftClicked: pill.shellRoot.runDetached(["kitty", "--title", "btop", "--start-as=fullscreen", "-e", "btop"])
-    }
-
-    TextModule {
-        shellRoot: pill.shellRoot
         label: pill.shellRoot.keyboardLayout
         textColor: pill.shellRoot.subtext
-        paddingLeft: 5
+        paddingLeft: 10
         paddingRight: 5
         fontPixelSize: 16
     }

@@ -16,10 +16,12 @@ hl.permission({ binary = "/usr/(lib|libexec|lib65)/xdg-desktop-portal-hyprland",
 hl.permission("/usr/(bin|local/bin)/hyprpm", "plugin", "allow")
 
 hl.on("hyprland.start", function()
-    hlc.d.exec_cmd("hyprlock")
-    hlc.d.exec_cmd("vicinae server")
-    hlc.d.exec_cmd("swaync")
-    hlc.d.exec_cmd("bash " .. settings.qs .. "/launch.sh")
-    hlc.d.exec_cmd("awww-daemon & waypaper --restore")
-    hlc.d.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme prefer-dark")
+    hl.exec_cmd("hyprlock")
+    hl.exec_cmd("vicinae server")
+    hl.exec_cmd("swaync")
+    hl.exec_cmd("bash " .. settings.qs .. "/launch.sh")
+    hl.exec_cmd("awww-daemon & waypaper --restore")
+    hl.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme prefer-dark")
 end)
+
+
