@@ -149,11 +149,5 @@ Item {
             root.networkHistory = root.appendHistory(root.networkHistory, root.networkRxRate + root.networkTxRate, root.statsHistoryLimit);
             root.temperatureHistory = root.appendHistory(root.temperatureHistory, root.temperatureC, root.statsHistoryLimit);
         }
-
-        // Power draw history — always while discharging, not gated on popup
-        if (root.batteryDischarging) {
-            const draw = Math.abs(Number(root.batteryDevice?.changeRate) || 0);
-            root.powerDrawHistory = root.appendHistory(root.powerDrawHistory, draw, root.statsHistoryLimit);
-        }
     }
 }

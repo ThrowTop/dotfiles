@@ -39,7 +39,9 @@ ShellRoot {
     property var networkHistory: []
     property var temperatureHistory: []
     property var powerDrawHistory: []
+    property real batteryCurrentW: 0
     readonly property bool batteryDischarging: !!batteryDevice && !batteryPlugged
+    readonly property bool batteryPopupOpen: batteryInfoPopup.popupRequested || batteryInfoPopup.animatingClose
     readonly property real avgPowerW: {
         const h = powerDrawHistory;
         if (!h || h.length === 0) return 0;
@@ -280,8 +282,12 @@ ShellRoot {
         }
         return root.primaryText;
     }
-    readonly property string batteryPowerDetailText: batteryInfo?.available ? formatPower(Number(batteryInfo?.powerW || 0), true) : "--"
-    readonly property string batteryAveragePowerDetailText: batteryInfo?.available ? formatPower(Number(batteryInfo?.averagePowerW || 0), true) : "--"
+    readonly property string batteryPowerDetailText: {
+        if (batteryCurrentW !== 0) return formatPower(batteryCurrentW, true);
+        if (batteryInfo?.available) return formatPower(Number(batteryInfo?.powerW || 0), true);
+        return "--";
+    }
+    readonly property string batteryAveragePowerDetailText: (batteryInfo?.available && avgPowerW > 0) ? formatPower(avgPowerW, true) : "--"
     readonly property string batteryEstimateTitle: {
         const mode = batteryInfo?.mode || "";
         if (mode === "charging") return root.chargeLimit < 100 ? "Time to limit" : "Time to full";
@@ -358,6 +364,8 @@ ShellRoot {
         root.islandOsdTrigger = !root.islandOsdTrigger;
     }
     onBatteryPluggedChanged: {
+        root.powerDrawHistory = [];
+        root.batteryCurrentW = 0;
         if (!root._osdReady || !root.batteryPlugged) return;
         root.islandOsdLabel     = "Charging";
         root.islandOsdRightText = Math.round(root.batteryPercent) + "%";
@@ -1190,6 +1198,25 @@ ShellRoot {
         onUpdated: function(output, exitCode) {
             if (exitCode !== 0 || output.trim().length === 0) return;
             systemStatsController.updateRamStaticInfo(output);
+        }
+    }
+
+    PollCommand {
+        id: batteryRatePoll
+
+        active: root.batteryDischarging
+        scheduled: true
+        interval: root.batteryPopupOpen ? 2000 : 10000
+        command: ["sh", "-c", "cat /sys/class/power_supply/BAT1/current_now /sys/class/power_supply/BAT1/voltage_now 2>/dev/null"]
+        onUpdated: function(output) {
+            const lines = output.trim().split("\n");
+            if (lines.length < 2) return;
+            const currentUa = parseInt(lines[0]) || 0;
+            const voltageUv = parseInt(lines[1]) || 0;
+            if (currentUa <= 0 || voltageUv <= 0) return;
+            const absW = (currentUa * voltageUv) / 1e12;
+            root.batteryCurrentW = -absW;
+            root.powerDrawHistory = root.appendHistory(root.powerDrawHistory, absW, root.statsHistoryLimit);
         }
     }
 

@@ -27,22 +27,8 @@ Item {
     property bool openAnimationPending: false
     property int chargeLimitIndex: 0
 
-    property var _powerSamples: []
-    property real _livePowerW: 0
-    property real _avgPowerW: 0
-    readonly property int _maxPowerSamples: 15
-
-    readonly property string _livePowerText: {
-        const w = _livePowerW;
-        if (w <= 0) return root.batteryPowerDetailText;
-        const abs = Math.abs(w);
-        return (abs >= 10 ? abs.toFixed(1) : abs.toFixed(2)) + " W";
-    }
-    readonly property string _avgPowerText: {
-        if (_powerSamples.length < 2) return root.batteryPowerDetailText;
-        const abs = Math.abs(_avgPowerW);
-        return (abs >= 10 ? abs.toFixed(1) : abs.toFixed(2)) + " W (avg " + _powerSamples.length + "s)";
-    }
+    property real batteryHealthPercent: 0
+    property int batteryCycleCount: 0
 
     function openFor(source, window) {
         if (!source || !window) {
@@ -52,10 +38,8 @@ Item {
         parentWindow = window;
         popupRequested = true;
         animatingClose = false;
-        _powerSamples = [];
-        _livePowerW = 0;
-        _avgPowerW = 0;
         chargeLimitPoll.refresh();
+        batteryStaticPoll.refresh();
         positionTimer.restart();
         if (popupWindow.visible) {
             popupCard.prepareOpenAnimation();
@@ -135,27 +119,20 @@ Item {
     }
 
     PollCommand {
-        id: batteryPowerPoll
+        id: batteryStaticPoll
 
-        active: popupWindow.visible
-        scheduled: true
-        interval: 2000
-        command: ["sh", "-c", "cat /sys/class/power_supply/BAT1/current_now /sys/class/power_supply/BAT1/voltage_now 2>/dev/null"]
+        scheduled: false
+        command: ["sh", "-c", "cat /sys/class/power_supply/BAT1/charge_full /sys/class/power_supply/BAT1/charge_full_design /sys/class/power_supply/BAT1/cycle_count 2>/dev/null"]
         onUpdated: function(output) {
-            const lines = output.split("\n");
-            if (lines.length < 2) return;
-            const currentUa = parseInt(lines[0]) || 0;
-            const voltageUv = parseInt(lines[1]) || 0;
-            if (currentUa <= 0 || voltageUv <= 0) return;
-            const watts = (currentUa * voltageUv) / 1e12;
-            batteryPopupRoot._livePowerW = watts;
-            const samples = batteryPopupRoot._powerSamples.slice();
-            samples.push(watts);
-            if (samples.length > batteryPopupRoot._maxPowerSamples) samples.shift();
-            batteryPopupRoot._powerSamples = samples;
-            let sum = 0;
-            for (let i = 0; i < samples.length; i++) sum += samples[i];
-            batteryPopupRoot._avgPowerW = sum / samples.length;
+            const lines = output.trim().split("\n");
+            if (lines.length < 3) return;
+            const full = parseInt(lines[0]) || 0;
+            const design = parseInt(lines[1]) || 0;
+            const cycles = parseInt(lines[2]) || 0;
+            if (full > 0 && design > 0)
+                batteryPopupRoot.batteryHealthPercent = Math.round((full / design) * 100);
+            if (cycles > 0)
+                batteryPopupRoot.batteryCycleCount = cycles;
         }
     }
 
@@ -454,7 +431,7 @@ Item {
                     shellRoot: root
                     width: parent.width
                     title: "Current power"
-                    value: batteryPopupRoot._livePowerText
+                    value: root.batteryPowerDetailText
                     valueColor: root.batteryDetailAccentColor
                 }
 
@@ -462,7 +439,7 @@ Item {
                     shellRoot: root
                     width: parent.width
                     title: "Avg power"
-                    value: batteryPopupRoot._avgPowerText
+                    value: root.batteryAveragePowerDetailText
                 }
 
                 BatteryInfoLine {
@@ -470,6 +447,25 @@ Item {
                     width: parent.width
                     title: root.batteryEstimateTitle
                     value: root.batteryEstimateText
+                }
+
+                BatteryInfoLine {
+                    shellRoot: root
+                    width: parent.width
+                    title: "Battery health"
+                    value: batteryPopupRoot.batteryHealthPercent > 0
+                        ? batteryPopupRoot.batteryHealthPercent + "%"
+                            + (batteryPopupRoot.batteryHealthPercent < 80 ? "  (service recommended)" : "")
+                        : "--"
+                }
+
+                BatteryInfoLine {
+                    shellRoot: root
+                    width: parent.width
+                    title: "Cycle count"
+                    value: batteryPopupRoot.batteryCycleCount > 0
+                        ? batteryPopupRoot.batteryCycleCount + " cycles"
+                        : "--"
                 }
             }
         }

@@ -15,9 +15,9 @@ Item {
 
     readonly property int popupScreenMargin: 10
     readonly property int popupWidth: 384
-    readonly property int popupPadding: 16
-    readonly property int cardPadding: 12
-    readonly property int cardRadius: 10
+    readonly property int popupPadding: 10
+    readonly property int cardPadding: 10
+    readonly property int cardRadius: 9
     readonly property color glassFill: shellRoot.glassFill
     readonly property color glassStroke: shellRoot.glassStroke
     readonly property color cardFill: shellRoot.withAlpha("#ffffff", 0.07)
@@ -154,19 +154,16 @@ Item {
 
         function updatePopupPosition() {
             if (!visible || !screen) return;
-            let relativeX = popupRoot.popupScreenMargin + popupCard.width / 2;
             let relativeY = popupRoot.parentWindow ? Math.max(0, popupRoot.parentWindow.exclusiveZone || 48) : 48;
             if (popupRoot.sourceItem) {
                 try {
-                    const point = popupRoot.sourceItem.mapToGlobal(Math.round(popupRoot.sourceItem.width / 2), popupRoot.sourceItem.height);
-                    relativeX = Math.round(point.x - screen.x);
+                    const point = popupRoot.sourceItem.mapToGlobal(0, popupRoot.sourceItem.height);
                     relativeY = Math.round(point.y - screen.y);
                 } catch (error) {
                     console.warn("hyprv system stats popup position fallback", error);
                 }
             }
-            const desiredX = Math.round(relativeX - popupCard.width / 2);
-            popupCard.x = Math.max(popupRoot.popupScreenMargin, Math.min(width - popupCard.width - popupRoot.popupScreenMargin, desiredX));
+            popupCard.x = popupRoot.popupScreenMargin;
             const belowY = Math.round(relativeY + 10);
             const aboveY = Math.round(relativeY - popupCard.height - 10);
             const fitsBelow = belowY + popupCard.height <= height - 8;
@@ -279,7 +276,7 @@ Item {
 
                 anchors.fill: parent
                 anchors.margins: popupRoot.popupPadding
-                spacing: 8
+                spacing: 10
                 onImplicitHeightChanged: {
                     if (popupRoot.openAnimationPending) popupOpenTimer.restart();
                 }
@@ -303,7 +300,7 @@ Item {
                     Text {
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        text: popupRoot.shellRoot.batteryPlugged ? "Live · 1s" : "Live · 3s"
+                        text: "Live · " + (popupRoot.shellRoot.batteryPlugged ? "1s" : "3s")
                         color: popupRoot.softText
                         font.family: popupRoot.shellRoot.baseFont
                         font.pixelSize: 11
@@ -312,35 +309,6 @@ Item {
                     }
                 }
 
-                // Avg power draw row — only while on battery
-                Item {
-                    width: parent.width
-                    height: popupRoot.shellRoot.batteryDischarging ? 16 : 0
-                    visible: popupRoot.shellRoot.batteryDischarging
-                    clip: true
-
-                    Text {
-                        anchors.left: parent.left
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Avg draw"
-                        color: popupRoot.softText
-                        font.family: popupRoot.shellRoot.baseFont
-                        font.pixelSize: 11
-                        font.weight: Font.Medium
-                        renderType: Text.NativeRendering
-                    }
-
-                    Text {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: (popupRoot.shellRoot.avgPowerW || 0).toFixed(1) + " W"
-                        color: popupRoot.mutedText
-                        font.family: popupRoot.shellRoot.baseFont
-                        font.pixelSize: 11
-                        font.weight: Font.Medium
-                        renderType: Text.NativeRendering
-                    }
-                }
 
                 // Load average row
                 Item {

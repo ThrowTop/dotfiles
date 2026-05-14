@@ -9,7 +9,7 @@ hl.layer_rule({
 })
 hl.layer_rule({
     match = {
-        namespace = "swaync-control-center"
+        namespace = "swaync-control-center",
     },
 
     blur = true,
