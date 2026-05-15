@@ -8,14 +8,14 @@ DynamicIsland {
     property var collapseTimer: null
 
     now: islandHost.shellRoot.now
-    mediaAvailable: islandHost.shellRoot.mediaAvailable
-    mediaPlaying: islandHost.shellRoot.mediaPlaying
-    mediaTitle: islandHost.shellRoot.mediaTitle
-    mediaArtist: islandHost.shellRoot.mediaArtist
-    mediaPlayerName: islandHost.shellRoot.mediaPlayerName
-    mediaArtUrl: islandHost.shellRoot.mediaArtUrl
-    mediaPositionSeconds: islandHost.shellRoot.mediaPositionSeconds
-    mediaLengthSeconds: islandHost.shellRoot.mediaLengthSeconds
+    mediaAvailable: islandHost.shellRoot.media.available
+    mediaPlaying: islandHost.shellRoot.media.playing
+    mediaTitle: islandHost.shellRoot.media.title
+    mediaArtist: islandHost.shellRoot.media.artist
+    mediaPlayerName: islandHost.shellRoot.media.playerName
+    mediaArtUrl: islandHost.shellRoot.media.artUrl
+    mediaPositionSeconds: islandHost.shellRoot.media.positionSeconds
+    mediaLengthSeconds: islandHost.shellRoot.media.lengthSeconds
     spectrumValues: islandHost.shellRoot.audioSpectrumValues
 
     onExpandedChanged: {
@@ -36,10 +36,10 @@ DynamicIsland {
 
     onLockClicked: islandHost.shellRoot.runDetached(["hyprlock"])
     onSeekRequested: function(positionSeconds) {
-        islandHost.shellRoot.seekMedia(positionSeconds);
+        islandHost.shellRoot.media.seek(positionSeconds);
     }
-    onAppFocusRequested: islandHost.shellRoot.focusMediaApp()
-    onPreviousClicked: islandHost.shellRoot.previousMedia()
-    onPlayPauseClicked: islandHost.shellRoot.toggleMediaPlayback()
-    onNextClicked: islandHost.shellRoot.nextMedia()
+    onAppFocusRequested: islandHost.shellRoot.media.focusApp()
+    onPreviousClicked: islandHost.shellRoot.media.previous()
+    onPlayPauseClicked: islandHost.shellRoot.media.togglePlayback()
+    onNextClicked: islandHost.shellRoot.media.next()
 }

@@ -14,6 +14,7 @@ Item {
     property bool actionBusy: false
     property bool statusInitialized: false
 
+    // qmllint disable unresolved-type
     readonly property var adapterObject: Bluetooth.defaultAdapter
     readonly property var deviceObjects: adapterObject && adapterObject.devices
         ? Array.from(adapterObject.devices.values || [])

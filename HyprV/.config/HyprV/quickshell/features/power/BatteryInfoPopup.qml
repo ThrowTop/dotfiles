@@ -74,7 +74,7 @@ Item {
     }
 
     Timer {
-    id: positionTimer
+        id: positionTimer
 
         interval: 0
         repeat: false
@@ -104,7 +104,7 @@ Item {
     PollCommand {
         id: chargeLimitPoll
 
-        command: ["cat", "/sys/class/power_supply/BAT1/charge_control_end_threshold"]
+        command: ["sh", "-c", "cat " + root.batteryDevPath + "/charge_control_end_threshold 2>/dev/null"]
         interval: 300000
         scheduled: false
         onOutputChanged: {
@@ -122,7 +122,7 @@ Item {
         id: batteryStaticPoll
 
         scheduled: false
-        command: ["sh", "-c", "cat /sys/class/power_supply/BAT1/charge_full /sys/class/power_supply/BAT1/charge_full_design /sys/class/power_supply/BAT1/cycle_count 2>/dev/null"]
+        command: ["sh", "-c", "cat " + root.batteryDevPath + "/charge_full " + root.batteryDevPath + "/charge_full_design " + root.batteryDevPath + "/cycle_count 2>/dev/null"]
         onUpdated: function(output) {
             const lines = output.trim().split("\n");
             if (lines.length < 3) return;
@@ -136,6 +136,7 @@ Item {
         }
     }
 
+    // qmllint disable uncreatable-type
     PanelWindow {
         id: popupWindow
 

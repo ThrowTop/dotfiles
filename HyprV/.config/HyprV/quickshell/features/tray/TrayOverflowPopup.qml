@@ -69,6 +69,7 @@ Item {
         onTriggered: overflowWindow.updatePopupPosition()
     }
 
+    // qmllint disable uncreatable-type
     PanelWindow {
         id: overflowWindow
 

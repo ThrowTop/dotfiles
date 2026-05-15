@@ -1,7 +1,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import "../.."
 import "../../components"
 
 Item {
@@ -66,7 +65,7 @@ Item {
             return;
         }
 
-        shellRoot.setAudioVolumePercent(nextValue);
+        shellRoot.audio.setVolumePercent(nextValue);
     }
 
     function toggleAudioMute() {
@@ -74,7 +73,7 @@ Item {
             return;
         }
         restartAutoHide();
-        shellRoot.toggleAudioMute();
+        shellRoot.audio.toggleMute();
     }
 
     Timer {
@@ -98,6 +97,7 @@ Item {
         }
     }
 
+    // qmllint disable uncreatable-type
     PanelWindow {
         id: popupWindow
 
@@ -173,7 +173,7 @@ Item {
                 iconClickable: popupRoot.mode === "volume"
                 label: popupRoot.mode === "volume" ? "Volume" : "Brightness"
                 value: popupRoot.mode === "volume"
-                    ? (popupRoot.shellRoot.audioVolumePercent)
+                    ? (popupRoot.shellRoot.audio.volumePercent)
                     : (popupRoot.shellRoot.brightnessPercent)
                 accentColor: popupRoot.mode === "volume"
                     ? (popupRoot.shellRoot.launchColor)

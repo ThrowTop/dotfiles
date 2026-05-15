@@ -20,7 +20,7 @@ Rectangle {
         : (rowMouse.containsMouse && !disabled ? shellRoot.withAlpha(shellRoot.primaryText, 0.08) : shellRoot.withAlpha("#ffffff", 0.06))
     border.width: 1
     border.color: active ? shellRoot.withAlpha(shellRoot.primaryText, 0.22) : shellRoot.withAlpha(shellRoot.primaryText, 0.1)
-    opacity: disabled ? 0.55 : 1
+    opacity: disabled ? 0.56 : 1
     antialiasing: true
 
     Behavior on color {

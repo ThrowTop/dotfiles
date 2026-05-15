@@ -130,6 +130,7 @@ Item {
         }
     }
 
+    // qmllint disable uncreatable-type
     PanelWindow {
         id: popupWindow
 

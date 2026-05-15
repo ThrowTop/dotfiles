@@ -37,6 +37,7 @@ Item {
         }
         stderr: StdioCollector {}
 
+        // qmllint disable signal-handler-parameters
         onExited: function(exitCode) {
             const text = (collector.text || "").trim();
             if (exitCode === 0) {

@@ -14,14 +14,14 @@ WifiIndicator {
     property var displayedNetworks: []
     property double displayedNetworksTimestamp: 0
 
-    readonly property bool wifiEnabled: shellRoot.wifiRadioEnabled
-    readonly property bool wifiConnectedState: shellRoot.wifiConnectionActive || shellRoot.wifiConnected
+    readonly property bool wifiEnabled: shellRoot.network.radioEnabled
+    readonly property bool wifiConnectedState: shellRoot.wifiConnectionActive || shellRoot.network.connected
     readonly property bool networkConnectedState: shellRoot.networkConnected
     readonly property bool wiredConnectedState: shellRoot.wiredConnectionActive
     readonly property bool otherConnectedState: shellRoot.otherConnectionActive
-    readonly property bool wifiControlsAvailable: shellRoot.wifiDevicePresent || shellRoot.wifiCapabilityDetected
-    readonly property real wifiStrength: shellRoot.wifiSignalStrength
-    readonly property var liveNetworks: shellRoot.wifiNetworks
+    readonly property bool wifiControlsAvailable: shellRoot.network.devicePresent || shellRoot.network.capabilityDetected
+    readonly property real wifiStrength: shellRoot.network.signalStrength
+    readonly property var liveNetworks: shellRoot.network.networks
     readonly property var networks: displayedNetworks
     readonly property color glassFill: shellRoot.glassFill
     readonly property color glassStroke: shellRoot.glassStroke
@@ -64,14 +64,14 @@ WifiIndicator {
         if (!wifiControlsAvailable) {
             return "No wireless device detected";
         }
-        if (!shellRoot.wifiHardwareEnabled) {
+        if (!shellRoot.network.hardwareEnabled) {
             return "Hardware blocked";
         }
         if (!wifiEnabled) {
             return "Wi-Fi disabled";
         }
         if (wifiConnectedState) {
-            return (shellRoot.wifiSsid || "Wi-Fi connected") + "  " + Math.round(wifiStrength * 100) + "%";
+            return (shellRoot.network.ssid || "Wi-Fi connected") + "  " + Math.round(wifiStrength * 100) + "%";
         }
         return "Not connected";
     }
@@ -133,7 +133,7 @@ WifiIndicator {
         const cacheAgeMs = Date.now() - displayedNetworksTimestamp;
         const popupShouldHoldSnapshot = root.popupVisible
             && root.wifiEnabled
-            && root.shellRoot.wifiHardwareEnabled;
+            && root.shellRoot.network.hardwareEnabled;
 
         if (!force && expandedSsid.length > 0) {
             const expandedNetworkStillAvailable = source.some(network => (network.ssid || "") === expandedSsid);
@@ -170,7 +170,7 @@ WifiIndicator {
 
     function openPopup() {
         if (!Array.isArray(root.liveNetworks) || root.liveNetworks.length === 0) {
-            shellRoot.refreshWifiStatus();
+            shellRoot.network.refresh();
         }
         popupVisible = true;
         if (popup.animatingClose) {
@@ -219,17 +219,17 @@ WifiIndicator {
     }
 
     function activateNetwork(network) {
-        if (!shellRoot || shellRoot.wifiActionBusy) {
+        if (!shellRoot || shellRoot.network.actionBusy) {
             return;
         }
         if (network.active) {
             expandedSsid = "";
             passwordText = "";
-            shellRoot.wifiDisconnect();
+            shellRoot.network.disconnect();
             return;
         }
         if (network.enterprise && !network.known) {
-            shellRoot.wifiActionMessage = "802.1X networks need a saved profile. Open the editor for first-time setup.";
+            shellRoot.network.actionMessage = "802.1X networks need a saved profile. Open the editor for first-time setup.";
             shellRoot.openWifiManager();
             return;
         }
@@ -241,7 +241,7 @@ WifiIndicator {
             passwordText = "";
             return;
         }
-        shellRoot.wifiConnect(network.ssid, network.secure && !network.known ? passwordText : "", network.security || "");
+        shellRoot.network.connect(network.ssid, network.secure && !network.known ? passwordText : "", network.security || "");
         expandedSsid = "";
         passwordText = "";
     }
@@ -282,13 +282,14 @@ WifiIndicator {
     Component.onCompleted: syncNetworkList(true)
 
     Connections {
-        target: root.shellRoot
+        target: root.shellRoot.network
 
-        function onWifiNetworksChanged() {
+        function onNetworksChanged() {
             root.syncNetworkList(false);
         }
     }
 
+    // qmllint disable uncreatable-type
     PanelWindow {
         id: popup
 
@@ -518,7 +519,7 @@ WifiIndicator {
                                 ? "Online"
                                 : (!root.wifiControlsAvailable
                                     ? "No Wi-Fi"
-                                    : (!root.shellRoot.wifiHardwareEnabled
+                                    : (!root.shellRoot.network.hardwareEnabled
                                         ? "Blocked"
                                         : (root.wifiEnabled ? (root.wifiConnectedState ? "Online" : "Ready") : "Off"))))
                             disabled: true
@@ -557,8 +558,8 @@ WifiIndicator {
                                 width: parent.width
                                 text: root.networkConnectedState
                                 ? "Interface: " + (root.shellRoot.defaultInterface || "network")
-                                : (root.shellRoot.wifiDevicePresent
-                                    ? "Wireless interface: " + (root.shellRoot.wifiInterface || "wifi")
+                                : (root.shellRoot.network.devicePresent
+                                    ? "Wireless interface: " + (root.shellRoot.network.iface || "wifi")
                                     : "No wireless device detected")
                                 elide: Text.ElideRight
                                 color: root.mutedText
@@ -581,11 +582,11 @@ WifiIndicator {
                         cornerRadius: root.innerRadius
                         label: root.wifiEnabled ? "Turn Off" : "Turn On"
                         minimumWidth: 96
-                        disabled: !root.wifiControlsAvailable || !root.shellRoot.wifiHardwareEnabled || root.shellRoot.wifiActionBusy
+                        disabled: !root.wifiControlsAvailable || !root.shellRoot.network.hardwareEnabled || root.shellRoot.network.actionBusy
                         fillColor: root.cardStrongFill
                         foregroundColor: root.shellRoot.launchColor
                         strokeColor: root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18)
-                        onClicked: root.shellRoot.wifiSetRadio(!root.wifiEnabled)
+                        onClicked: root.shellRoot.network.setRadio(!root.wifiEnabled)
                     }
 
                     ActionChip {
@@ -593,10 +594,10 @@ WifiIndicator {
                         cornerRadius: root.innerRadius
                         label: "Rescan"
                         minimumWidth: 88
-                        disabled: !root.wifiControlsAvailable || !root.wifiEnabled || root.shellRoot.wifiActionBusy
+                        disabled: !root.wifiControlsAvailable || !root.wifiEnabled || root.shellRoot.network.actionBusy
                         fillColor: root.cardFill
                         strokeColor: root.cardStroke
-                        onClicked: root.shellRoot.wifiRescan()
+                        onClicked: root.shellRoot.network.rescan()
                     }
 
                     ActionChip {
@@ -615,7 +616,7 @@ WifiIndicator {
                     id: messageCard
 
                     width: parent.width
-                    visible: root.shellRoot.wifiActionMessage.length > 0
+                    visible: root.shellRoot.network.actionMessage.length > 0
                     implicitHeight: actionMessageLabel.implicitHeight + 18
                     radius: root.innerRadius
                     color: root.panelColor(root.cardFill)
@@ -629,7 +630,7 @@ WifiIndicator {
                         anchors.right: parent.right
                         anchors.top: parent.top
                         anchors.margins: root.innerPadding
-                        text: root.shellRoot.wifiActionMessage
+                        text: root.shellRoot.network.actionMessage
                         color: root.shellRoot.withAlpha(root.shellRoot.primaryText, 0.82)
                         font.family: root.shellRoot.baseFont
                         font.pixelSize: 12
@@ -751,7 +752,7 @@ WifiIndicator {
                                             label: ""
                                             iconLabel: networkCard.buttonIconLabel
                                             minimumWidth: 50
-                                            disabled: root.shellRoot.wifiActionBusy
+                                            disabled: root.shellRoot.network.actionBusy
                                             || (!root.wifiEnabled && !networkCard.modelData.active)
                                             || (networkCard.expanded && networkCard.modelData.secure && !networkCard.modelData.known && root.passwordText.length === 0)
                                             fillColor: networkCard.modelData.active ? root.cardStrongFill : root.cardFill
@@ -902,7 +903,7 @@ WifiIndicator {
                                                     cornerRadius: root.innerRadius
                                                     label: "Join"
                                                     minimumWidth: 82
-                                                    disabled: root.passwordText.length === 0 || root.shellRoot.wifiActionBusy
+                                                    disabled: root.passwordText.length === 0 || root.shellRoot.network.actionBusy
                                                     fillColor: root.cardStrongFill
                                                     foregroundColor: root.shellRoot.launchColor
                                                     strokeColor: root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18)

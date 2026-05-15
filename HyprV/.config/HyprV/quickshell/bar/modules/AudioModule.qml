@@ -27,7 +27,7 @@ Item {
             if (mouse.button === Qt.LeftButton) {
                 module.shellRoot.openAudioPopup(module, module.parentWindow);
             } else {
-                module.shellRoot.toggleAudioMute();
+                module.shellRoot.audio.toggleMute();
             }
         }
     }
@@ -35,9 +35,9 @@ Item {
     WheelHandler {
         onWheel: function(event) {
             if (event.angleDelta.y > 0) {
-                module.shellRoot.adjustAudioVolume(-5);
+                module.shellRoot.audio.adjustVolume(-5);
             } else {
-                module.shellRoot.adjustAudioVolume(5);
+                module.shellRoot.audio.adjustVolume(5);
             }
         }
     }

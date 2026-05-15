@@ -149,27 +149,24 @@ Item {
     }
 
     function setAudioVolumePercent(value) {
-        shellRoot.setAudioVolumePercent(clampPercent(value));
+        shellRoot.audio.setVolumePercent(clampPercent(value));
     }
 
     function toggleAudioMute() {
-        shellRoot.toggleAudioMute();
+        shellRoot.audio.toggleMute();
     }
 
     function toggleWifiEnabled() {
-        const enabled = !shellRoot.wifiRadioEnabled;
-        shellRoot.wifiRadioEnabled = enabled;
-        shellRoot.wifiEnabled = enabled;
-        shellRoot.wifiSetRadio(enabled);
+        shellRoot.network.setRadio(!shellRoot.network.radioEnabled);
         controlPanelRefreshTimer.restart();
     }
 
     function toggleBluetoothEnabled() {
-        shellRoot.bluetoothSetPower(!shellRoot.bluetoothEnabled);
+        shellRoot.bluetooth.setPower(!shellRoot.bluetooth.powered);
     }
 
     function toggleDnd() {
-        shellRoot.toggleDnd();
+        shellRoot.notifications.toggleDnd();
     }
 
     function toggleRecording() {
@@ -183,7 +180,7 @@ Item {
     }
 
     function togglePreventSleep() {
-        shellRoot.togglePreventSleep();
+        shellRoot.power.togglePreventSleep();
         controlPanelRefreshTimer.restart();
     }
 
@@ -200,7 +197,7 @@ Item {
             showMainPage();
             return;
         }
-        shellRoot.refreshBluetoothStatus();
+        shellRoot.bluetooth.syncFromModel();
         switchPageWithAnimation("bluetooth");
     }
 
@@ -234,13 +231,13 @@ Item {
         if (!profile) {
             return;
         }
-        shellRoot.setPowerProfile(profile);
+        shellRoot.power.setProfile(profile);
         powerProfileFollowupRefresh.restart();
     }
 
     function cyclePowerProfile() {
         const order = ["power-saver", "balanced", "performance"];
-        const current = order.indexOf(shellRoot.powerProfile);
+        const current = order.indexOf(shellRoot.power.profile);
         const nextIndex = current >= 0 ? (current + 1) % order.length : 1;
         setPowerProfile(order[nextIndex]);
     }
@@ -266,15 +263,15 @@ Item {
     }
 
     function handleMediaAction(command) {
-        if (!shellRoot.mediaAvailable) {
+        if (!shellRoot.media.available) {
             return;
         }
         if (command === "previous") {
-            shellRoot.previousMedia();
+            shellRoot.media.previous();
         } else if (command === "play-pause") {
-            shellRoot.toggleMediaPlayback();
+            shellRoot.media.togglePlayback();
         } else if (command === "next") {
-            shellRoot.nextMedia();
+            shellRoot.media.next();
         }
     }
 
@@ -283,21 +280,21 @@ Item {
     }
 
     function currentWifiSubtitle() {
-        if (!shellRoot.wifiRadioEnabled) {
+        if (!shellRoot.network.radioEnabled) {
             return "Turned off";
         }
-        if (shellRoot.wifiConnected) {
-            return shellRoot.wifiSsid.length > 0 ? shellRoot.wifiSsid : "Connected";
+        if (shellRoot.network.connected) {
+            return shellRoot.network.ssid.length > 0 ? shellRoot.network.ssid : "Connected";
         }
         return "Not connected";
     }
 
     function currentBluetoothTitle() {
-        if (!Array.isArray(shellRoot.bluetoothDevices)) {
+        if (!Array.isArray(shellRoot.bluetooth.devices)) {
             return "Bluetooth";
         }
-        for (let i = 0; i < shellRoot.bluetoothDevices.length; i++) {
-            const device = shellRoot.bluetoothDevices[i];
+        for (let i = 0; i < shellRoot.bluetooth.devices.length; i++) {
+            const device = shellRoot.bluetooth.devices[i];
             if (device.connected && (device.name || "").length > 0) {
                 return device.name;
             }
@@ -306,13 +303,13 @@ Item {
     }
 
     function currentBluetoothSubtitle() {
-        if (!shellRoot.bluetoothPresent) {
+        if (!shellRoot.bluetooth.present) {
             return "No adapter";
         }
-        if (!shellRoot.bluetoothEnabled) {
+        if (!shellRoot.bluetooth.powered) {
             return "Turned off";
         }
-        const devices = Array.isArray(shellRoot.bluetoothDevices) ? shellRoot.bluetoothDevices : [];
+        const devices = Array.isArray(shellRoot.bluetooth.devices) ? shellRoot.bluetooth.devices : [];
         let connectedCount = 0;
         let pairedCount = 0;
         for (let i = 0; i < devices.length; i++) {
@@ -329,7 +326,7 @@ Item {
         if (connectedCount === 1) {
             return "Connected";
         }
-        if (shellRoot.bluetoothDiscovering) {
+        if (shellRoot.bluetooth.discovering) {
             return "Scanning";
         }
         if (pairedCount > 0) {
@@ -352,7 +349,7 @@ Item {
 
         interval: 900
         repeat: false
-        onTriggered: shellRoot.refreshPowerProfileStatus()
+        onTriggered: shellRoot.power.refreshProfile()
     }
 
 
@@ -423,7 +420,7 @@ Item {
                         icon: active ? popupRoot.shellRoot.icons.wifiStrong : popupRoot.shellRoot.icons.wifiDisconnected
                         title: popupRoot.currentWifiTitle()
                         subtitle: popupRoot.currentWifiSubtitle()
-                        active: popupRoot.shellRoot.wifiRadioEnabled
+                        active: popupRoot.shellRoot.network.radioEnabled
                         expanded: popupRoot.wifiExpanded
                         onLeftClicked: popupRoot.toggleWifiEnabled()
                         onRightClicked: popupRoot.toggleWifiExpanded()
@@ -437,7 +434,7 @@ Item {
                         icon: active ? popupRoot.shellRoot.icons.bluetooth : popupRoot.shellRoot.icons.bluetoothOff
                         title: popupRoot.currentBluetoothTitle()
                         subtitle: popupRoot.currentBluetoothSubtitle()
-                        active: popupRoot.shellRoot.bluetoothEnabled
+                        active: popupRoot.shellRoot.bluetooth.powered
                         expanded: popupRoot.bluetoothExpanded
                         onLeftClicked: popupRoot.toggleBluetoothEnabled()
                         onRightClicked: popupRoot.toggleBluetoothExpanded()
@@ -468,7 +465,7 @@ Item {
                             icon: active ? popupRoot.shellRoot.icons.preventSleep : popupRoot.shellRoot.icons.preventSleepOff
                             iconOnly: true
                             label: "Prevent\nsleep"
-                            active: popupRoot.shellRoot.preventSleepEnabled
+                            active: popupRoot.shellRoot.power.preventSleepEnabled
                             onClicked: popupRoot.togglePreventSleep()
                         }
                     }
@@ -478,9 +475,9 @@ Item {
                         height: popupRoot.moduleSize
 
                         shellRoot: popupRoot.shellRoot
-                        icon: popupRoot.powerProfileIcon(popupRoot.shellRoot.powerProfile)
+                        icon: popupRoot.powerProfileIcon(popupRoot.shellRoot.power.profile)
                         title: "Power"
-                        subtitle: popupRoot.powerProfileLabel(popupRoot.shellRoot.powerProfile)
+                        subtitle: popupRoot.powerProfileLabel(popupRoot.shellRoot.power.profile)
                         active: false
                         expanded: popupRoot.powerExpanded
                         onLeftClicked: popupRoot.cyclePowerProfile()
@@ -512,10 +509,10 @@ Item {
                                     width: parent.width
                                     shellRoot: popupRoot.shellRoot
                                     label: "Saver"
-                                    fillColor: popupRoot.shellRoot.powerProfile === "power-saver"
+                                    fillColor: popupRoot.shellRoot.power.profile === "power-saver"
                                         ? popupRoot.shellRoot.withAlpha(popupRoot.shellRoot.batteryColor, 0.22)
                                         : popupRoot.detailFill
-                                    foregroundColor: popupRoot.shellRoot.powerProfile === "power-saver"
+                                    foregroundColor: popupRoot.shellRoot.power.profile === "power-saver"
                                         ? popupRoot.shellRoot.batteryColor
                                         : popupRoot.shellRoot.primaryText
                                     strokeColor: popupRoot.detailStroke
@@ -526,10 +523,10 @@ Item {
                                     width: parent.width
                                     shellRoot: popupRoot.shellRoot
                                     label: "Balanced"
-                                    fillColor: popupRoot.shellRoot.powerProfile === "balanced"
+                                    fillColor: popupRoot.shellRoot.power.profile === "balanced"
                                         ? popupRoot.shellRoot.withAlpha(popupRoot.shellRoot.launchColor, 0.22)
                                         : popupRoot.detailFill
-                                    foregroundColor: popupRoot.shellRoot.powerProfile === "balanced"
+                                    foregroundColor: popupRoot.shellRoot.power.profile === "balanced"
                                         ? popupRoot.shellRoot.launchColor
                                         : popupRoot.shellRoot.primaryText
                                     strokeColor: popupRoot.detailStroke
@@ -540,10 +537,10 @@ Item {
                                     width: parent.width
                                     shellRoot: popupRoot.shellRoot
                                     label: "Fast"
-                                    fillColor: popupRoot.shellRoot.powerProfile === "performance"
+                                    fillColor: popupRoot.shellRoot.power.profile === "performance"
                                         ? popupRoot.shellRoot.withAlpha(popupRoot.shellRoot.criticalColor, 0.22)
                                         : popupRoot.detailFill
-                                    foregroundColor: popupRoot.shellRoot.powerProfile === "performance"
+                                    foregroundColor: popupRoot.shellRoot.power.profile === "performance"
                                         ? popupRoot.shellRoot.criticalColor
                                         : popupRoot.shellRoot.primaryText
                                     strokeColor: popupRoot.detailStroke
@@ -563,12 +560,12 @@ Item {
                         height: popupRoot.moduleSize * 2 + popupRoot.cardSpacing
 
                         shellRoot: popupRoot.shellRoot
-                        available: popupRoot.shellRoot.mediaAvailable
-                        playing: popupRoot.shellRoot.mediaPlaying
-                        title: popupRoot.shellRoot.mediaTitle
-                        subtitle: popupRoot.shellRoot.mediaArtist
-                        playerName: popupRoot.shellRoot.mediaPlayerName
-                        artUrl: popupRoot.shellRoot.mediaArtUrl
+                        available: popupRoot.shellRoot.media.available
+                        playing: popupRoot.shellRoot.media.playing
+                        title: popupRoot.shellRoot.media.title
+                        subtitle: popupRoot.shellRoot.media.artist
+                        playerName: popupRoot.shellRoot.media.playerName
+                        artUrl: popupRoot.shellRoot.media.artUrl
                         onPreviousClicked: popupRoot.handleMediaAction("previous")
                         onPlayPauseClicked: popupRoot.handleMediaAction("play-pause")
                         onNextClicked: popupRoot.handleMediaAction("next")
@@ -586,7 +583,7 @@ Item {
                             icon: popupRoot.shellRoot.icons.bellOff
                             iconOnly: true
                             label: "No\ndisturb"
-                            active: popupRoot.shellRoot.dndEnabled
+                            active: popupRoot.shellRoot.notifications.dndEnabled
                             onClicked: popupRoot.toggleDnd()
                         }
                     }
@@ -711,7 +708,7 @@ Item {
                     icon: popupRoot.shellRoot.volumeIcon
                     iconClickable: true
                     label: "Volume"
-                    value: popupRoot.shellRoot.audioVolumePercent
+                    value: popupRoot.shellRoot.audio.volumePercent
                     accentColor: popupRoot.shellRoot.launchColor
                     onValueChangeRequested: function(newValue) { popupRoot.setAudioVolumePercent(newValue); }
                     onIconClicked: popupRoot.toggleAudioMute()
@@ -720,6 +717,7 @@ Item {
         }
     }
 
+    // qmllint disable uncreatable-type
     PanelWindow {
         id: popupWindow
 
@@ -769,9 +767,9 @@ Item {
                     popupFocusScope.forceActiveFocus();
                     shellRoot.refreshBrightnessStatus();
                     shellRoot.refreshControlPanelStatus();
-                    shellRoot.refreshMediaStatus();
-                    shellRoot.refreshWifiStatus();
-                    shellRoot.refreshBluetoothStatus();
+                    shellRoot.media.refresh();
+                    shellRoot.network.refresh();
+                    shellRoot.bluetooth.syncFromModel();
                 if (!popupRoot.animatingClose) {
                     popupRoot.openAnimationPending = true;
                     popupCard.prepareOpenAnimation();
@@ -882,6 +880,7 @@ Item {
 
                 anchors.fill: parent
                 anchors.margins: popupRoot.currentPage === "main" ? popupRoot.popupPadding : 0
+                // qmllint disable missing-property
                 implicitHeight: pageLoader.item ? pageLoader.item.implicitHeight : 0
                 onImplicitHeightChanged: {
                     if (popupRoot.openAnimationPending) {

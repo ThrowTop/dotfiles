@@ -201,6 +201,7 @@ Item {
             id: actionStderr
         }
 
+        // qmllint disable signal-handler-parameters
         onExited: function(exitCode) {
             const stdout = (actionStdout.text || "").trim();
             const stderr = (actionStderr.text || "").trim();
@@ -232,6 +233,7 @@ Item {
             }
         }
 
+        // qmllint disable signal-handler-parameters
         onExited: function() {
             monitorRestartTimer.interval = controller._monitorRestartDelay;
             controller._monitorRestartDelay = Math.min(controller.shellRoot.monitorRestartMaxDelay, controller._monitorRestartDelay * 2);

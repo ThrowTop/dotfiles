@@ -34,6 +34,7 @@ Item {
             }
         }
         stderr: StdioCollector {}
+        // qmllint disable signal-handler-parameters
         onExited: function() {
             watcherRestartTimer.interval = controller._watcherRestartDelay;
             controller._watcherRestartDelay = Math.min(controller.shellRoot.monitorRestartMaxDelay, controller._watcherRestartDelay * 2);
@@ -60,6 +61,7 @@ Item {
             "--method", "org.erikreider.swaync.cc.GetSubscribeData"
         ]
         stdout: StdioCollector { id: initStdout }
+        // qmllint disable signal-handler-parameters
         onExited: function() {
             const text = (initStdout.text || "").trim();
             const m = text.match(/\((\w+), \w+, uint32 (\d+),/);

@@ -1,7 +1,6 @@
 //@ pragma UseQApplication
 
 import QtQuick
-import QtQuick.Effects
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
@@ -61,54 +60,13 @@ ShellRoot {
     property int cpuThreads: 0
     property string ramSpeedText: ""
     readonly property bool systemStatsPopupOpen: systemStatsPopup.popupRequested || systemStatsPopup.animatingClose
-    property alias wifiDevicePresent: networkController.devicePresent
-    property alias wifiRadioEnabled: networkController.radioEnabled
-    property alias wifiHardwareEnabled: networkController.hardwareEnabled
-    property alias wifiConnected: networkController.connected
-    property alias wifiSignalStrength: networkController.signalStrength
-    property alias wifiInterface: networkController.iface
-    property alias wifiSsid: networkController.ssid
-    property alias wifiSecure: networkController.secure
-    property alias wifiNetworks: networkController.networks
-    property alias wifiCapabilityDetected: networkController.capabilityDetected
-    property alias wifiActionMessage: networkController.actionMessage
-    property alias wifiActionBusy: networkController.actionBusy
-    readonly property alias _wifiStatusInitialized: networkController.statusInitialized
-    readonly property bool bluetoothPresent: bluetoothController.present
-    readonly property bool bluetoothDiscovering: bluetoothController.discovering
-    readonly property bool bluetoothPairable: bluetoothController.pairable
-    readonly property var bluetoothDevices: bluetoothController.devices
-    readonly property string bluetoothActionMessage: bluetoothController.actionMessage
-    readonly property bool bluetoothActionBusy: bluetoothController.actionBusy
-    readonly property bool _bluetoothStatusInitialized: bluetoothController.statusInitialized
-    readonly property string notificationAlt: notificationController.alt
-    readonly property string notificationTooltip: notificationController.tooltip
     property var trayMenuController: null
-
-    property alias wifiEnabled: networkController.radioEnabled
-    readonly property bool bluetoothEnabled: bluetoothController.powered
-    property alias bluetoothShowUnnamedDevices: bluetoothController.showUnnamedDevices
-    readonly property alias bluetoothAdapterObject: bluetoothController.adapterObject
-    readonly property alias bluetoothDeviceObjects: bluetoothController.deviceObjects
     readonly property string brightnessScriptPath: configDir + "/quickshell/scripts/brightness.sh"
     readonly property string mediaFocusScriptPath: configDir + "/quickshell/scripts/media-focus.sh"
     readonly property string openManagerScriptPath: configDir + "/quickshell/scripts/open-manager.sh"
     readonly property int brightnessUiStepPercent: 10
     property int brightnessPercent: 50
-    readonly property bool dndEnabled: notificationController.dndEnabled
     property bool screenRecording: false
-    readonly property string powerProfile: powerController.profile
-    readonly property bool preventSleepEnabled: powerController.preventSleepEnabled
-    readonly property var mediaPlayers: mediaController.players
-    readonly property var activeMediaPlayer: mediaController.activePlayer
-    readonly property bool mediaAvailable: mediaController.available
-    readonly property bool mediaPlaying: mediaController.playing
-    readonly property string mediaTitle: mediaController.title
-    readonly property string mediaArtist: mediaController.artist
-    readonly property string mediaPlayerName: mediaController.playerName
-    readonly property string mediaArtUrl: mediaController.artUrl
-    readonly property real mediaPositionSeconds: mediaController.positionSeconds
-    readonly property real mediaLengthSeconds: mediaController.lengthSeconds
     property bool audioSpectrumCavaAvailable: false
     property var audioSpectrumValues: []
     property var primaryBarWindow: null
@@ -138,7 +96,7 @@ ShellRoot {
     property string batteryDevPath: "/sys/class/power_supply/BAT1"
 
     Component.onCompleted: {
-        root.refreshWifiStatus();
+        networkController.refresh();
         root.refreshControlPanelStatus();
         root.refreshBrightnessStatus(false);
         cpuInfoSnapshot.refresh();
@@ -177,6 +135,13 @@ ShellRoot {
 
         shellRoot: root
     }
+
+    readonly property alias bluetooth: bluetoothController
+    readonly property alias network: networkController
+    readonly property alias audio: audioController
+    readonly property alias media: mediaController
+    readonly property alias power: powerController
+    readonly property alias notifications: notificationController
 
     readonly property real pillOpacity: 0.25
     readonly property color moduleBackground: withAlpha(colors.base, pillOpacity)
@@ -230,12 +195,6 @@ ShellRoot {
     }
     readonly property int activeWorkspaceId: Hyprland.focusedWorkspace?.id || 1
     readonly property string activeWindowTitle: Hyprland.activeToplevel?.title || ""
-    readonly property var defaultAudioSink: audioController.defaultOutputDevice
-    readonly property var audioOutputDevices: audioController.outputDevices
-    readonly property bool audioAvailable: audioController.available
-    readonly property bool audioMuted: audioController.muted
-    readonly property int audioVolumePercent: audioController.volumePercent
-    readonly property string audioOutputName: audioController.defaultOutputName
     readonly property var batteryDevice: UPower.displayDevice
     readonly property real batteryPercent: {
         const percent = batteryDevice?.percentage;
@@ -333,11 +292,11 @@ ShellRoot {
         return "Sampling...";
     }
     readonly property string volumeIcon: {
-        const percent = audioVolumePercent;
-        if (!audioAvailable) {
+        const percent = audioController.volumePercent;
+        if (!audioController.available) {
             return icons.volumeLow;
         }
-        if (audioMuted) {
+        if (audioController.muted) {
             return icons.volumeMuted;
         }
         if (percent <= 20) {
@@ -349,18 +308,44 @@ ShellRoot {
         return icons.volumeHigh;
     }
 
-    onAudioVolumePercentChanged: {
-        if (!root._osdReady) return;
-        root.islandOsdType = "volume";
-        root.islandOsdValue = root.audioMuted ? 0 : root.audioVolumePercent;
-        root.islandOsdTrigger = !root.islandOsdTrigger;
+    Connections {
+        target: audioController
+        function onVolumePercentChanged() {
+            if (!root._osdReady) return;
+            root.islandOsdType = "volume";
+            root.islandOsdValue = audioController.muted ? 0 : audioController.volumePercent;
+            root.islandOsdTrigger = !root.islandOsdTrigger;
+        }
+        function onMutedChanged() {
+            if (!root._osdReady) return;
+            root.islandOsdType = "volume";
+            root.islandOsdValue = audioController.muted ? 0 : audioController.volumePercent;
+            root.islandOsdTrigger = !root.islandOsdTrigger;
+        }
     }
-    onAudioMutedChanged: {
-        if (!root._osdReady) return;
-        root.islandOsdType = "volume";
-        root.islandOsdValue = root.audioMuted ? 0 : root.audioVolumePercent;
-        root.islandOsdTrigger = !root.islandOsdTrigger;
+
+    Connections {
+        target: powerController
+        function onProfileChanged() {
+            if (!root._osdReady) return;
+            root.islandOsdLabel     = "Power";
+            root.islandOsdRightText = powerController.profile === "performance" ? "Perf"
+                                    : powerController.profile === "power-saver"  ? "Saver"
+                                    : "Bal";
+            root.islandOsdAccent    = powerController.profile === "performance" ? colors.red
+                                    : powerController.profile === "power-saver"  ? colors.green
+                                    : colors.purple;
+            root.islandOsdIcon      = String.fromCodePoint(
+                powerController.profile === "performance" ? 0xF0425
+                : powerController.profile === "power-saver" ? 0xF007B
+                : 0xF0725
+            );
+            root.islandOsdDuration  = 1500;
+            root.islandOsdType      = "sidetext";
+            root.islandOsdTrigger   = !root.islandOsdTrigger;
+        }
     }
+
     onBrightnessPercentChanged: {
         if (!root._osdReady || root._brightnessFromPoll) return;
         root.islandOsdType = "brightness";
@@ -389,35 +374,6 @@ ShellRoot {
         root.islandOsdType      = "sidetext";
         root.islandOsdTrigger   = !root.islandOsdTrigger;
     }
-    onPowerProfileChanged: {
-        if (!root._osdReady) return;
-        root.islandOsdLabel     = "Power";
-        root.islandOsdRightText = root.powerProfile === "performance" ? "Perf"
-                                : root.powerProfile === "power-saver"  ? "Saver"
-                                : "Bal";
-        root.islandOsdAccent    = root.powerProfile === "performance" ? colors.red
-                                : root.powerProfile === "power-saver"  ? colors.green
-                                : colors.purple;
-        root.islandOsdIcon      = String.fromCodePoint(
-            root.powerProfile === "performance" ? 0xF0425
-            : root.powerProfile === "power-saver" ? 0xF007B
-            : 0xF0725
-        );
-        root.islandOsdDuration  = 1500;
-        root.islandOsdType      = "sidetext";
-        root.islandOsdTrigger   = !root.islandOsdTrigger;
-    }
-    function resetMediaState() {}
-    function updateMediaState(output) {}
-
-    function triggerVolumeOsd(value) {
-        if (!root._osdReady) {
-            return;
-        }
-        root.islandOsdType = "volume";
-        root.islandOsdValue = Math.max(0, Math.min(100, Math.round(value)));
-        root.islandOsdTrigger = !root.islandOsdTrigger;
-    }
 
     function triggerBrightnessOsd(value) {
         if (!root._osdReady) {
@@ -428,27 +384,6 @@ ShellRoot {
         root.islandOsdTrigger = !root.islandOsdTrigger;
     }
 
-    function currentAudioVolumePercent() {
-        return root.audioVolumePercent;
-    }
-
-    function setAudioVolumePercent(value) {
-        audioController.setVolumePercent(value);
-    }
-
-    function adjustAudioVolume(delta) {
-        audioController.adjustVolume(delta);
-    }
-
-    function toggleAudioMute() {
-        audioController.toggleMute();
-    }
-
-    function audioDeviceTitle(device) { return audioController.deviceTitle(device); }
-    function audioDeviceSubtitle(device) { return audioController.deviceSubtitle(device); }
-    function audioDeviceIcon(device) { return audioController.deviceIcon(device); }
-    function isDefaultAudioOutput(device) { return audioController.isDefaultOutput(device); }
-    function setDefaultAudioOutput(device) { audioController.setDefaultOutputDevice(device); }
     function isWifiInterfaceName(name) {
         const iface = (name || "").toLowerCase();
         return iface.startsWith("wl") || iface.startsWith("wlan") || iface.startsWith("wifi");
@@ -473,7 +408,7 @@ ShellRoot {
         return isWifiInterfaceName(defaultInterface) ? icons.wifi : icons.wired;
     }
     readonly property string networkText: defaultInterface ? humanRate(networkRxRate + networkTxRate) : "nocon"
-    readonly property bool wifiWidgetVisible: wifiCapabilityDetected || wifiDevicePresent || wifiNetworks.length > 0 || isWifiInterfaceName(defaultInterface)
+    readonly property bool wifiWidgetVisible: networkController.capabilityDetected || networkController.devicePresent || networkController.networks.length > 0 || isWifiInterfaceName(defaultInterface)
     readonly property bool networkWidgetVisible: networkConnected || wifiWidgetVisible
     readonly property bool notificationDoNotDisturb: notificationController.doNotDisturb
     readonly property bool notificationHasDot: notificationController.hasDot
@@ -563,26 +498,6 @@ ShellRoot {
             return hours + "h";
         }
         return roundedMinutes + " min";
-    }
-
-    function fileUrl(path) {
-        return path ? "file://" + path : "";
-    }
-
-    function wifiSignalBucket(signalPercent) {
-        if (signalPercent < 20) {
-            return "0";
-        }
-        if (signalPercent < 40) {
-            return "25";
-        }
-        if (signalPercent < 60) {
-            return "50";
-        }
-        if (signalPercent < 80) {
-            return "75";
-        }
-        return "100";
     }
 
     function humanRate(bytesPerSecond) {
@@ -698,12 +613,6 @@ ShellRoot {
         };
     }
 
-    function resetBatteryInfo() {
-    }
-
-    function updateBatteryInfo(raw) {
-    }
-
     function parseNumberMap(text) {
         const result = {};
         const lines = (text || "").split("\n");
@@ -780,13 +689,9 @@ ShellRoot {
             return icons.wired;
         }
         if (wifiConnectionActive) {
-            return wifiTrayGlyph(true, true, wifiSignalStrength);
+            return wifiTrayGlyph(true, true, networkController.signalStrength);
         }
-        return wifiTrayGlyph(wifiRadioEnabled, wifiConnected, wifiSignalStrength);
-    }
-
-    function updateNotificationState(raw) {
-        notificationController.updateFromJson(raw);
+        return wifiTrayGlyph(networkController.radioEnabled, networkController.connected, networkController.signalStrength);
     }
 
     function trayItemPriority(item) {
@@ -831,10 +736,6 @@ ShellRoot {
         const total = Math.max(0, Math.floor(Number(totalCount) || 0));
         const visible = Math.max(0, Math.min(total, Math.floor(Number(visibleCount) || 0)));
         return visible * trayButtonWidth + (total > visible ? trayOverflowButtonWidth : 0);
-    }
-
-    function trayItemsWidth(count) {
-        return collapsedTrayWidthForSpacing(count, count, trayButtonSpacing);
     }
 
     function collapsedTrayWidthForSpacing(visibleCount, totalCount, spacing) {
@@ -942,43 +843,9 @@ ShellRoot {
         }
     }
 
-    function refreshWifiStatus() {
-        networkController.refresh();
-    }
-
     function openBluetoothManager() {
         runDetached([openManagerScriptPath, "bluetooth"]);
     }
-
-    function refreshBluetoothStatus() {
-        bluetoothController.syncFromModel();
-    }
-
-    function wifiSetRadio(enabled) {
-        networkController.setRadio(enabled);
-    }
-
-    function wifiRescan() {
-        networkController.rescan();
-    }
-
-    function wifiDisconnect() {
-        networkController.disconnect();
-    }
-
-    function wifiConnect(ssid, password, security) {
-        networkController.connect(ssid, password, security);
-    }
-
-    function bluetoothSetPower(enabled) { bluetoothController.setPower(enabled); }
-    function bluetoothScan() { bluetoothController.scan(); }
-    function bluetoothConnect(address, paired, label) { bluetoothController.connectDevice(address, paired, label); }
-    function bluetoothDisconnect(address, label) { bluetoothController.disconnectDevice(address, label); }
-    function bluetoothRemove(address, label) { bluetoothController.removeDevice(address, label); }
-    function toggleNotificationPanel() { notificationController.togglePanel(); }
-    function toggleDnd() { notificationController.toggleDnd(); }
-    function setPowerProfile(profile) { powerController.setProfile(profile); }
-    function togglePreventSleep() { powerController.togglePreventSleep(); }
 
     function runDetached(command) {
         if (!command || command.length === 0) {
@@ -1037,32 +904,6 @@ ShellRoot {
         quickAdjustBrightnessProbe.running = true;
     }
 
-    function refreshMediaStatus() {
-        mediaController.refresh();
-    }
-
-    function seekMedia(positionSeconds) {
-        mediaController.seek(positionSeconds);
-    }
-
-    function previousMedia() {
-        mediaController.previous();
-    }
-
-    function toggleMediaPlayback() {
-        mediaController.togglePlayback();
-    }
-
-    function nextMedia() {
-        mediaController.next();
-    }
-
-    function focusMediaApp() {
-        mediaController.focusApp();
-    }
-
-    function refreshPowerProfileStatus() { powerController.refreshProfile(); }
-    function refreshPreventSleepStatus() { powerController.refreshPreventSleep(); }
 
     Process {
         id: detachedRunner
@@ -1079,6 +920,7 @@ ShellRoot {
             id: quickAdjustBrightnessProbeStdout
         }
 
+        // qmllint disable signal-handler-parameters
         onExited: function(exitCode) {
             const parsed = Number((quickAdjustBrightnessProbeStdout.text || "").trim());
             if (exitCode === 0 && isFinite(parsed)) {
@@ -1151,6 +993,7 @@ ShellRoot {
         command: ["hyprctl", "-j", "devices"]
         stdout: StdioCollector { id: initialKeyboardLayoutStdout }
 
+        // qmllint disable signal-handler-parameters
         onExited: function(exitCode) {
             if (exitCode !== 0) return;
             try {
@@ -1263,6 +1106,7 @@ ShellRoot {
 
         running: true
         command: ["sh", "-lc", "command -v cava >/dev/null 2>&1"]
+        // qmllint disable signal-handler-parameters
         onExited: function(exitCode) {
             root.audioSpectrumCavaAvailable = exitCode === 0;
         }
@@ -1280,6 +1124,7 @@ ShellRoot {
             }
         }
 
+        // qmllint disable signal-handler-parameters
         onExited: function(exitCode) {
             if (exitCode !== 0) {
                 root.audioSpectrumValues = [];
@@ -1405,15 +1250,15 @@ ShellRoot {
         }
 
         function volumeIncrease() {
-            root.adjustAudioVolume(5);
+            audioController.adjustVolume(5);
         }
 
         function volumeDecrease() {
-            root.adjustAudioVolume(-5);
+            audioController.adjustVolume(-5);
         }
 
         function volumeToggleMute() {
-            root.toggleAudioMute();
+            audioController.toggleMute();
         }
     }
 
@@ -1432,15 +1277,15 @@ ShellRoot {
         }
 
         function volumeIncrease() {
-            root.adjustAudioVolume(5);
+            audioController.adjustVolume(5);
         }
 
         function volumeDecrease() {
-            root.adjustAudioVolume(-5);
+            audioController.adjustVolume(-5);
         }
 
         function volumeToggleMute() {
-            root.toggleAudioMute();
+            audioController.toggleMute();
         }
     }
 
@@ -1461,6 +1306,7 @@ ShellRoot {
     Variants {
         model: Quickshell.screens
 
+        // qmllint disable uncreatable-type
         PanelWindow {
             required property var modelData
 
@@ -1537,3 +1383,5 @@ ShellRoot {
     }
 
 }
+
+

@@ -17,6 +17,7 @@ Item {
         running: true
         command: [controller.profileScriptPath, "get"]
         stdout: StdioCollector { id: profileInitStdout }
+        // qmllint disable signal-handler-parameters
         onExited: function() {
             controller.updateProfileFromOutput(profileInitStdout.text);
         }
@@ -28,6 +29,7 @@ Item {
         running: false
         command: [controller.profileScriptPath, "get"]
         stdout: StdioCollector { id: profileRefreshStdout }
+        // qmllint disable signal-handler-parameters
         onExited: function() {
             controller.updateProfileFromOutput(profileRefreshStdout.text);
         }
@@ -47,6 +49,7 @@ Item {
             }
         }
         stderr: StdioCollector {}
+        // qmllint disable signal-handler-parameters
         onExited: function() {
             profileWatcherRestartTimer.interval = controller._profileWatcherRestartDelay;
             controller._profileWatcherRestartDelay = Math.min(controller.shellRoot.monitorRestartMaxDelay, controller._profileWatcherRestartDelay * 2);
@@ -76,6 +79,7 @@ Item {
         running: false
         command: [controller.shellRoot.configDir + "/quickshell/scripts/prevent-sleep.sh", "status"]
         stdout: StdioCollector { id: preventSleepStdout }
+        // qmllint disable signal-handler-parameters
         onExited: function() {
             controller.updatePreventSleepFromOutput(preventSleepStdout.text);
         }

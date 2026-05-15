@@ -9,13 +9,13 @@ Rectangle {
 
     signal closeRequested()
 
-    readonly property bool bluetoothPresent: shellRoot.bluetoothPresent
-    readonly property bool bluetoothEnabled: shellRoot.bluetoothEnabled
-    readonly property bool bluetoothDiscovering: shellRoot.bluetoothDiscovering
-    readonly property bool bluetoothPairable: shellRoot.bluetoothPairable
-    readonly property bool showUnnamedDevices: shellRoot.bluetoothShowUnnamedDevices
-    readonly property bool busy: shellRoot.bluetoothActionBusy
-    readonly property var devices: Array.isArray(shellRoot.bluetoothDevices) ? shellRoot.bluetoothDevices : []
+    readonly property bool bluetoothPresent: shellRoot.bluetooth.present
+    readonly property bool bluetoothEnabled: shellRoot.bluetooth.powered
+    readonly property bool bluetoothDiscovering: shellRoot.bluetooth.discovering
+    readonly property bool bluetoothPairable: shellRoot.bluetooth.pairable
+    readonly property bool showUnnamedDevices: shellRoot.bluetooth.showUnnamedDevices
+    readonly property bool busy: shellRoot.bluetooth.actionBusy
+    readonly property var devices: Array.isArray(shellRoot.bluetooth.devices) ? shellRoot.bluetooth.devices : []
     readonly property var visibleDevices: devices.filter(device => showUnnamedDevices || !!device.hasName)
     readonly property int hiddenUnnamedCount: Math.max(0, devices.length - visibleDevices.length)
     readonly property var connectedDevices: devices.filter(device => !!device.connected)
@@ -186,10 +186,10 @@ Rectangle {
             return;
         }
         if (device.connected) {
-            shellRoot.bluetoothDisconnect(device.address, device.displayName || device.name || "");
+            shellRoot.bluetooth.disconnectDevice(device.address, device.displayName || device.name || "");
             return;
         }
-        shellRoot.bluetoothConnect(device.address, !!device.paired, device.displayName || device.name || "");
+        shellRoot.bluetooth.connectDevice(device.address, !!device.paired, device.displayName || device.name || "");
     }
 
     Column {
@@ -273,7 +273,7 @@ Rectangle {
                         enabled: root.bluetoothPresent && !root.busy
                         hoverEnabled: true
                         cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        onClicked: root.shellRoot.bluetoothSetPower(!root.bluetoothEnabled)
+                        onClicked: root.shellRoot.bluetooth.setPower(!root.bluetoothEnabled)
                     }
                 }
             }
@@ -386,7 +386,7 @@ Rectangle {
                 disabled: !root.bluetoothPresent || !root.bluetoothEnabled || root.busy
                 fillColor: root.cardFill
                 strokeColor: root.cardStroke
-                onClicked: root.shellRoot.bluetoothScan()
+                onClicked: root.shellRoot.bluetooth.scan()
             }
 
             ActionChip {
@@ -402,7 +402,7 @@ Rectangle {
                 strokeColor: root.showUnnamedDevices
                     ? (root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18))
                     : root.cardStroke
-                onClicked: root.shellRoot.bluetoothShowUnnamedDevices = !root.shellRoot.bluetoothShowUnnamedDevices
+                onClicked: root.shellRoot.bluetooth.showUnnamedDevices = !root.shellRoot.bluetooth.showUnnamedDevices
             }
 
             ActionChip {
@@ -419,7 +419,7 @@ Rectangle {
 
         Rectangle {
             width: parent.width
-            visible: root.shellRoot.bluetoothActionMessage.length > 0
+            visible: root.shellRoot.bluetooth.actionMessage.length > 0
             implicitHeight: actionMessageLabel.implicitHeight + 18
             radius: root.innerRadius
             color: root.panelColor(root.cardFill)
@@ -433,7 +433,7 @@ Rectangle {
                 anchors.right: parent.right
                 anchors.top: parent.top
                 anchors.margins: root.innerPadding
-                text: root.shellRoot.bluetoothActionMessage
+                text: root.shellRoot.bluetooth.actionMessage
                 color: root.shellRoot.withAlpha(root.shellRoot.primaryText, 0.82)
                 font.family: root.shellRoot.baseFont
                 font.pixelSize: 12

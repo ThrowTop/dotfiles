@@ -10,6 +10,7 @@ import "modules"
 import "control"
 import "../components"
 
+// qmllint disable uncreatable-type
 PanelWindow {
     id: barWindow
 
@@ -31,6 +32,7 @@ PanelWindow {
     exclusiveZone: 48
     color: "transparent"
     surfaceFormat.opaque: false
+    // qmllint disable unqualified unresolved-type missing-property
     margins.bottom: 10
     mask: Region {
         item: topBarMask

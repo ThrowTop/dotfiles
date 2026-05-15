@@ -14,110 +14,117 @@ Keep this file blunt and current: when a task is started, finished, abandoned, o
 
 ## Current Baseline
 
-- `shell.qml` is still too large and owns too many unrelated responsibilities.
-- Several QML files are too large to be maintainable as single components.
-- Popup positioning and animation state are duplicated across features.
-- Some shell scripts or shell fragments are embedded directly in QML.
-- Hardware-specific assumptions still exist in brightness and system stats.
+All controller extraction done. All compat wrappers removed. Hardware assumptions eliminated. Bar and system stats polished. qmllint clean (no real warnings; `unqualified` suppressions deferred to Phase 6).
 
-Recent completed work:
+What remains:
 
-- Controller extraction: Bluetooth, Network, Audio, Media, Notifications, Power, SystemStats — all done.
-- Script flattening under `quickshell/scripts/` with one `lib/` folder — done.
-- Control center layout rebalanced — done.
-- Bar polish pass: SF Pro font split, BatteryPill component, icon/text font separation — done.
+- Popup positioning and animation state duplicated across every popup.
+- `WifiFallback.qml` mixes popup lifecycle, network list state machine, and all UI in one file.
+- `ControlPanelPopup.qml` has its main page content inlined alongside the popup shell.
+- Shell scripts have not had a quality pass.
 
-## Phase 1: Stop Process And Command Fragility
+## Splitting Rule
 
-Status: `Done`
+Only split a file when the extracted piece is genuinely reusable elsewhere, or when the file is so large it cannot be reasoned about and the extracted piece has a clean one-directional interface. Do not split just to make line counts smaller. Tight bidirectional coupling (child IDs referenced by parent, parent IDs referenced by children) is a hard stop — keep those files whole.
 
-- [x] Add restart backoff for long-running monitors.
-- [x] Move embedded shell fragments out of QML into scripts.
-- [x] Move transient marker files out of `/tmp` into `$XDG_RUNTIME_DIR/hyprv/`.
+## Pragma Rule
 
-## Phase 2: Split ShellRoot Into Controllers
+Every newly created component gets `pragma ComponentBehavior: Bound` at the top and declares `required property` on any delegate or nested component that needs outer scope IDs.
 
-Status: `Done`
+---
 
-- [x] Extract `features/network/NetworkController.qml`.
-- [x] Extract `features/audio/AudioController.qml` + `AudioPopup.qml`.
-- [x] Extract `features/media/MediaController.qml`.
-- [x] Extract `features/power/PowerController.qml`.
-- [x] Extract `features/notifications/NotificationController.qml`.
-- [x] Extract `features/system/SystemStatsController.qml`.
-
-Remaining: charge-limit logic is still partly popup-owned (`BatteryInfoPopup` calls `battery.sh` directly). Could move behind `PowerController` in a later pass, but low priority.
-
-## Phase 2b: Bar Polish
-
-Status: `Done`
-
-Goal: Apple-inspired bar aesthetic, coherent typography, clean battery widget.
-
-- [x] Switch `baseFont` to SF Pro Text, add `displayFont` = SF Pro Display. `iconFont` stays JetBrainsMono Nerd Font.
-- [x] Apply `displayFont` to large labels (≥ 18 px) in `DynamicIsland.qml` (clock, media title).
-- [x] Create `components/BatteryPill.qml` — iPhone-style solid colored rect (32 × 18, radius 6) with number inside. No fill-level bar; color encodes state.
-- [x] Wire `BatteryPill` into `bar/status/StatusPill.qml`; remove old `TextModule` battery block.
-- [x] Fix network icon/text overlap in `SystemResourcesPill.qml` by splitting icon and speed into separate items; size icon container via `paintedWidth` to avoid nerd font logical-advance undercount.
-- [x] Bump keyboard layout label in `StatusPill` from 13 → 16 px to match temperature label.
-
-## Phase 2c: System Stats & Battery Revamp
-
-Status: `Done`
-
-Goal: Unified system resources bar module, rich popup, production-quality battery monitoring.
-
-- [x] Rewrite `SystemResourcesPill` — 4 color-coded modules (CPU, RAM, Temp, Network); temperature moved from `StatusPill`.
-- [x] Rewrite `SystemStatsPopup` — cards with trend charts, per-core grid, CPU model/clock, RAM GB/speed, load avg; geometry matches WiFi widget (`cardRadius 9 + padding 10 = panel 19`).
-- [x] Popup-gate heavy poll data: light command (head of `/proc/stat` only) when popup closed; full command (all cores, loadavg, cpufreq) when open.
-- [x] One-shot CPU info (model, cores, threads) and RAM speed (from `/run/udev/data/+dmi:id`) fetched at startup — no root or dmidecode required.
-- [x] Battery popup: live power draw from sysfs (`current_now × voltage_now`), rolling average, battery health %, cycle count.
-- [x] `batteryRatePoll`: 2s when battery popup open, 10s when closed, stopped on AC — event-driven, no UPower polling hack.
-- [x] Remove battery stats from system stats popup (duplicate; dedicated panel exists).
-
-## Phase 3: Make One Popup Host
+## Phase 3: AnchoredPopup Component
 
 Status: `Todo`
 
-Goal: delete duplicated popup state machines.
+Goal: eliminate duplicated popup state machines by creating one reusable host.
 
-Many popups carry the same state under different local names:
-`sourceItem`, `parentWindow`, `positionTimer`, `popupOpenTimer`, `popupRequested`, `animatingClose`, `openAnimationPending`, `mapToGlobal()` placement, implicit-height retry loops.
+Every popup (`AudioPopup`, `BatteryInfoPopup`, `SystemStatsPopup`, `ControlPanelPopup`, `WifiFallback`, `TrayMenuPopup`, `TrayOverflowPopup`) carries identical boilerplate:
 
-Tasks:
+```
+sourceItem, parentWindow, positionTimer, popupOpenTimer,
+popupRequested, animatingClose, openAnimationPending,
+updatePopupPosition(), mapToGlobal() placement,
+PanelWindow, FocusScope, escape/outside-click handling,
+AnimatedGlassPanel, prepareOpenAnimation(), playOpenAnimation(), playCloseAnimation()
+```
 
-- [ ] Create `components/AnchoredPopup.qml` or `components/PopupSurface.qml` owning anchoring, screen clamping, open/close lifecycle, animation timing, and escape/outside-click behavior.
-- [ ] Migrate simple popups first: `TrayOverflowPopup`, `BatteryInfoPopup`, `SystemStatsPopup`.
-- [ ] Migrate harder popups: `ControlPanelPopup`, `TrayMenuPopup`, `WifiFallback`.
+### AnchoredPopup API
 
-Verification: anchor placement on left/center/right items; open/close spam; keyboard escape; monitor changes.
+Create `components/AnchoredPopup.qml`. Consumers embed it and slot content in via the default property:
+
+```qml
+AnchoredPopup {
+    id: myPopup
+
+    required property var shellRoot
+    popupWidth: 324          // content width; height is implicit
+    popupPadding: 12         // optional
+    closeOnOutsideClick: true
+    closeOnEscape: true
+
+    onAboutToOpen: { ... }   // hook for data refresh before open animation
+
+    SomeContentItem { ... }  // default property
+}
+
+myPopup.openFor(sourceItem, parentWindow)
+myPopup.closePopup()
+myPopup.toggleFor(sourceItem, parentWindow)
+// read-only: myPopup.isOpen, myPopup.animatingClose
+```
+
+### Migration order
+
+1. Implement and verify `AnchoredPopup.qml` with one simple popup.
+2. Migrate simple popups: `TrayOverflowPopup`, `BatteryInfoPopup`, `SystemStatsPopup`.
+3. Migrate `AudioPopup`.
+4. Migrate `ControlPanelPopup` and `WifiFallback` (extra internal state — harder).
+5. Migrate `TrayMenuPopup` last (custom close/clear timers on top of the base lifecycle).
+
+Verification: anchor placement on left/center/right items; open/close spam; keyboard escape; multi-monitor.
+
+---
 
 ## Phase 4: Break Up Giant QML Files
 
 Status: `Todo`
 
-Goal: make feature files small enough to reason about.
+**Do Phase 3 first.** Lifecycle removal shrinks each file before splitting.
 
-Targets:
+### Phase 4a: Split WifiFallback.qml
 
-- `features/network/WifiFallback.qml` — split into indicator, popup shell, status card, action row, network list, network row, password row.
-- `DynamicIsland.qml` — split into island shell, idle view, media view, OSD view, media controls, seek control.
-- `features/control/ControlPanelPopup.qml` — split into popup shell, main grid, Wi-Fi tile, Bluetooth tile, power section, session section, sliders.
-- `features/bluetooth/ControlPanelBluetoothDetails.qml` — split status card, action row, device list, device row.
-- `features/tray/TrayMenuPopup.qml` — split menu model/hydration from visual row rendering.
+Status: `Todo`
 
-Rule: extract view subcomponents first. Do not move business logic and UI in the same patch unless the file is already failing.
+~970 lines with three unrelated jobs: indicator widget, network list state machine, popup UI. The primary goal is step 5 — moving UI-owned state into the controller where it belongs. Steps 1–4 are view extractions that make step 5 tractable.
 
-## Phase 5: Replace Hardware-Specific Assumptions
+1. **Extract `WifiStatusCard.qml`** — connected/signal/interface status card. Takes `shellRoot`, connection state booleans, `connectionSummary`. No logic.
 
-Status: `Done`
+2. **Extract `WifiActionRow.qml`** — Turn On/Off, Rescan, Advanced chips. Takes `shellRoot`, `wifiEnabled`, `wifiControlsAvailable`, action callbacks.
 
-- [x] Thermal zone: `scripts/lib/detect-thermal-zone.sh` auto-detects best zone (x86_pkg_temp → TCPU_PCI → TCPU → acpitz → first readable). `shell.qml` runs it once at startup and stores path in `thermalZonePath`; both `systemSnapshot` commands use the property.
-- [x] Brightness max: `brightness.sh` now reads `MAX` from `brightnessctl m`, falls back to `/sys/class/backlight/*/max_brightness`, then hardcoded 400.
-- [x] Battery path: `scripts/lib/detect-battery-path.sh` auto-detects first BAT* device with `current_now`. `shell.qml` detects at startup into `batteryDevPath`; `batteryRatePoll` and `battery-limit.sh` use the dynamic path.
-- [x] Terminal fallback: `open-manager.sh` tries `foot`, `kitty`, `alacritty`, `ghostty`, `xterm` in order instead of hardcoding `kitty`.
+3. **Extract `WifiNetworkRow.qml`** — single network card: title, signal icon, security badge, connect chip, expandable password row. Takes `shellRoot`, `modelData`, `expanded`, `passwordText`, action callbacks.
 
-## Phase 6: Improve Script Quality
+4. **Extract `WifiNetworkList.qml`** — `Flickable` + `Repeater` over `WifiNetworkRow`. Takes `shellRoot`, `networks`, `expandedSsid`, `passwordText`, `maxHeight`, action callbacks. No state.
+
+5. **Move network list state into `NetworkController.qml`** — `syncNetworkList`, `mergeNetworkLists`, `cloneNetwork`, `displayedNetworks`, `displayedNetworksTimestamp`, `expandedSsid`, `passwordText`. `NetworkController` already owns the live array; the display cache belongs with it.
+
+6. **Slim `WifiFallback.qml` to popup shell** — color/layout properties, `panelColumn` assembling extracted cards, `AnchoredPopup`. Target: under 150 lines.
+
+Rule: steps 1–4 before step 5. Do not move state until UI extraction is stable.
+
+### Phase 4b: Split ControlPanelPopup.qml
+
+Status: `Todo`
+
+904 lines. The `mainPageComponent` is already a `Component {}` block — the boundary exists, it just needs to become its own file.
+
+1. **Extract `ControlPanelMainPage.qml`** — the `mainPageComponent` Column (~400–714): all tiles, power modes, session actions, sliders, media card. Takes `shellRoot` and action callbacks. Emits signals for page switches and close requests.
+
+2. **`ControlPanelPopup.qml` becomes popup shell** — `AnchoredPopup`, `Loader` switching between `ControlPanelMainPage` and `ControlPanelBluetoothDetails`, page-switch animation, coordinator functions. Target: under 150 lines.
+
+---
+
+## Phase 5: Improve Script Quality
 
 Status: `Todo`
 
@@ -126,44 +133,40 @@ Status: `Todo`
 - [ ] Add usage output to every public script.
 - [ ] Reduce Wi-Fi status dependency chain (`nmcli`, `iw`, `awk`, temp files, `jq`) behind a stable output contract.
 
-## Phase 7: Reduce Static QML Noise
+---
+
+## Phase 6: Qualify Unqualified Accesses
 
 Status: `Later`
 
-- `pragma ComponentBehavior: Bound` where it fits.
-- Qualify easy unqualified accesses in smaller files first.
-- Fix dead defensive checks left after `required shellRoot`.
+~355 `unqualified` access warnings from delegates reaching outer scope IDs without `required property`.
+
+- Work file by file: `find quickshell -name "*.qml" | xargs qmllint 2>&1 | grep unqualified`
+- Smallest files first; `ControlPanelPopup` and `WifiFallback` last.
+- Files created in Phases 3–4 already have `pragma ComponentBehavior: Bound`, so this is retrofit-only.
+
+---
 
 ## Tried / Notes
 
-- Phase 1 process/command cleanup: `Done`.
-  - Done: helper scripts for manager launch, media focus, icon theme lookup, audio volume.
-  - Done: monitor restart backoff for audio, Wi-Fi, notifications, power profile.
-  - Done: nmcli failure marker moved to HyprV runtime dir instead of bare `/tmp`.
-- Network controller extraction: `Done`.
-  - Moved Wi-Fi state, cached networks, status polling, action process state, follow-up refresh, `nmcli monitor` ownership.
-  - Kept `shell.qml` compatibility aliases/wrappers.
-- Audio controller extraction: `Done`.
-  - Native Pipewire output via `Quickshell.Services.Pipewire`.
-  - Added `components/DeviceRow.qml` and `features/audio/AudioPopup.qml`.
-- `shellRoot` null-guard cleanup: `Done`.
+- DynamicIsland split: `Tried, abandoned`.
+  - Coupling is bidirectional: inner content blocks read `island.*`; `compactWidth` on the shell references IDs inside `compactMusic`. Splitting requires passing 15+ properties for zero reuse. One cohesive widget — stays whole.
+- ControlPanelBluetoothDetails internal split: `Tried, abandoned`.
+  - Already the right atomic unit (bluetooth details page). Sub-splitting `BluetoothStatusCard` / `BluetoothActionRow` is pure fragmentation — all sections read `root.*`, nothing is reused elsewhere.
+- TrayMenuPopup split: `Tried, abandoned`.
+  - Row delegate references `trayMenuPopupRoot.*` throughout; `menuContent.implicitHeight` is referenced back upward. Bidirectional coupling, no reuse gain.
+- AudioPopup split: `Tried, abandoned`.
+  - After Phase 3 removes lifecycle boilerplate it will be ~250 lines. `AudioDeviceList` is not reused anywhere.
 - Icon audit (MDI-outline pass): `Tried, abandoned`.
-  - Attempted to replace filled glyphs with `-outline` variants by computing codepoints arithmetically. The approach was wrong — glyph codepoints cannot be computed from names without the actual font charmap. Would need to reference the nerdfont cheatsheet directly. Reverted to original. Leave for a future pass with a proper lookup source.
-- Bar polish (SF Pro + BatteryPill): `Done`.
-  - Font split to SF Pro Text/Display for UI, Nerd Font for glyphs only.
-  - BatteryPill component: solid colored rect, number inside, tip nub.
-  - Network icon/text split using `paintedWidth` for correct ink-rect sizing.
-  - Keyboard layout font bumped to 16 px for visual consistency.
-- System stats & battery revamp: `Done`.
-  - SystemResourcesPill: 4 color-coded modules (CPU, RAM, Temp, Network); temperature moved out of StatusPill.
-  - SystemStatsPopup: card layout with trend charts, per-core grid, CPU model/clock, RAM GB/speed, load avg; geometry coherent with WiFi widget.
-  - Battery popup: live sysfs power draw, rolling average, health %, cycle count; adaptive poll rate (2s open / 10s closed / off on AC).
-  - RAM speed sourced from `/run/udev/data/+dmi:id` — no root, no dmidecode.
+  - Glyph codepoints cannot be computed from names without the font charmap. Needs a proper lookup source.
+- Charge-limit logic: still partly popup-owned (`BatteryInfoPopup` calls `battery.sh` directly). Low priority.
 
-## Suggested Work Order
+---
 
-1. Phase 3 popup lifecycle extraction (simple popups first).
-2. Wi-Fi popup split.
-3. Dynamic Island split.
-4. Hardware assumption cleanup (thermal zone, brightness max).
-5. Script quality pass (shellcheck, dialect normalization).
+## Work Order
+
+1. **Phase 3** — `AnchoredPopup.qml` + migrate all popups.
+2. **Phase 4a** — WifiFallback split + state → NetworkController.
+3. **Phase 4b** — ControlPanelPopup main page extraction.
+4. **Phase 5** — Script quality pass.
+5. **Phase 6** — Unqualified access retrofit.

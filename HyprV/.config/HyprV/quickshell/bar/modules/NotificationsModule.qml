@@ -43,7 +43,7 @@ Item {
             if (mouse.button === Qt.LeftButton) {
                 module.shellRoot.toggleNotificationPanel();
             } else if (mouse.button === Qt.RightButton) {
-                module.shellRoot.toggleDnd();
+                module.shellRoot.notifications.toggleDnd();
             }
         }
     }

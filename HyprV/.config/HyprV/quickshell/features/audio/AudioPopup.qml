@@ -26,7 +26,7 @@ Item {
     readonly property color cardFill: shellRoot.withAlpha("#ffffff", 0.07)
     readonly property color cardStrongFill: shellRoot.withAlpha("#ffffff", 0.11)
     readonly property color cardStroke: shellRoot.withAlpha(shellRoot.primaryText, 0.12)
-    readonly property var devices: Array.isArray(shellRoot.audioOutputDevices) ? shellRoot.audioOutputDevices : []
+    readonly property var devices: Array.isArray(shellRoot.audio.outputDevices) ? shellRoot.audio.outputDevices : []
 
     function openFor(source, window) {
         if (!source || !window) {
@@ -94,6 +94,7 @@ Item {
         }
     }
 
+    // qmllint disable uncreatable-type
     PanelWindow {
         id: popupWindow
 
@@ -231,7 +232,7 @@ Item {
                     Text {
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        text: popupRoot.shellRoot.audioMuted ? "Muted" : popupRoot.shellRoot.audioVolumePercent + "%"
+                        text: popupRoot.shellRoot.audio.muted ? "Muted" : popupRoot.shellRoot.audio.volumePercent + "%"
                         color: popupRoot.mutedText
                         font.family: popupRoot.shellRoot.baseFont
                         font.pixelSize: 12
@@ -274,7 +275,7 @@ Item {
 
                             Text {
                                 width: parent.width
-                                text: popupRoot.shellRoot.audioOutputName
+                                text: popupRoot.shellRoot.audio.defaultOutputName
                                 color: popupRoot.shellRoot.primaryText
                                 elide: Text.ElideRight
                                 font.family: popupRoot.shellRoot.baseFont
@@ -285,7 +286,7 @@ Item {
 
                             Text {
                                 width: parent.width
-                                text: popupRoot.shellRoot.audioAvailable ? "Selected output device" : "No output device available"
+                                text: popupRoot.shellRoot.audio.available ? "Selected output device" : "No output device available"
                                 color: popupRoot.mutedText
                                 elide: Text.ElideRight
                                 font.family: popupRoot.shellRoot.baseFont
@@ -308,11 +309,11 @@ Item {
 
                             width: parent ? parent.width : popupRoot.popupWidth - popupRoot.popupPadding * 2
                             shellRoot: popupRoot.shellRoot
-                            icon: popupRoot.shellRoot.audioDeviceIcon(modelData)
-                            title: popupRoot.shellRoot.audioDeviceTitle(modelData)
-                            subtitle: popupRoot.shellRoot.audioDeviceSubtitle(modelData)
-                            active: popupRoot.shellRoot.isDefaultAudioOutput(modelData)
-                            onClicked: popupRoot.shellRoot.setDefaultAudioOutput(modelData)
+                            icon: popupRoot.shellRoot.audio.deviceIcon(modelData)
+                            title: popupRoot.shellRoot.audio.deviceTitle(modelData)
+                            subtitle: popupRoot.shellRoot.audio.deviceSubtitle(modelData)
+                            active: popupRoot.shellRoot.audio.isDefaultOutput(modelData)
+                            onClicked: popupRoot.shellRoot.audio.setDefaultOutputDevice(modelData)
                         }
                     }
                 }

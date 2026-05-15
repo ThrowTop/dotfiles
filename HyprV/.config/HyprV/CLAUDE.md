@@ -109,7 +109,7 @@ The battery is rendered by `components/BatteryPill.qml`. It is a solid colored r
 
 ## Feature State
 
-Bluetooth is mostly extracted from `shell.qml`: state, actions, timers, and device signal watchers live in `BluetoothController.qml`. `shell.qml` still exposes compatibility properties and methods like `bluetoothEnabled`, `bluetoothDevices`, `bluetoothScan()`, and `bluetoothConnect()` so existing UI can remain stable.
+Bluetooth state, actions, timers, and device signal watchers live in `BluetoothController.qml`. Accessed via `shellRoot.bluetooth.*`.
 
 System stats parsing is in `SystemStatsController.qml`. The poll command switches between a lightweight snapshot (head of `/proc/stat` + meminfo + temp + net) when the popup is closed, and a full snapshot (all CPU cores, loadavg, cpufreq) when open. `shell.qml` exposes `cpuUsage`, `memoryUsage`, `memoryUsedGB`, `memoryTotalGB`, `temperatureC`, network rates, histories, per-core usages, CPU model/cores/freq, and RAM speed for bar/popup consumers.
 
@@ -132,6 +132,7 @@ Keep the shell compact, desktop-native, and Apple-flavored:
 - Use `qmllint` on any file you touch before reloading.
 - Never mix `iconFont` and text in the same `Text` element — always split them.
 - **Prefer the most robust and proper implementation.** Use event-driven approaches and native Quickshell service integrations over polling or scripts wherever possible. Polling and `PollCommand` are last resorts for things Quickshell cannot expose natively.
+- **No legacy paths.** When an API, property, or pattern changes, update all consumers immediately. Do not leave compatibility shims, forwarding aliases, or old call sites around. The codebase has one way to do each thing — if that changes, the old way is deleted, not preserved alongside the new one.
 
 ## Script Conventions
 
@@ -155,8 +156,8 @@ Keep the shell compact, desktop-native, and Apple-flavored:
 
 See `CLEANUP_PLAN.md` for the current tracked cleanup plan.
 
-1. Phase 3: shared popup host/chrome for lifecycle deduplication.
-2. Split large feature files: `WifiFallback.qml`, `DynamicIsland.qml`, `ControlPanelPopup.qml`.
-3. Reduce `shell.qml` to global composition, shared helpers, and compatibility wiring.
+1. Phase 3: `AnchoredPopup.qml` — shared popup lifecycle host.
+2. Phase 4a: Split `WifiFallback.qml`; move network list state into `NetworkController`.
+3. Phase 4b: Extract `ControlPanelMainPage.qml` from `ControlPanelPopup.qml`.
 
 

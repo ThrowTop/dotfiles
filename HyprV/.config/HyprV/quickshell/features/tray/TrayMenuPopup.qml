@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Services.SystemTray
 import Quickshell.Wayland
 import "../.."
 
@@ -243,6 +242,7 @@ Item {
         }
     }
 
+    // qmllint disable uncreatable-type
     PanelWindow {
         id: trayMenuWindow
 
