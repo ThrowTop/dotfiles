@@ -74,7 +74,7 @@ Rectangle {
         Text {
             width: 26
             anchors.verticalCenter: parent.verticalCenter
-            text: row.active ? "" : row.actionIcon
+            text: row.active ? row.shellRoot.icons.check : row.actionIcon
             color: row.active ? row.shellRoot.launchColor : row.shellRoot.withAlpha(row.shellRoot.primaryText, 0.7)
             font.family: row.shellRoot.iconFont
             font.pixelSize: row.active ? 15 : 13

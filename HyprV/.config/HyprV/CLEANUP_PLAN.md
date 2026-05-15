@@ -1,6 +1,5 @@
 # HyprV Cleanup Plan
 
-This is the working plan for reducing complexity in the Quickshell codebase.
 Keep this file blunt and current: when a task is started, finished, abandoned, or disproven, update the status here.
 
 ## Status Legend
@@ -14,132 +13,47 @@ Keep this file blunt and current: when a task is started, finished, abandoned, o
 
 ## Current Baseline
 
-All controller extraction done. All compat wrappers removed. Hardware assumptions eliminated. Bar and system stats polished. qmllint clean (no real warnings; `unqualified` suppressions deferred to Phase 6). All popups migrated to `AnchoredPopup`.
+All controller extraction done. All compat wrappers removed. Hardware assumptions eliminated. Bar and system stats polished. qmllint clean (no real warnings; `unqualified` suppressions deferred to Phase 6). All popups migrated to `AnchoredPopup`. `ControlPanelMainPage.qml` extracted. All Nerd Font glyphs routed through `Icons.qml` (`scan-icons.py` confirms clean).
 
 What remains:
 
-- `WifiPopup.qml` used to mix popup lifecycle, network list state machine, and all UI in one file. Network state now lives in `NetworkController.qml`; remaining cleanup is UI structure only.
-- `ControlPanelPopup.qml` has its main page content inlined alongside the popup shell.
 - Shell scripts have not had a quality pass.
-
-## Splitting Rule
-
-Only split a file when the extracted piece is genuinely reusable elsewhere, or when the file is so large it cannot be reasoned about and the extracted piece has a clean one-directional interface. Do not split just to make line counts smaller. Tight bidirectional coupling (child IDs referenced by parent, parent IDs referenced by children) is a hard stop — keep those files whole.
-
-## Pragma Rule
-
-Every newly created component gets `pragma ComponentBehavior: Bound` at the top and declares `required property` on any delegate or nested component that needs outer scope IDs.
+- ~355 unqualified access warnings in delegates.
 
 ---
 
-## Phase 3: AnchoredPopup Component
+## Phase 3: AnchoredPopup Component — `Done`
 
-Status: `Done`
-
-Goal: eliminate duplicated popup state machines by creating one reusable host.
-
-Every popup (`AudioPopup`, `BatteryInfoPopup`, `SystemStatsPopup`, `ControlPanelPopup`, `WifiPopup`, `TrayMenuPopup`, `TrayOverflowPopup`) carries identical boilerplate:
-
-```
-sourceItem, parentWindow, positionTimer, popupOpenTimer,
-popupRequested, animatingClose, openAnimationPending,
-updatePopupPosition(), mapToGlobal() placement,
-PanelWindow, FocusScope, escape/outside-click handling,
-AnimatedGlassPanel, prepareOpenAnimation(), playOpenAnimation(), playCloseAnimation()
-```
-
-### AnchoredPopup API
-
-Create `components/AnchoredPopup.qml`. Consumers embed it and slot content in via the default property:
-
-```qml
-AnchoredPopup {
-    id: myPopup
-
-    required property var shellRoot
-    popupWidth: 324          // content width; height is implicit
-    popupPadding: 12         // optional
-    closeOnOutsideClick: true
-    closeOnEscape: true
-
-    onAboutToOpen: { ... }   // hook for data refresh before open animation
-
-    SomeContentItem { ... }  // default property
-}
-
-myPopup.openFor(sourceItem, parentWindow)
-myPopup.closePopup()
-myPopup.toggleFor(sourceItem, parentWindow)
-// read-only: myPopup.isOpen, myPopup.animatingClose
-```
-
-### Migration order
-
-1. Implement and verify `AnchoredPopup.qml` with one simple popup.
-2. Migrate simple popups: `TrayOverflowPopup`, `BatteryInfoPopup`, `SystemStatsPopup`.
-3. Migrate `AudioPopup`.
-4. Migrate `ControlPanelPopup` and `WifiPopup` (extra internal state — harder).
-5. Migrate `TrayMenuPopup` last (custom close/clear timers on top of the base lifecycle).
-
-Verification: anchor placement on left/center/right items; open/close spam; keyboard escape; multi-monitor.
+Shared popup lifecycle host created in `components/AnchoredPopup.qml`. All popups migrated: `TrayOverflowPopup`, `BatteryInfoPopup`, `SystemStatsPopup`, `AudioPopup`, `ControlPanelPopup`, `WifiPopup`, `TrayMenuPopup`.
 
 ---
 
 ## Phase 4: Break Up Giant QML Files
 
-Status: `Todo`
+### Phase 4a: Split WifiPopup.qml — `Tried, abandoned`
 
-**Do Phase 3 first.** Lifecycle removal shrinks each file before splitting.
+File went from ~970 to ~611 lines after native network migration. None of the extracted pieces would be reused elsewhere — splitting adds indirection with no payoff. Keeping WifiPopup whole.
 
-### Phase 4a: Split WifiPopup.qml
+### Phase 4b: Split ControlPanelPopup.qml — `Done`
 
-Status: `Tried, abandoned`
-
-~970 lines with three unrelated jobs: indicator widget, native network list presentation, popup UI. The native Wi-Fi migration removed the script-derived network snapshot state, so this phase is UI decomposition only and must keep native `WifiNetwork` objects flowing through the popup.
-
-1. **Extract `WifiStatusCard.qml`** — connected/signal/interface status card. Takes `shellRoot`, connection state booleans, `connectionSummary`. No logic.
-
-2. **Extract `WifiActionRow.qml`** — Turn On/Off, Rescan, Advanced chips. Takes `shellRoot`, `wifiEnabled`, `wifiControlsAvailable`, action callbacks.
-
-3. **Extract `WifiNetworkRow.qml`** — single network card: title, signal icon, security badge, connect/disconnect chip, forget chip, expandable password row. Takes `shellRoot`, native `network`, `expanded`, `passwordText`, action callbacks.
-
-4. **Extract `WifiNetworkList.qml`** — `Flickable` + `Repeater` over `WifiNetworkRow`. Takes `shellRoot`, native `networks`, `expandedNetworkName`, `passwordText`, `maxHeight`, action callbacks. No state.
-
-5. **Remove stale network snapshot state** — `Done via native migration`. `syncNetworkList`, merge/clone helpers, `displayedNetworks`, `expandedSsid`, and script-derived rows were deleted; the native model is the live truth.
-
-6. **Slim `WifiPopup.qml` to popup shell** — color/layout properties, `panelColumn` assembling extracted cards, `AnchoredPopup`. Target: under 150 lines.
-
-None of the extracted pieces (`WifiStatusCard`, `WifiActionRow`, `WifiNetworkRow`, `WifiNetworkList`) would be reused anywhere else. The file was ~970 lines when this phase was planned but is now ~611 after the native network migration. Splitting it would add indirection with no payoff — same reasoning as AudioPopup and TrayMenuPopup. Keeping WifiPopup whole.
-
-Rule: future extractions must preserve native object flow; do not reintroduce script rows or snapshot caches.
-
-### Phase 4b: Split ControlPanelPopup.qml
-
-Status: `Done`
-
-Extracted all UI content, state, and action functions into `ControlPanelMainPage.qml` (Column root, `required property var shellRoot`, signals: `closeRequested`, `bluetoothPanelRequested`, `wifiPanelRequested`). `ControlPanelPopup.qml` is now the popup shell only (~55 lines): `AnchoredPopup`, animation config, lifecycle hooks, and signal wiring to `shellRoot` actions.
+All UI, state, and actions extracted to `ControlPanelMainPage.qml`. `ControlPanelPopup.qml` is now the popup shell only (~55 lines).
 
 ---
 
-## Phase 5: Improve Remaining Script Quality
-
-Status: `Todo`
+## Phase 5: Improve Remaining Script Quality — `Todo`
 
 - [ ] `shellcheck` pass on remaining scripts.
 - [ ] Normalize to one dialect per script (POSIX `sh` or Bash, not mixed).
 - [ ] Add usage output to public action scripts.
 - [ ] Confirm each remaining script has a current owner and no dead Wi-Fi or battery-path branches.
 
-Remaining scripts intentionally cover integrations without suitable native Quickshell APIs:
-`brightness.sh`, `battery.sh`, `power-profile.sh`, `prevent-sleep.sh`,
+Remaining scripts: `brightness.sh`, `battery.sh`, `power-profile.sh`, `prevent-sleep.sh`,
 `audio-spectrum.sh`, `system-status.sh`, `media-focus.sh`, `open-manager.sh`, `osd.sh`,
 plus launch/debug/reload helpers.
 
 ---
 
-## Phase 6: Qualify Unqualified Accesses
-
-Status: `Later`
+## Phase 6: Qualify Unqualified Accesses — `Later`
 
 ~355 `unqualified` access warnings from delegates reaching outer scope IDs without `required property`.
 
@@ -151,24 +65,9 @@ Status: `Later`
 
 ## Tried / Notes
 
-- DynamicIsland split: `Tried, abandoned`.
-  - Coupling is bidirectional: inner content blocks read `island.*`; `compactWidth` on the shell references IDs inside `compactMusic`. Splitting requires passing 15+ properties for zero reuse. One cohesive widget — stays whole.
-- ControlPanelBluetoothDetails internal split: `Tried, abandoned`.
-  - Already the right atomic unit (bluetooth details page). Sub-splitting `BluetoothStatusCard` / `BluetoothActionRow` is pure fragmentation — all sections read `root.*`, nothing is reused elsewhere.
-- TrayMenuPopup split: `Tried, abandoned`.
-  - Row delegate references `trayMenuPopupRoot.*` throughout; `menuContent.implicitHeight` is referenced back upward. Bidirectional coupling, no reuse gain.
-- AudioPopup split: `Tried, abandoned`.
-  - After Phase 3 removes lifecycle boilerplate it will be ~250 lines. `AudioDeviceList` is not reused anywhere.
-- Icon audit (MDI-outline pass): `Tried, abandoned`.
-  - Glyph codepoints cannot be computed from names without the font charmap. Needs a proper lookup source.
-- Charge-limit logic: still partly popup-owned (`BatteryInfoPopup` calls `battery.sh` directly). Low priority.
-
----
-
-## Work Order
-
-1. **Phase 3** — `AnchoredPopup.qml` + migrate all popups.
-2. **Phase 4a** — WifiPopup split + state → NetworkController.
-3. **Phase 4b** — ControlPanelPopup main page extraction.
-4. **Phase 5** — Script quality pass.
-5. **Phase 6** — Unqualified access retrofit.
+- DynamicIsland split: `Tried, abandoned` — bidirectional coupling, 15+ properties to pass, no reuse.
+- ControlPanelBluetoothDetails internal split: `Tried, abandoned` — already the right atomic unit, no reuse.
+- TrayMenuPopup split: `Tried, abandoned` — bidirectional coupling between row delegate and popup root.
+- AudioPopup split: `Tried, abandoned` — ~250 lines after Phase 3; nothing reused elsewhere.
+- WifiPopup split: `Tried, abandoned` — see Phase 4a.
+- Icon audit (MDI-outline pass): `Tried, abandoned` — glyph codepoints need font charmap, no lookup source available.
