@@ -176,9 +176,9 @@ Rectangle {
 
     function deviceActionIcon(device) {
         if (device.connected) {
-            return "";
+            return root.shellRoot.icons.bluetoothOff;
         }
-        return "";
+        return root.shellRoot.icons.bluetooth;
     }
 
     function activateDevice(device) {

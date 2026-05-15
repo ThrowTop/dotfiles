@@ -17,11 +17,5 @@ Item {
         anchors.fill: parent
         shellRoot: module.shellRoot
         parentWindow: module.parentWindow
-
-        Component.onCompleted: {
-            if (!module.shellRoot.wifiPanelController || module.parentWindow === module.shellRoot.primaryBarWindow) {
-                module.shellRoot.wifiPanelController = wifiIndicator;
-            }
-        }
     }
 }

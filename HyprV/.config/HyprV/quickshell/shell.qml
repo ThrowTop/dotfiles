@@ -71,7 +71,6 @@ ShellRoot {
     property var audioSpectrumValues: []
     property var primaryBarWindow: null
     property var quickAdjustAnchorItem: null
-    property var wifiPanelController: null
     property string islandOsdType: ""
     property int islandOsdValue: 0
     property bool islandOsdTrigger: false
@@ -818,7 +817,8 @@ ShellRoot {
     }
 
     function openTrayOverflowPopup(sourceItem, parentWindow, items) {
-        trayOverflowPopup.toggleFor(sourceItem, parentWindow, items);
+        trayOverflowPopup.trayItems = Array.isArray(items) ? items : [];
+        trayOverflowPopup.toggleFor(sourceItem, parentWindow);
     }
 
     function closeTrayOverflowPopup() {
@@ -837,14 +837,16 @@ ShellRoot {
         runDetached([openManagerScriptPath, "wifi"]);
     }
 
-    function openWifiPanel() {
-        if (wifiPanelController && wifiPanelController.available && wifiPanelController.openPopup) {
-            wifiPanelController.openPopup();
-        }
+    function openWifiPanel(sourceItem, parentWindow) {
+        wifiPopup.openFor(sourceItem, parentWindow || root.primaryBarWindow);
     }
 
     function openBluetoothManager() {
         runDetached([openManagerScriptPath, "bluetooth"]);
+    }
+
+    function openBluetoothPanel(sourceItem, parentWindow) {
+        bluetoothPopup.openFor(sourceItem, parentWindow || root.primaryBarWindow);
     }
 
     function runDetached(command) {
@@ -1195,8 +1197,20 @@ ShellRoot {
         }
     }
 
+    WifiPopup {
+        id: wifiPopup
+
+        shellRoot: root
+    }
+
     ControlPanelPopup {
         id: controlPanelPopup
+
+        shellRoot: root
+    }
+
+    BluetoothPopup {
+        id: bluetoothPopup
 
         shellRoot: root
     }

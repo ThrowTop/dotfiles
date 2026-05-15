@@ -21,12 +21,20 @@ Item {
     property bool actionBusy: false
     property bool statusInitialized: false
 
+    property bool popupOpen: false
+    property var displayedNetworks: []
+    property double displayedNetworksTimestamp: 0
+    property string expandedSsid: ""
+    property string passwordText: ""
+
     property var _cachedNetworks: []
     property double _cachedNetworksTimestamp: 0
     property string _actionSuccessMessage: ""
     property int _monitorRestartDelay: 1000
 
     readonly property string wifiScriptPath: shellRoot.configDir + "/quickshell/scripts/wifi.sh"
+
+    onNetworksChanged: syncNetworkList(false)
 
     Component.onCompleted: refresh()
 
@@ -159,6 +167,101 @@ Item {
     function connect(ssid, password, security) {
         const command = [wifiScriptPath, "connect", ssid || "", password || "", security || ""];
         startAction(command, "Connecting to " + (ssid || "network") + "...", "Connection requested for " + (ssid || "network"));
+    }
+
+    function cloneNetwork(network) {
+        return {
+            active: !!network.active,
+            ssid: network.ssid || "",
+            signal: Number(network.signal) || 0,
+            security: network.security || "",
+            secure: !!network.secure,
+            known: !!network.known,
+            enterprise: !!network.enterprise
+        };
+    }
+
+    function mergeNetworkLists(primary, fallback) {
+        const bySsid = {};
+        const merged = [];
+        for (let i = 0; i < primary.length; i++) {
+            const n = cloneNetwork(primary[i]);
+            if (!n.ssid || bySsid[n.ssid]) continue;
+            bySsid[n.ssid] = true;
+            merged.push(n);
+        }
+        for (let i = 0; i < fallback.length; i++) {
+            const n = cloneNetwork(fallback[i]);
+            if (!n.ssid || bySsid[n.ssid]) continue;
+            bySsid[n.ssid] = true;
+            merged.push(n);
+        }
+        return merged;
+    }
+
+    function syncNetworkList(force) {
+        const source = Array.isArray(networks) ? networks : [];
+        const nextNetworks = source.map(n => cloneNetwork(n));
+        const cacheAgeMs = Date.now() - displayedNetworksTimestamp;
+        const shouldHoldSnapshot = popupOpen && radioEnabled && hardwareEnabled;
+
+        if (!force && expandedSsid.length > 0) {
+            if (source.some(n => (n.ssid || "") === expandedSsid)) return;
+        }
+
+        if (nextNetworks.length > 0) {
+            const shouldMerge = shouldHoldSnapshot
+                && displayedNetworks.length > 0
+                && nextNetworks.length < displayedNetworks.length
+                && cacheAgeMs < 30000;
+            displayedNetworks = shouldMerge ? mergeNetworkLists(nextNetworks, displayedNetworks) : nextNetworks;
+            displayedNetworksTimestamp = Date.now();
+        } else if (!(shouldHoldSnapshot && displayedNetworks.length > 0 && cacheAgeMs < 30000)) {
+            displayedNetworks = [];
+            displayedNetworksTimestamp = Date.now();
+        }
+
+        if (expandedSsid.length > 0) {
+            if (!displayedNetworks.some(n => n.ssid === expandedSsid && n.secure && !n.known)) {
+                expandedSsid = "";
+                passwordText = "";
+            }
+        }
+    }
+
+    function networkMeta(network) {
+        const parts = [];
+        if (network.active) parts.push("Connected");
+        else if (network.known) parts.push("Saved");
+        if (network.enterprise) parts.push("802.1X");
+        else if (network.security) parts.push(network.security);
+        else parts.push("Open");
+        parts.push(network.signal + "%");
+        return parts.join("  •  ");
+    }
+
+    function activateNetwork(network) {
+        if (!network || actionBusy) return;
+        if (network.active) {
+            expandedSsid = "";
+            passwordText = "";
+            disconnect();
+            return;
+        }
+        if (network.enterprise && !network.known) {
+            actionMessage = "802.1X networks need a saved profile. Open the editor for first-time setup.";
+            shellRoot.openWifiManager();
+            return;
+        }
+        if (network.secure && !network.known && expandedSsid === network.ssid && passwordText.length === 0) return;
+        if (network.secure && !network.known && expandedSsid !== network.ssid) {
+            expandedSsid = network.ssid;
+            passwordText = "";
+            return;
+        }
+        connect(network.ssid, network.secure && !network.known ? passwordText : "", network.security || "");
+        expandedSsid = "";
+        passwordText = "";
     }
 
     Timer {

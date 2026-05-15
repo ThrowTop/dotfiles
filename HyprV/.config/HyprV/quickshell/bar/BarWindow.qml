@@ -140,6 +140,11 @@ PanelWindow {
                     parentWindow: barWindow
                 }
 
+                BluetoothModule {
+                    shellRoot: barWindow.shellRoot
+                    parentWindow: barWindow
+                }
+
                 AudioModule {
                     shellRoot: barWindow.shellRoot
                     parentWindow: barWindow

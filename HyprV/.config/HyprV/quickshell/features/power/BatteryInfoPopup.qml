@@ -1,119 +1,52 @@
 import QtQuick
-import Quickshell
-import Quickshell.Wayland
 import "../.."
+import "../../components"
 
-Item {
-    id: batteryPopupRoot
+AnchoredPopup {
+    id: batteryPopup
 
-    required property var shellRoot
-    readonly property var root: shellRoot
+    // sr: shorthand alias for shellRoot, avoids clashing with AnchoredPopup's id:root
+    readonly property var sr: shellRoot
 
-    function withAlpha(colorString, alpha) {
-        return root.withAlpha(colorString, alpha);
-    }
+    namespace: "shell:hyprv-battery-info"
+    popupWidth: 324
+    popupPadding: 12
 
+    openRevealPause: 20
+    openRevealDuration: 200
+    openContentDelay: 20
+    openFadeDuration: 140
+    openSlideDuration: 180
+    openContentOffset: -8
+    closeRevealPause: 30
+    closeRevealDuration: 180
+    closeFadeDuration: 90
+    closeSlideDuration: 150
+    closeContentOffset: -8
 
-    property var sourceItem: null
-    property var parentWindow: null
-    readonly property bool openVisible: popupRequested
-    readonly property int popupWidth: 324
-    readonly property int popupPadding: 12
-    readonly property color glassFill: root.glassFill
-    readonly property color glassStroke: root.glassStroke
-    readonly property color mutedTextColor: withAlpha(root.primaryText, 0.72)
-    property bool popupRequested: false
-    property bool animatingClose: false
-    property bool openAnimationPending: false
+    readonly property color mutedTextColor: sr.withAlpha(sr.primaryText, 0.72)
     property int chargeLimitIndex: 0
-
     property real batteryHealthPercent: 0
     property int batteryCycleCount: 0
 
-    function openFor(source, window) {
-        if (!source || !window) {
-            return;
-        }
-        sourceItem = source;
-        parentWindow = window;
-        popupRequested = true;
-        animatingClose = false;
+    onAboutToOpen: {
         chargeLimitPoll.refresh();
         batteryStaticPoll.refresh();
-        positionTimer.restart();
-        if (popupWindow.visible) {
-            popupCard.prepareOpenAnimation();
-            openAnimationPending = true;
-            popupOpenTimer.restart();
-            popupWindow.updatePopupPosition();
-        } else {
-            popupWindow.visible = true;
-        }
-    }
-
-    function closePopup() {
-        if ((!popupRequested && !animatingClose) || !popupWindow.visible) {
-            popupRequested = false;
-            animatingClose = false;
-            return;
-        }
-        if (animatingClose) {
-            return;
-        }
-        popupRequested = false;
-        animatingClose = true;
-        popupCard.playCloseAnimation();
-    }
-
-    function toggleFor(source, window) {
-        if (popupWindow.visible && sourceItem === source && parentWindow === window) {
-            closePopup();
-            return;
-        }
-        openFor(source, window);
-    }
-
-    Timer {
-        id: positionTimer
-
-        interval: 0
-        repeat: false
-        onTriggered: popupWindow.updatePopupPosition()
-    }
-
-    Timer {
-        id: popupOpenTimer
-
-        interval: 16
-        repeat: false
-        onTriggered: {
-            if (!popupWindow.visible || !batteryPopupRoot.popupRequested || batteryPopupRoot.animatingClose) {
-                batteryPopupRoot.openAnimationPending = false;
-                return;
-            }
-            if (popupContent.implicitHeight <= 0) {
-                popupOpenTimer.restart();
-                return;
-            }
-            batteryPopupRoot.openAnimationPending = false;
-            popupWindow.updatePopupPosition();
-            popupCard.playOpenAnimation();
-        }
     }
 
     PollCommand {
         id: chargeLimitPoll
 
-        command: ["sh", "-c", "cat " + root.batteryDevPath + "/charge_control_end_threshold 2>/dev/null"]
+        command: ["sh", "-c", "cat " + batteryPopup.sr.batteryDevPath + "/charge_control_end_threshold 2>/dev/null"]
         interval: 300000
         scheduled: false
         onOutputChanged: {
             const val = parseInt(output.trim());
             if (!isNaN(val)) {
-                if (val >= 100) batteryPopupRoot.chargeLimitIndex = 2;
-                else if (val >= 90) batteryPopupRoot.chargeLimitIndex = 1;
-                else batteryPopupRoot.chargeLimitIndex = 0;
-                root.chargeLimit = val;
+                if (val >= 100) batteryPopup.chargeLimitIndex = 2;
+                else if (val >= 90) batteryPopup.chargeLimitIndex = 1;
+                else batteryPopup.chargeLimitIndex = 0;
+                batteryPopup.sr.chargeLimit = val;
             }
         }
     }
@@ -122,7 +55,7 @@ Item {
         id: batteryStaticPoll
 
         scheduled: false
-        command: ["sh", "-c", "cat " + root.batteryDevPath + "/charge_full " + root.batteryDevPath + "/charge_full_design " + root.batteryDevPath + "/cycle_count 2>/dev/null"]
+        command: ["sh", "-c", "cat " + batteryPopup.sr.batteryDevPath + "/charge_full " + batteryPopup.sr.batteryDevPath + "/charge_full_design " + batteryPopup.sr.batteryDevPath + "/cycle_count 2>/dev/null"]
         onUpdated: function(output) {
             const lines = output.trim().split("\n");
             if (lines.length < 3) return;
@@ -130,345 +63,189 @@ Item {
             const design = parseInt(lines[1]) || 0;
             const cycles = parseInt(lines[2]) || 0;
             if (full > 0 && design > 0)
-                batteryPopupRoot.batteryHealthPercent = Math.round((full / design) * 100);
+                batteryPopup.batteryHealthPercent = Math.round((full / design) * 100);
             if (cycles > 0)
-                batteryPopupRoot.batteryCycleCount = cycles;
+                batteryPopup.batteryCycleCount = cycles;
         }
     }
 
-    // qmllint disable uncreatable-type
-    PanelWindow {
-        id: popupWindow
+    Column {
+        width: parent.width
+        spacing: 10
 
-        screen: batteryPopupRoot.parentWindow?.screen || null
-        visible: false
-        color: "transparent"
-        aboveWindows: true
-        focusable: visible
-        exclusiveZone: -1
+        Item {
+            width: parent.width
+            height: Math.max(headerLeft.implicitHeight, headerRight.implicitHeight)
 
-        WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
-        WlrLayershell.namespace: "shell:hyprv-battery-info"
+            Column {
+                id: headerLeft
 
-        anchors.top: true
-        anchors.left: true
-        anchors.right: true
-        anchors.bottom: true
+                anchors.left: parent.left
+                anchors.right: headerRight.left
+                anchors.rightMargin: 8
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 2
 
-        onWidthChanged: if (visible) {
-            updatePopupPosition();
-        }
-        onHeightChanged: if (visible) {
-            updatePopupPosition();
-        }
-
-        function updatePopupPosition() {
-            if (!visible || !batteryPopupRoot.sourceItem || !screen) {
-                return;
-            }
-            const point = batteryPopupRoot.sourceItem.mapToGlobal(Math.round(batteryPopupRoot.sourceItem.width / 2), batteryPopupRoot.sourceItem.height);
-            const relativeX = point.x - screen.x;
-            const relativeY = point.y - screen.y;
-            const maxX = Math.max(8, width - popupCard.width - 8);
-            const desiredX = Math.round(relativeX - popupCard.width / 2);
-            popupCard.x = Math.max(8, Math.min(maxX, desiredX));
-
-            const belowY = Math.round(relativeY + 10);
-            const aboveY = Math.round(relativeY - popupCard.height - 10);
-            const fitsBelow = belowY + popupCard.height <= height - 8;
-            const fitsAbove = aboveY >= 8;
-
-            if (fitsBelow || !fitsAbove) {
-                popupCard.y = Math.max(8, Math.min(height - popupCard.height - 8, belowY));
-            } else {
-                popupCard.y = Math.max(8, aboveY);
-            }
-        }
-
-        onVisibleChanged: {
-            if (visible) {
-                updatePopupPosition();
-                popupFocusScope.forceActiveFocus();
-                if (!batteryPopupRoot.animatingClose) {
-                    batteryPopupRoot.openAnimationPending = true;
-                    popupCard.prepareOpenAnimation();
-                    popupOpenTimer.restart();
+                Text {
+                    text: batteryPopup.sr.batteryPopupTitle
+                    color: batteryPopup.sr.batteryDetailAccentColor
+                    font.family: batteryPopup.sr.baseFont
+                    font.pixelSize: 15
+                    font.weight: Font.Bold
+                    renderType: Text.NativeRendering
                 }
-            } else {
-                batteryPopupRoot.animatingClose = false;
-                batteryPopupRoot.openAnimationPending = false;
-                popupOpenTimer.stop();
-                popupCard.stopAnimations();
-                popupCard.resetAnimationState();
-                batteryPopupRoot.sourceItem = null;
-                batteryPopupRoot.parentWindow = null;
-            }
-        }
 
-        MouseArea {
-            anchors.fill: parent
-            acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-            onClicked: batteryPopupRoot.closePopup()
-        }
-
-        FocusScope {
-            id: popupFocusScope
-
-            anchors.fill: parent
-            focus: popupWindow.visible
-
-            Keys.onEscapePressed: batteryPopupRoot.closePopup()
-        }
-
-        AnimatedGlassPanel {
-            id: popupCard
-
-            width: batteryPopupRoot.popupWidth
-            fullPanelHeight: popupContent.implicitHeight + batteryPopupRoot.popupPadding * 2
-            fillColor: batteryPopupRoot.glassFill
-            strokeColor: batteryPopupRoot.glassStroke
-            shadowColor: withAlpha("#000000", 0.45)
-            devicePixelRatio: popupWindow.devicePixelRatio
-            openRevealPause: 20
-            openRevealDuration: 200
-            openContentDelay: 20
-            openFadeDuration: 140
-            openSlideDuration: 180
-            openContentOffset: -8
-            closeRevealPause: 30
-            closeRevealDuration: 180
-            closeFadeDuration: 90
-            closeSlideDuration: 150
-            closeContentOffset: -8
-
-            onFullPanelHeightChanged: {
-                if (batteryPopupRoot.openAnimationPending) {
-                    positionTimer.restart();
-                    popupOpenTimer.restart();
-                    return;
+                Text {
+                    width: headerLeft.width
+                    text: batteryPopup.sr.batteryStatusText
+                    color: batteryPopup.mutedTextColor
+                    font.family: batteryPopup.sr.baseFont
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
+                    renderType: Text.NativeRendering
+                    wrapMode: Text.WordWrap
                 }
-                if (popupWindow.visible && !batteryPopupRoot.animatingClose) {
-                    if (popupCard.openAnimationRunning || popupCard.closeAnimationRunning) {
-                        positionTimer.restart();
-                        return;
-                    }
-                    revealHeight = fullPanelHeight;
-                    contentOpacity = 1;
-                    contentOffset = 0;
-                } else if (!popupCard.openAnimationRunning && !popupCard.closeAnimationRunning) {
-                    revealHeight = fullPanelHeight;
-                    if (!popupWindow.visible) {
-                        contentOpacity = 1;
-                        contentOffset = 0;
-                    }
-                }
-                positionTimer.restart();
-            }
-
-            onOpenAnimationFinished: {
-                if (!popupWindow.visible || batteryPopupRoot.animatingClose) {
-                    return;
-                }
-                positionTimer.restart();
-            }
-
-            onCloseAnimationFinished: {
-                if (batteryPopupRoot.animatingClose && !batteryPopupRoot.popupRequested) {
-                    batteryPopupRoot.animatingClose = false;
-                    popupWindow.visible = false;
-                }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
             }
 
             Column {
-                id: popupContent
+                id: headerRight
 
-                anchors.fill: parent
-                anchors.margins: batteryPopupRoot.popupPadding
-                spacing: 10
-                onImplicitHeightChanged: {
-                    if (batteryPopupRoot.openAnimationPending) {
-                        popupOpenTimer.restart();
-                    }
-                }
+                anchors.left: parent.horizontalCenter
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 4
 
                 Item {
+                    id: chargeLimitSelector
+
+                    readonly property var options: ["80%", "90%", "100%"]
+                    readonly property var values: [80, 90, 100]
+                    readonly property real segWidth: width / 3
+
                     width: parent.width
-                    height: Math.max(headerLeft.implicitHeight, headerRight.implicitHeight)
+                    height: 28
 
-                    Column {
-                        id: headerLeft
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 8
+                        color: batteryPopup.sr.withAlpha(batteryPopup.sr.primaryText, 0.07)
+                        border.width: 1
+                        border.color: batteryPopup.sr.glassStroke
+                    }
 
-                        anchors.left: parent.left
-                        anchors.right: headerRight.left
-                        anchors.rightMargin: 8
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 2
+                    Rectangle {
+                        id: limitThumb
 
-                        Text {
-                            text: root.batteryPopupTitle
-                            color: root.batteryDetailAccentColor
-                            font.family: root.baseFont
-                            font.pixelSize: 15
-                            font.weight: Font.Bold
-                            renderType: Text.NativeRendering
-                        }
+                        x: batteryPopup.chargeLimitIndex * chargeLimitSelector.segWidth + 2
+                        y: 2
+                        width: chargeLimitSelector.segWidth - 4
+                        height: parent.height - 4
+                        radius: 6
+                        color: batteryPopup.sr.batteryColor
 
-                        Text {
-                            width: headerLeft.width
-                            text: root.batteryStatusText
-                            color: batteryPopupRoot.mutedTextColor
-                            font.family: root.baseFont
-                            font.pixelSize: 12
-                            font.weight: Font.DemiBold
-                            renderType: Text.NativeRendering
-                            wrapMode: Text.WordWrap
+                        Behavior on x {
+                            NumberAnimation { duration: 180; easing.type: Easing.InOutCubic }
                         }
                     }
 
-                    Column {
-                        id: headerRight
-
-                        anchors.left: parent.horizontalCenter
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 4
+                    Repeater {
+                        model: chargeLimitSelector.options
 
                         Item {
-                            id: chargeLimitSelector
+                            required property var modelData
+                            required property int index
 
-                            readonly property var options: ["80%", "90%", "100%"]
-                            readonly property var values: [80, 90, 100]
-                            readonly property real segWidth: width / 3
+                            x: index * chargeLimitSelector.segWidth
+                            width: chargeLimitSelector.segWidth
+                            height: chargeLimitSelector.height
 
-                            width: parent.width
-                            height: 28
+                            Text {
+                                anchors.centerIn: parent
+                                text: modelData
+                                color: index === batteryPopup.chargeLimitIndex
+                                    ? ("#1e1e2e")
+                                    : batteryPopup.sr.primaryText
+                                font.family: batteryPopup.sr.baseFont
+                                font.pixelSize: 11
+                                font.weight: Font.Bold
+                                renderType: Text.NativeRendering
 
-                            Rectangle {
+                                Behavior on color {
+                                    ColorAnimation { duration: 120 }
+                                }
+                            }
+
+                            MouseArea {
                                 anchors.fill: parent
-                                radius: 8
-                                color: withAlpha(root.primaryText, 0.07)
-                                border.width: 1
-                                border.color: batteryPopupRoot.glassStroke
-                            }
-
-                            Rectangle {
-                                id: limitThumb
-
-                                x: batteryPopupRoot.chargeLimitIndex * chargeLimitSelector.segWidth + 2
-                                y: 2
-                                width: chargeLimitSelector.segWidth - 4
-                                height: parent.height - 4
-                                radius: 6
-                                color: root.batteryColor
-
-                                Behavior on x {
-                                    NumberAnimation { duration: 180; easing.type: Easing.InOutCubic }
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    batteryPopup.chargeLimitIndex = index;
+                                    batteryPopup.sr.chargeLimit = chargeLimitSelector.values[index];
+                                    batteryPopup.sr.runDetached([batteryPopup.sr.configDir + "/quickshell/scripts/battery.sh", "limit", String(chargeLimitSelector.values[index])]);
                                 }
                             }
-
-                            Repeater {
-                                model: chargeLimitSelector.options
-
-                                Item {
-                                    x: index * chargeLimitSelector.segWidth
-                                    width: chargeLimitSelector.segWidth
-                                    height: chargeLimitSelector.height
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: modelData
-                                        color: index === batteryPopupRoot.chargeLimitIndex
-                                            ? ("#1e1e2e")
-                                            : root.primaryText
-                                        font.family: root.baseFont
-                                        font.pixelSize: 11
-                                        font.weight: Font.Bold
-                                        renderType: Text.NativeRendering
-
-                                        Behavior on color {
-                                            ColorAnimation { duration: 120 }
-                                        }
-                                    }
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            batteryPopupRoot.chargeLimitIndex = index;
-                                            root.chargeLimit = chargeLimitSelector.values[index];
-                                            root.runDetached([root.configDir + "/quickshell/scripts/battery.sh", "limit", String(chargeLimitSelector.values[index])]);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Text {
-                            anchors.right: parent.right
-                            text: "Limit"
-                            color: batteryPopupRoot.mutedTextColor
-                            font.family: root.baseFont
-                            font.pixelSize: 12
-                            font.weight: Font.DemiBold
-                            renderType: Text.NativeRendering
                         }
                     }
                 }
 
-                Rectangle {
-                    width: parent.width
-                    height: 1
-                    radius: 1
-                    color: batteryPopupRoot.glassStroke
-                }
-
-                BatteryInfoLine {
-                    shellRoot: root
-                    width: parent.width
-                    title: "Current power"
-                    value: root.batteryPowerDetailText
-                    valueColor: root.batteryDetailAccentColor
-                }
-
-                BatteryInfoLine {
-                    shellRoot: root
-                    width: parent.width
-                    title: "Avg power"
-                    value: root.batteryAveragePowerDetailText
-                }
-
-                BatteryInfoLine {
-                    shellRoot: root
-                    width: parent.width
-                    title: root.batteryEstimateTitle
-                    value: root.batteryEstimateText
-                }
-
-                BatteryInfoLine {
-                    shellRoot: root
-                    width: parent.width
-                    title: "Battery health"
-                    value: batteryPopupRoot.batteryHealthPercent > 0
-                        ? batteryPopupRoot.batteryHealthPercent + "%"
-                            + (batteryPopupRoot.batteryHealthPercent < 80 ? "  (service recommended)" : "")
-                        : "--"
-                }
-
-                BatteryInfoLine {
-                    shellRoot: root
-                    width: parent.width
-                    title: "Cycle count"
-                    value: batteryPopupRoot.batteryCycleCount > 0
-                        ? batteryPopupRoot.batteryCycleCount + " cycles"
-                        : "--"
+                Text {
+                    anchors.right: parent.right
+                    text: "Limit"
+                    color: batteryPopup.mutedTextColor
+                    font.family: batteryPopup.sr.baseFont
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
+                    renderType: Text.NativeRendering
                 }
             }
+        }
+
+        Rectangle {
+            width: parent.width
+            height: 1
+            radius: 1
+            color: batteryPopup.sr.glassStroke
+        }
+
+        BatteryInfoLine {
+            shellRoot: batteryPopup.sr
+            width: parent.width
+            title: "Current power"
+            value: batteryPopup.sr.batteryPowerDetailText
+            valueColor: batteryPopup.sr.batteryDetailAccentColor
+        }
+
+        BatteryInfoLine {
+            shellRoot: batteryPopup.sr
+            width: parent.width
+            title: "Avg power"
+            value: batteryPopup.sr.batteryAveragePowerDetailText
+        }
+
+        BatteryInfoLine {
+            shellRoot: batteryPopup.sr
+            width: parent.width
+            title: batteryPopup.sr.batteryEstimateTitle
+            value: batteryPopup.sr.batteryEstimateText
+        }
+
+        BatteryInfoLine {
+            shellRoot: batteryPopup.sr
+            width: parent.width
+            title: "Battery health"
+            value: batteryPopup.batteryHealthPercent > 0
+                ? batteryPopup.batteryHealthPercent + "%"
+                    + (batteryPopup.batteryHealthPercent < 80 ? "  (service recommended)" : "")
+                : "--"
+        }
+
+        BatteryInfoLine {
+            shellRoot: batteryPopup.sr
+            width: parent.width
+            title: "Cycle count"
+            value: batteryPopup.batteryCycleCount > 0
+                ? batteryPopup.batteryCycleCount + " cycles"
+                : "--"
         }
     }
 }
