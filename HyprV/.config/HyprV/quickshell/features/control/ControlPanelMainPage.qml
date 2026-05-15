@@ -42,7 +42,7 @@ Column {
     function toggleWifiEnabled() { shellRoot.network.setRadio(!shellRoot.network.radioEnabled); controlPanelRefreshTimer.restart(); }
     function toggleBluetoothEnabled() { shellRoot.bluetooth.setPower(!shellRoot.bluetooth.powered); }
     function toggleDnd() { shellRoot.notifications.toggleDnd(); }
-    function togglePreventSleep() { shellRoot.power.togglePreventSleep(); controlPanelRefreshTimer.restart(); }
+    function togglePreventSleep() { shellRoot.power.togglePreventSleep(); }
     function togglePowerExpanded() { powerExpanded = !powerExpanded; }
     function toggleSessionExpanded() { sessionExpanded = !sessionExpanded; }
 
@@ -72,7 +72,6 @@ Column {
     function setPowerProfile(profile) {
         if (!profile) return;
         shellRoot.power.setProfile(profile);
-        powerProfileFollowupRefresh.restart();
     }
 
     function cyclePowerProfile() {
@@ -125,13 +124,6 @@ Column {
         interval: 400
         repeat: false
         onTriggered: root.shellRoot.refreshControlPanelStatus()
-    }
-
-    Timer {
-        id: powerProfileFollowupRefresh
-        interval: 900
-        repeat: false
-        onTriggered: root.shellRoot.power.refreshProfile()
     }
 
     Row {

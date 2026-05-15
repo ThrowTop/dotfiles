@@ -449,8 +449,6 @@ ShellRoot {
                 }
             } else if (line.startsWith("recording=")) {
                 root.screenRecording = line.slice(10).trim() === "true";
-            } else if (line.startsWith("prevent_sleep=")) {
-                powerController.updatePreventSleepEnabled(line.slice(14).trim() === "true");
             }
         }
     }
