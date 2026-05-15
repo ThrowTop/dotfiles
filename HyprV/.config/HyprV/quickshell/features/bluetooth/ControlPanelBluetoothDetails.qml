@@ -12,21 +12,22 @@ Rectangle {
     readonly property bool bluetoothPresent: shellRoot.bluetooth.present
     readonly property bool bluetoothEnabled: shellRoot.bluetooth.powered
     readonly property bool bluetoothDiscovering: shellRoot.bluetooth.discovering
-    readonly property bool bluetoothPairable: shellRoot.bluetooth.pairable
     readonly property bool showUnnamedDevices: shellRoot.bluetooth.showUnnamedDevices
     readonly property bool busy: shellRoot.bluetooth.actionBusy
     readonly property var devices: Array.isArray(shellRoot.bluetooth.devices) ? shellRoot.bluetooth.devices : []
-    readonly property var visibleDevices: devices.filter(device => showUnnamedDevices || !!device.hasName)
-    readonly property int hiddenUnnamedCount: Math.max(0, devices.length - visibleDevices.length)
-    readonly property var connectedDevices: devices.filter(device => !!device.connected)
+    readonly property var visibleDevices: devices.filter(d => showUnnamedDevices || !!d.hasName)
+    readonly property var pairedDevices: visibleDevices.filter(d => !!d.paired)
+    readonly property var nearbyDevices: visibleDevices.filter(d => !d.paired)
+    readonly property var connectedDevices: devices.filter(d => !!d.connected)
     readonly property int connectedCount: connectedDevices.length
-    readonly property int pairedCount: devices.filter(device => !!device.paired).length
+    readonly property bool hasDevices: visibleDevices.length > 0
+
     readonly property color cardFill: shellRoot.withAlpha("#ffffff", 0.07)
     readonly property color cardStrongFill: shellRoot.withAlpha("#ffffff", 0.11)
     readonly property color cardStroke: shellRoot.withAlpha(shellRoot.primaryText, 0.12)
     readonly property color accentFill: shellRoot.withAlpha(shellRoot.primaryText, 0.1)
     readonly property color accentStroke: shellRoot.withAlpha(shellRoot.primaryText, 0.18)
-    readonly property color mutedText: shellRoot.withAlpha(shellRoot.primaryText, 0.68)
+    readonly property color mutedText: shellRoot.withAlpha(shellRoot.primaryText, 0.55)
     readonly property color panelFill: shellRoot.withAlpha("#101214", 0.42)
     readonly property color panelStroke: shellRoot.withAlpha(shellRoot.primaryText, 0.14)
     readonly property color powerToggleOnFill: shellRoot.withAlpha("#7f99bd", 0.94)
@@ -36,81 +37,38 @@ Rectangle {
     readonly property color powerToggleKnob: "#f7f7fa"
     readonly property color powerToggleKnobStroke: shellRoot.withAlpha("#000000", 0.18)
     readonly property real panelSurfaceOpacity: 0.82
-    readonly property int pageSpacing: 10
+
     readonly property int panelPadding: 10
-    readonly property int innerPadding: 10
+    readonly property int sectionSpacing: 12
+    readonly property int rowSpacing: 6
     readonly property int innerRadius: 9
-    readonly property int maxDeviceListHeight: 420
-    readonly property string statusLabel: {
-        if (!bluetoothPresent) {
-            return "No BT";
-        }
-        if (!bluetoothEnabled) {
-            return "Off";
-        }
-        if (connectedCount > 0) {
-            return "Online";
-        }
-        if (bluetoothDiscovering) {
-            return "Scan";
-        }
-        return "Ready";
-    }
+    readonly property int maxListHeight: 420
+
     readonly property string connectionSummary: {
-        if (!bluetoothPresent) {
-            return "No Bluetooth adapter detected";
-        }
-        if (!bluetoothEnabled) {
-            return "Bluetooth is turned off";
-        }
-        if (connectedCount > 1) {
-            return connectedCount + " Bluetooth devices connected";
-        }
-        if (connectedCount === 1) {
-            return connectedDevices[0].displayName || connectedDevices[0].address || "Bluetooth connected";
-        }
-        if (bluetoothDiscovering) {
-            return "Scanning nearby Bluetooth devices";
-        }
-        if (pairedCount > 0) {
-            return pairedCount + " paired Bluetooth devices";
-        }
+        if (!bluetoothPresent) return "No Bluetooth adapter";
+        if (!bluetoothEnabled) return "Bluetooth is off";
+        if (connectedCount > 1) return connectedCount + " devices connected";
+        if (connectedCount === 1) return connectedDevices[0].displayName || "Bluetooth connected";
+        if (bluetoothDiscovering) return "Scanning for devices";
+        if (pairedDevices.length > 0) return pairedDevices.length + " paired devices";
         return "Bluetooth ready";
     }
+
     readonly property string detailText: {
-        if (!bluetoothPresent) {
-            return "No Bluetooth controller was detected";
-        }
-        if (!bluetoothEnabled) {
-            return "Turn Bluetooth on to discover and connect devices";
-        }
-        if (connectedCount > 0) {
-            return connectedCount === 1
-                ? "Connected and ready for audio or input"
-                : connectedCount + " active Bluetooth connections";
-        }
-        if (bluetoothDiscovering) {
-            return "Searching for nearby devices";
-        }
-        if (pairedCount > 0) {
-            return pairedCount + " saved devices available";
-        }
-        return bluetoothPairable ? "Pairable and ready for nearby devices" : "Bluetooth adapter available";
+        if (!bluetoothPresent) return "No Bluetooth controller detected";
+        if (!bluetoothEnabled) return "Turn on to discover and connect devices";
+        if (connectedCount > 0) return connectedCount === 1 ? "Connected and ready" : connectedCount + " active connections";
+        if (bluetoothDiscovering) return "Searching for nearby devices";
+        if (pairedDevices.length > 0) return pairedDevices.length + " saved devices";
+        return shellRoot.bluetooth.pairable ? "Visible to nearby devices" : "Ready";
     }
-    readonly property string emptyStateText: {
-        if (!bluetoothPresent) {
-            return "No Bluetooth adapter detected.";
-        }
-        if (!bluetoothEnabled) {
-            return "Turn Bluetooth on to scan for nearby devices.";
-        }
-        if (hiddenUnnamedCount > 0 && !showUnnamedDevices) {
-            return "Only unnamed Bluetooth devices are hidden right now. Tap \"Show Unnamed\" to reveal them.";
-        }
-        if (bluetoothDiscovering) {
-            return "Searching for nearby devices...";
-        }
-        return "No nearby or paired Bluetooth devices right now.";
+
+    readonly property string statusLabel: {
+        if (!bluetoothPresent) return "N/A";
+        if (!bluetoothEnabled) return "Off";
+        if (connectedCount > 0) return "Online";
+        if (bluetoothDiscovering) return "Scan";
+        return "Ready";
     }
 
     radius: 19
@@ -120,76 +78,31 @@ Rectangle {
     antialiasing: true
     implicitHeight: contentColumn.implicitHeight + panelPadding * 2
 
-    function panelColor(colorValue) {
-        return Qt.rgba(colorValue.r, colorValue.g, colorValue.b, colorValue.a * panelSurfaceOpacity);
+    function panelColor(c) {
+        return Qt.rgba(c.r, c.g, c.b, c.a * panelSurfaceOpacity);
     }
 
     function deviceGlyph(device) {
         const icon = (device.icon || "").toLowerCase();
-        if (icon.indexOf("audio-headset") >= 0 || icon.indexOf("audio-headphones") >= 0 || icon.indexOf("audio-card") >= 0 || icon.indexOf("audio-speakers") >= 0) {
-            return root.shellRoot.icons.headphones;
-        }
-        if (icon.indexOf("input-mouse") >= 0) {
-            return root.shellRoot.icons.mouse;
-        }
-        if (icon.indexOf("input-keyboard") >= 0) {
-            return root.shellRoot.icons.keyboard;
-        }
-        if (icon.indexOf("phone") >= 0) {
-            return root.shellRoot.icons.phone;
-        }
-        if (icon.indexOf("camera") >= 0) {
-            return root.shellRoot.icons.camera;
-        }
-        if (icon.indexOf("printer") >= 0) {
-            return root.shellRoot.icons.printer;
-        }
-        if (icon.indexOf("computer") >= 0) {
-            return root.shellRoot.icons.computer;
-        }
-        return bluetoothEnabled ? root.shellRoot.icons.bluetooth : root.shellRoot.icons.bluetoothOff;
+        if (icon.indexOf("audio-headset") >= 0 || icon.indexOf("audio-headphones") >= 0 || icon.indexOf("audio-card") >= 0 || icon.indexOf("audio-speakers") >= 0)
+            return shellRoot.icons.headphones;
+        if (icon.indexOf("input-mouse") >= 0) return shellRoot.icons.mouse;
+        if (icon.indexOf("input-keyboard") >= 0) return shellRoot.icons.keyboard;
+        if (icon.indexOf("phone") >= 0) return shellRoot.icons.phone;
+        if (icon.indexOf("camera") >= 0) return shellRoot.icons.camera;
+        if (icon.indexOf("printer") >= 0) return shellRoot.icons.printer;
+        if (icon.indexOf("computer") >= 0) return shellRoot.icons.computer;
+        return bluetoothEnabled ? shellRoot.icons.bluetooth : shellRoot.icons.bluetoothOff;
     }
 
     function deviceMeta(device) {
         const parts = [];
-        if (device.connected) {
-            parts.push("Connected");
-        } else if (device.paired) {
-            parts.push("Paired");
-        } else {
-            parts.push("Available");
-        }
-        if (!device.hasName) {
-            parts.push("Unnamed");
-        }
-        if (device.trusted) {
-            parts.push("Trusted");
-        }
-        if (device.blocked) {
-            parts.push("Blocked");
-        }
-        if (device.rssi !== null && device.rssi !== undefined) {
-            parts.push(device.rssi + " dBm");
-        }
-        return parts.join("  •  ");
-    }
-
-    function deviceActionIcon(device) {
-        if (device.connected) {
-            return root.shellRoot.icons.bluetoothOff;
-        }
-        return root.shellRoot.icons.bluetooth;
-    }
-
-    function activateDevice(device) {
-        if (!shellRoot || busy) {
-            return;
-        }
-        if (device.connected) {
-            shellRoot.bluetooth.disconnectDevice(device.address, device.displayName || device.name || "");
-            return;
-        }
-        shellRoot.bluetooth.connectDevice(device.address, !!device.paired, device.displayName || device.name || "");
+        if (device.connected) parts.push("Connected");
+        else if (device.paired) parts.push("Paired");
+        else parts.push("Available");
+        if (device.batteryAvailable) parts.push(device.battery + "%");
+        if (device.blocked) parts.push("Blocked");
+        return parts.join("  ·  ");
     }
 
     Column {
@@ -199,7 +112,7 @@ Rectangle {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.margins: root.panelPadding
-        spacing: root.pageSpacing
+        spacing: root.sectionSpacing
 
         Item {
             width: parent.width
@@ -211,8 +124,6 @@ Rectangle {
                 spacing: 12
 
                 Text {
-                    id: titleLabel
-
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Bluetooth"
                     color: root.shellRoot.primaryText
@@ -223,8 +134,6 @@ Rectangle {
                 }
 
                 Rectangle {
-                    id: bluetoothPowerToggle
-
                     anchors.verticalCenter: parent.verticalCenter
                     width: 48
                     height: 28
@@ -236,20 +145,14 @@ Rectangle {
                     antialiasing: true
 
                     Behavior on color {
-                        ColorAnimation {
-                            duration: 140
-                        }
+                        ColorAnimation { duration: 140 }
                     }
 
                     Behavior on border.color {
-                        ColorAnimation {
-                            duration: 140
-                        }
+                        ColorAnimation { duration: 140 }
                     }
 
                     Rectangle {
-                        id: bluetoothPowerKnob
-
                         width: 22
                         height: 22
                         radius: width / 2
@@ -261,10 +164,7 @@ Rectangle {
                         antialiasing: true
 
                         Behavior on x {
-                            NumberAnimation {
-                                duration: 160
-                                easing.type: Easing.InOutQuad
-                            }
+                            NumberAnimation { duration: 160; easing.type: Easing.InOutQuad }
                         }
                     }
 
@@ -293,7 +193,7 @@ Rectangle {
 
         Rectangle {
             width: parent.width
-            implicitHeight: statusBody.implicitHeight + 24
+            implicitHeight: statusBody.implicitHeight + 22
             radius: root.innerRadius
             color: root.panelColor(root.connectedCount > 0 ? root.accentFill : root.cardStrongFill)
             border.width: 1
@@ -305,19 +205,18 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.margins: root.innerPadding
-                implicitHeight: Math.max(statusInfo.implicitHeight, statusIcon.implicitHeight, statusPill.implicitHeight)
+                anchors.margins: 12
+                implicitHeight: Math.max(statusIconText.implicitHeight, statusInfo.implicitHeight, statusPill.implicitHeight)
 
                 Text {
-                    id: statusIcon
+                    id: statusIconText
 
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.bluetoothEnabled ? root.shellRoot.icons.bluetooth : root.shellRoot.icons.bluetoothOff
                     color: root.shellRoot.primaryText
                     font.family: root.shellRoot.iconFont
-                    font.pixelSize: 24
-                    font.weight: Font.Bold
+                    font.pixelSize: 22
                     renderType: Text.NativeRendering
                 }
 
@@ -330,25 +229,21 @@ Rectangle {
                     cornerRadius: root.innerRadius
                     label: root.statusLabel
                     disabled: true
-                    minimumWidth: 72
+                    minimumWidth: 64
                     fillColor: root.cardFill
-                    foregroundColor: root.connectedCount > 0
-                        ? (root.shellRoot.launchColor)
-                        : (root.shellRoot.primaryText)
-                    strokeColor: root.connectedCount > 0
-                        ? (root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18))
-                        : root.cardStroke
+                    foregroundColor: root.connectedCount > 0 ? root.shellRoot.launchColor : root.shellRoot.primaryText
+                    strokeColor: root.connectedCount > 0 ? root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18) : root.cardStroke
                 }
 
                 Column {
                     id: statusInfo
 
-                    anchors.left: statusIcon.right
-                    anchors.leftMargin: root.innerPadding
+                    anchors.left: statusIconText.right
+                    anchors.leftMargin: 10
                     anchors.right: statusPill.left
-                    anchors.rightMargin: root.innerPadding
+                    anchors.rightMargin: 10
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 4
+                    spacing: 3
 
                     Text {
                         width: parent.width
@@ -356,7 +251,7 @@ Rectangle {
                         elide: Text.ElideRight
                         color: root.shellRoot.primaryText
                         font.family: root.shellRoot.baseFont
-                        font.pixelSize: 14
+                        font.pixelSize: 13
                         font.weight: Font.Bold
                         renderType: Text.NativeRendering
                     }
@@ -367,7 +262,7 @@ Rectangle {
                         elide: Text.ElideRight
                         color: root.mutedText
                         font.family: root.shellRoot.baseFont
-                        font.pixelSize: 12
+                        font.pixelSize: 11
                         renderType: Text.NativeRendering
                     }
                 }
@@ -376,16 +271,17 @@ Rectangle {
 
         Flow {
             width: parent.width
-            spacing: 10
+            spacing: 8
 
             ActionChip {
                 shellRoot: root.shellRoot
                 cornerRadius: root.innerRadius
-                label: root.bluetoothDiscovering ? "Scanning" : "Scan"
-                minimumWidth: 88
+                label: root.bluetoothDiscovering ? "Scanning..." : "Scan"
+                minimumWidth: 80
                 disabled: !root.bluetoothPresent || !root.bluetoothEnabled || root.busy
-                fillColor: root.cardFill
-                strokeColor: root.cardStroke
+                fillColor: root.bluetoothDiscovering ? root.cardStrongFill : root.cardFill
+                foregroundColor: root.bluetoothDiscovering ? root.shellRoot.launchColor : root.shellRoot.primaryText
+                strokeColor: root.bluetoothDiscovering ? root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18) : root.cardStroke
                 onClicked: root.shellRoot.bluetooth.scan()
             }
 
@@ -393,15 +289,10 @@ Rectangle {
                 shellRoot: root.shellRoot
                 cornerRadius: root.innerRadius
                 label: root.showUnnamedDevices ? "Hide Unnamed" : "Show Unnamed"
-                minimumWidth: 132
-                disabled: false
+                minimumWidth: 124
                 fillColor: root.showUnnamedDevices ? root.cardStrongFill : root.cardFill
-                foregroundColor: root.showUnnamedDevices
-                    ? (root.shellRoot.launchColor)
-                    : (root.shellRoot.primaryText)
-                strokeColor: root.showUnnamedDevices
-                    ? (root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18))
-                    : root.cardStroke
+                foregroundColor: root.showUnnamedDevices ? root.shellRoot.launchColor : root.shellRoot.primaryText
+                strokeColor: root.showUnnamedDevices ? root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18) : root.cardStroke
                 onClicked: root.shellRoot.bluetooth.showUnnamedDevices = !root.shellRoot.bluetooth.showUnnamedDevices
             }
 
@@ -409,8 +300,7 @@ Rectangle {
                 shellRoot: root.shellRoot
                 cornerRadius: root.innerRadius
                 label: "Advanced"
-                minimumWidth: 98
-                disabled: false
+                minimumWidth: 90
                 fillColor: root.cardFill
                 strokeColor: root.cardStroke
                 onClicked: root.shellRoot.openBluetoothManager()
@@ -420,19 +310,19 @@ Rectangle {
         Rectangle {
             width: parent.width
             visible: root.shellRoot.bluetooth.actionMessage.length > 0
-            implicitHeight: actionMessageLabel.implicitHeight + 18
+            implicitHeight: actionMsg.implicitHeight + 16
             radius: root.innerRadius
             color: root.panelColor(root.cardFill)
             border.width: 1
             border.color: root.cardStroke
 
             Text {
-                id: actionMessageLabel
+                id: actionMsg
 
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.margins: root.innerPadding
+                anchors.margins: root.panelPadding
                 text: root.shellRoot.bluetooth.actionMessage
                 color: root.shellRoot.withAlpha(root.shellRoot.primaryText, 0.82)
                 font.family: root.shellRoot.baseFont
@@ -444,141 +334,204 @@ Rectangle {
 
         Rectangle {
             width: parent.width
-            visible: root.visibleDevices.length === 0
-            implicitHeight: emptyState.implicitHeight + 26
+            visible: !root.hasDevices
+            implicitHeight: emptyLabel.implicitHeight + 24
             radius: root.innerRadius
             color: root.panelColor(root.cardFill)
             border.width: 1
             border.color: root.cardStroke
 
             Text {
-                id: emptyState
+                id: emptyLabel
 
                 anchors.centerIn: parent
                 width: parent.width - 28
                 horizontalAlignment: Text.AlignHCenter
-                text: root.emptyStateText
+                text: {
+                    if (!root.bluetoothPresent) return "No Bluetooth adapter detected.";
+                    if (!root.bluetoothEnabled) return "Turn Bluetooth on to scan for devices.";
+                    if (root.bluetoothDiscovering) return "Searching for nearby devices...";
+                    return "No nearby or paired devices found.";
+                }
                 color: root.mutedText
                 font.family: root.shellRoot.baseFont
-                font.pixelSize: 13
+                font.pixelSize: 12
                 wrapMode: Text.Wrap
                 renderType: Text.NativeRendering
             }
         }
 
         Flickable {
-            id: deviceList
-
             width: parent.width
-            height: visible ? Math.min(contentHeight, root.maxDeviceListHeight) : 0
-            contentHeight: deviceColumn.implicitHeight
-            visible: root.visibleDevices.length > 0
+            height: visible ? Math.min(contentHeight, root.maxListHeight) : 0
+            contentHeight: listContent.implicitHeight
+            visible: root.hasDevices
             clip: true
             interactive: contentHeight > height
             boundsBehavior: Flickable.StopAtBounds
 
             Column {
-                id: deviceColumn
+                id: listContent
 
-                width: deviceList.width
-                spacing: 10
+                width: parent.width
+                spacing: root.sectionSpacing
 
-                Repeater {
-                    model: root.visibleDevices
+                Column {
+                    width: parent.width
+                    spacing: root.rowSpacing
+                    visible: root.pairedDevices.length > 0
 
-                    delegate: Rectangle {
-                        id: deviceCard
+                    Text {
+                        leftPadding: 2
+                        text: "MY DEVICES"
+                        color: root.mutedText
+                        font.family: root.shellRoot.baseFont
+                        font.pixelSize: 10
+                        font.weight: Font.Bold
+                        font.letterSpacing: 0.8
+                        renderType: Text.NativeRendering
+                    }
 
-                        required property var modelData
+                    Repeater {
+                        model: root.pairedDevices
+                        delegate: deviceRowComponent
+                    }
+                }
 
-                        width: deviceColumn.width
-                        implicitHeight: deviceBody.implicitHeight + 20
-                        radius: root.innerRadius
-                        color: root.panelColor(modelData.connected ? root.accentFill : root.cardFill)
-                        border.width: 1
-                        border.color: modelData.connected ? root.accentStroke : root.cardStroke
+                Column {
+                    width: parent.width
+                    spacing: root.rowSpacing
+                    visible: root.nearbyDevices.length > 0
 
-                        Column {
-                            id: deviceBody
+                    Text {
+                        leftPadding: 2
+                        text: "NEARBY"
+                        color: root.mutedText
+                        font.family: root.shellRoot.baseFont
+                        font.pixelSize: 10
+                        font.weight: Font.Bold
+                        font.letterSpacing: 0.8
+                        renderType: Text.NativeRendering
+                    }
 
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.top: parent.top
-                            anchors.margins: 10
-                            spacing: 10
+                    Repeater {
+                        model: root.nearbyDevices
+                        delegate: deviceRowComponent
+                    }
+                }
+            }
+        }
+    }
 
-                            Item {
-                                width: parent.width
-                                implicitHeight: Math.max(deviceInfo.implicitHeight, actionChip.implicitHeight, deviceIcon.implicitHeight)
+    Component {
+        id: deviceRowComponent
 
-                                Text {
-                                    id: deviceIcon
+        Rectangle {
+            id: deviceCard
 
-                                    anchors.left: parent.left
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: root.deviceGlyph(modelData)
-                                    color: root.shellRoot.primaryText
-                                    font.family: root.shellRoot.iconFont
-                                    font.pixelSize: 24
-                                    font.weight: Font.Bold
-                                    renderType: Text.NativeRendering
-                                }
+            required property var modelData
 
-                                ActionChip {
-                                    id: actionChip
+            width: parent ? parent.width : 0
+            implicitHeight: rowContent.implicitHeight + 18
+            radius: root.innerRadius
+            color: root.panelColor(modelData.connected ? root.accentFill : root.cardFill)
+            border.width: 1
+            border.color: modelData.connected ? root.accentStroke : root.cardStroke
+            antialiasing: true
 
-                                    anchors.right: parent.right
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    shellRoot: root.shellRoot
-                                    cornerRadius: root.innerRadius
-                                    label: ""
-                                    iconLabel: root.deviceActionIcon(modelData)
-                                    minimumWidth: 50
-                                    disabled: root.busy || (!root.bluetoothEnabled && !modelData.connected)
-                                    fillColor: modelData.connected ? root.cardStrongFill : root.cardFill
-                                    foregroundColor: modelData.connected
-                                        ? (root.shellRoot.criticalColor)
-                                        : (root.shellRoot.launchColor)
-                                    strokeColor: modelData.connected
-                                        ? (root.shellRoot.withAlpha(root.shellRoot.criticalColor, 0.2))
-                                        : (root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18))
-                                    onClicked: root.activateDevice(modelData)
-                                }
+            Item {
+                id: rowContent
 
-                                Column {
-                                    id: deviceInfo
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.margins: 10
+                implicitHeight: Math.max(deviceIconText.implicitHeight, deviceInfoCol.implicitHeight, chipRow.implicitHeight)
 
-                                    anchors.left: deviceIcon.right
-                                    anchors.leftMargin: root.innerPadding
-                                    anchors.right: actionChip.left
-                                    anchors.rightMargin: root.innerPadding
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    spacing: 4
+                Text {
+                    id: deviceIconText
 
-                                    Text {
-                                        width: parent.width
-                                        text: modelData.displayName || modelData.address
-                                        elide: Text.ElideRight
-                                        color: root.shellRoot.primaryText
-                                        font.family: root.shellRoot.baseFont
-                                        font.pixelSize: 14
-                                        font.weight: Font.Bold
-                                        renderType: Text.NativeRendering
-                                    }
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.deviceGlyph(modelData)
+                    color: root.shellRoot.primaryText
+                    font.family: root.shellRoot.iconFont
+                    font.pixelSize: 20
+                    renderType: Text.NativeRendering
+                }
 
-                                    Text {
-                                        width: parent.width
-                                        text: root.deviceMeta(modelData)
-                                        elide: Text.ElideRight
-                                        color: root.mutedText
-                                        font.family: root.shellRoot.baseFont
-                                        font.pixelSize: 11
-                                        renderType: Text.NativeRendering
-                                    }
-                                }
+                Row {
+                    id: chipRow
+
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 6
+
+                    ActionChip {
+                        shellRoot: root.shellRoot
+                        cornerRadius: root.innerRadius - 2
+                        iconLabel: modelData.connected ? root.shellRoot.icons.bluetoothOff : root.shellRoot.icons.bluetooth
+                        iconPixelSize: 14
+                        minimumWidth: 40
+                        disabled: root.busy || (!root.bluetoothEnabled && !modelData.connected)
+                        fillColor: modelData.connected ? root.cardStrongFill : root.cardFill
+                        foregroundColor: modelData.connected ? root.shellRoot.criticalColor : root.shellRoot.launchColor
+                        strokeColor: modelData.connected
+                            ? root.shellRoot.withAlpha(root.shellRoot.criticalColor, 0.22)
+                            : root.shellRoot.withAlpha(root.shellRoot.launchColor, 0.18)
+                        onClicked: {
+                            if (modelData.connected) {
+                                root.shellRoot.bluetooth.disconnectDevice(modelData.address, modelData.displayName || modelData.name || "");
+                            } else {
+                                root.shellRoot.bluetooth.connectDevice(modelData.address, !!modelData.paired, modelData.displayName || modelData.name || "");
                             }
-
                         }
+                    }
+
+                    ActionChip {
+                        shellRoot: root.shellRoot
+                        cornerRadius: root.innerRadius - 2
+                        iconLabel: root.shellRoot.icons.trash
+                        iconPixelSize: 13
+                        minimumWidth: 40
+                        visible: !!modelData.paired
+                        disabled: root.busy
+                        fillColor: root.cardFill
+                        foregroundColor: root.shellRoot.withAlpha(root.shellRoot.criticalColor, 0.75)
+                        strokeColor: root.shellRoot.withAlpha(root.shellRoot.criticalColor, 0.18)
+                        onClicked: root.shellRoot.bluetooth.removeDevice(modelData.address, modelData.displayName || modelData.name || "")
+                    }
+                }
+
+                Column {
+                    id: deviceInfoCol
+
+                    anchors.left: deviceIconText.right
+                    anchors.leftMargin: 10
+                    anchors.right: chipRow.left
+                    anchors.rightMargin: 10
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 3
+
+                    Text {
+                        width: parent.width
+                        text: modelData.displayName || modelData.address
+                        elide: Text.ElideRight
+                        color: root.shellRoot.primaryText
+                        font.family: root.shellRoot.baseFont
+                        font.pixelSize: 13
+                        font.weight: Font.Bold
+                        renderType: Text.NativeRendering
+                    }
+
+                    Text {
+                        width: parent.width
+                        text: root.deviceMeta(modelData)
+                        elide: Text.ElideRight
+                        color: root.mutedText
+                        font.family: root.shellRoot.baseFont
+                        font.pixelSize: 11
+                        renderType: Text.NativeRendering
                     }
                 }
             }

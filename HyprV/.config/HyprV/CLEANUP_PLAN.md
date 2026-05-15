@@ -93,7 +93,7 @@ Status: `Todo`
 
 ### Phase 4a: Split WifiPopup.qml
 
-Status: `Todo`
+Status: `Tried, abandoned`
 
 ~970 lines with three unrelated jobs: indicator widget, native network list presentation, popup UI. The native Wi-Fi migration removed the script-derived network snapshot state, so this phase is UI decomposition only and must keep native `WifiNetwork` objects flowing through the popup.
 
@@ -109,17 +109,15 @@ Status: `Todo`
 
 6. **Slim `WifiPopup.qml` to popup shell** — color/layout properties, `panelColumn` assembling extracted cards, `AnchoredPopup`. Target: under 150 lines.
 
+None of the extracted pieces (`WifiStatusCard`, `WifiActionRow`, `WifiNetworkRow`, `WifiNetworkList`) would be reused anywhere else. The file was ~970 lines when this phase was planned but is now ~611 after the native network migration. Splitting it would add indirection with no payoff — same reasoning as AudioPopup and TrayMenuPopup. Keeping WifiPopup whole.
+
 Rule: future extractions must preserve native object flow; do not reintroduce script rows or snapshot caches.
 
 ### Phase 4b: Split ControlPanelPopup.qml
 
-Status: `Todo`
+Status: `Done`
 
-904 lines. The `mainPageComponent` is already a `Component {}` block — the boundary exists, it just needs to become its own file.
-
-1. **Extract `ControlPanelMainPage.qml`** — the `mainPageComponent` Column (~400–714): all tiles, power modes, session actions, sliders, media card. Takes `shellRoot` and action callbacks. Emits signals for page switches and close requests.
-
-2. **`ControlPanelPopup.qml` becomes popup shell** — `AnchoredPopup`, `Loader` switching between `ControlPanelMainPage` and `ControlPanelBluetoothDetails`, page-switch animation, coordinator functions. Target: under 150 lines.
+Extracted all UI content, state, and action functions into `ControlPanelMainPage.qml` (Column root, `required property var shellRoot`, signals: `closeRequested`, `bluetoothPanelRequested`, `wifiPanelRequested`). `ControlPanelPopup.qml` is now the popup shell only (~55 lines): `AnchoredPopup`, animation config, lifecycle hooks, and signal wiring to `shellRoot` actions.
 
 ---
 

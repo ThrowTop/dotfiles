@@ -296,11 +296,8 @@ ShellRoot {
         if (audioController.muted) {
             return icons.volumeMuted;
         }
-        if (percent <= 20) {
+        if (percent <= 60) {
             return icons.volumeLow;
-        }
-        if (percent <= 50) {
-            return icons.volumeMedium;
         }
         return icons.volumeHigh;
     }

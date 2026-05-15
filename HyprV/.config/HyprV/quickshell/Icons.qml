@@ -11,11 +11,13 @@ QtObject {
     readonly property string check: "󰄬"        // nf-md-check
     readonly property string close: "󰅖"        // nf-md-close
     readonly property string trash: "󰆴"        // nf-md-delete
+    readonly property string chevronUp: ""      // nf-fa-chevron_up
+    readonly property string chevronDown: ""    // nf-fa-chevron_down
+    readonly property string chevronRight: ""  // nf-fa-chevron_right
 
-    readonly property string volumeMuted: "󰝟"   // nf-md-volume_off
-    readonly property string volumeLow: "󰕿"     // nf-md-volume_low
-    readonly property string volumeMedium: "󰖀"  // nf-md-volume_medium
-    readonly property string volumeHigh: "󰕾"    // nf-md-volume_high
+    readonly property string volumeMuted: ""   // nf-md-volume_off
+    readonly property string volumeLow: ""     // nf-md-volume_low
+    readonly property string volumeHigh: ""    // nf-md-volume_high
 
     readonly property string bell: "󰂚"          // nf-md-bell
     readonly property string bellOff: "󰂛"       // nf-md-bell_off
@@ -39,6 +41,7 @@ QtObject {
 
     readonly property string headphones: "󰋋"    // nf-md-headphones
     readonly property string speaker: "󰓃"       // nf-md-speaker
+    readonly property string microphone: "󰍬"   // nf-md-microphone
     readonly property string display: "󰍹"       // nf-md-monitor
     readonly property string mouse: "󰍽"         // nf-md-mouse
     readonly property string keyboard: "󰌌"      // nf-md-keyboard

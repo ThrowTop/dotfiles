@@ -84,7 +84,8 @@ Item {
             trusted: !!device.trusted,
             connected: !!device.connected,
             blocked: !!device.blocked,
-            rssi: null
+            batteryAvailable: !!device.batteryAvailable,
+            battery: device.batteryAvailable ? Math.round(device.battery) : -1
         };
     }
 
@@ -451,6 +452,8 @@ Item {
             function onStateChanged() { controller.syncFromModel(); }
             function onPairingChanged() { controller.syncFromModel(); }
             function onBondedChanged() { controller.syncFromModel(); }
+            function onBatteryChanged() { controller.syncFromModel(); }
+            function onBatteryAvailableChanged() { controller.syncFromModel(); }
         }
     }
 }
