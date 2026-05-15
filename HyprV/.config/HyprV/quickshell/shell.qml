@@ -30,7 +30,7 @@ ShellRoot {
     property real memoryUsage: 0
     property real temperatureC: 0
     property string keyboardLayout: "ENG"
-    property string defaultInterface: ""
+    property string networkRateInterface: ""
     property real networkRxRate: 0
     property real networkTxRate: 0
     property var cpuHistory: []
@@ -40,7 +40,7 @@ ShellRoot {
     property var powerDrawHistory: []
     property real batteryCurrentW: 0
     readonly property bool batteryDischarging: !!batteryDevice && !batteryPlugged
-    readonly property bool batteryPopupOpen: batteryInfoPopup.popupRequested || batteryInfoPopup.animatingClose
+    readonly property bool batteryPopupOpen: batteryInfoPopup.isOpen || batteryInfoPopup.animatingClose
     readonly property real avgPowerW: {
         const h = powerDrawHistory;
         if (!h || h.length === 0) return 0;
@@ -59,7 +59,7 @@ ShellRoot {
     property int cpuCores: 0
     property int cpuThreads: 0
     property string ramSpeedText: ""
-    readonly property bool systemStatsPopupOpen: systemStatsPopup.popupRequested || systemStatsPopup.animatingClose
+    readonly property bool systemStatsPopupOpen: systemStatsPopup.isOpen || systemStatsPopup.animatingClose
     property var trayMenuController: null
     readonly property string brightnessScriptPath: configDir + "/quickshell/scripts/brightness.sh"
     readonly property string mediaFocusScriptPath: configDir + "/quickshell/scripts/media-focus.sh"
@@ -86,13 +86,12 @@ ShellRoot {
     property bool _brightnessProbeQueued: false
     property int _pendingBrightnessPercent: -1
     readonly property int monitorRestartMaxDelay: 30000
-    readonly property bool networkConnected: defaultInterface.length > 0
-    readonly property string activeNetworkType: networkTypeForInterface(defaultInterface)
-    readonly property bool wifiConnectionActive: activeNetworkType === "wifi"
-    readonly property bool wiredConnectionActive: activeNetworkType === "wired"
-    readonly property bool otherConnectionActive: activeNetworkType === "other"
+    readonly property bool networkConnected: networkController.networkConnected
+    readonly property bool wifiConnectionActive: networkController.wifiConnectionActive
+    readonly property bool wiredConnectionActive: networkController.wiredConnectionActive
+    readonly property string defaultInterface: networkController.defaultInterface || networkRateInterface
     property string thermalZonePath: "/sys/class/thermal/thermal_zone0/temp"
-    property string batteryDevPath: "/sys/class/power_supply/BAT1"
+    readonly property string batteryDevPath: batterySysfsPath()
 
     Component.onCompleted: {
         networkController.refresh();
@@ -101,7 +100,6 @@ ShellRoot {
         cpuInfoSnapshot.refresh();
         ramInfoSnapshot.refresh();
         thermalZoneDetect.refresh();
-        batteryPathDetect.refresh();
     }
 
     Colors { id: colors }
@@ -249,7 +247,7 @@ ShellRoot {
         if (batteryInfo?.available) return formatPower(Number(batteryInfo?.powerW || 0), true);
         return "--";
     }
-    readonly property string batteryAveragePowerDetailText: (batteryInfo?.available && avgPowerW > 0) ? formatPower(avgPowerW, true) : "--"
+    readonly property string batteryAveragePowerDetailText: (batteryInfo?.available && avgPowerW > 0) ? formatPower(avgPowerW, false) : "--"
     readonly property string batteryEstimateTitle: {
         const mode = batteryInfo?.mode || "";
         if (mode === "charging") return root.chargeLimit < 100 ? "Time to limit" : "Time to full";
@@ -383,6 +381,12 @@ ShellRoot {
         root.islandOsdTrigger = !root.islandOsdTrigger;
     }
 
+    onBatteryPopupOpenChanged: {
+        if (root.batteryPopupOpen) {
+            batteryRatePoll.refresh();
+        }
+    }
+
     function isWifiInterfaceName(name) {
         const iface = (name || "").toLowerCase();
         return iface.startsWith("wl") || iface.startsWith("wlan") || iface.startsWith("wifi");
@@ -406,8 +410,8 @@ ShellRoot {
         }
         return isWifiInterfaceName(defaultInterface) ? icons.wifi : icons.wired;
     }
-    readonly property string networkText: defaultInterface ? humanRate(networkRxRate + networkTxRate) : "nocon"
-    readonly property bool wifiWidgetVisible: networkController.capabilityDetected || networkController.devicePresent || networkController.networks.length > 0 || isWifiInterfaceName(defaultInterface)
+    readonly property string networkText: networkConnected ? humanRate(networkRxRate + networkTxRate) : "nocon"
+    readonly property bool wifiWidgetVisible: networkController.capabilityDetected || networkController.devicePresent || networkController.networks.length > 0 || networkController.wifiConnectionActive
     readonly property bool networkWidgetVisible: networkConnected || wifiWidgetVisible
     readonly property bool notificationDoNotDisturb: notificationController.doNotDisturb
     readonly property bool notificationHasDot: notificationController.hasDot
@@ -439,9 +443,7 @@ ShellRoot {
         const lines = (output || "").split("\n");
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
-            if (line.startsWith("wifi_enabled=")) {
-                continue;
-            } else if (line.startsWith("brightness=")) {
+            if (line.startsWith("brightness=")) {
                 const parsed = Number(line.slice(11).trim());
                 if (isFinite(parsed)) {
                     root._brightnessFromPoll = true;
@@ -612,6 +614,58 @@ ShellRoot {
         };
     }
 
+    function batterySysfsPath() {
+        const devices = Array.from(UPower.devices?.values || []);
+        for (let i = 0; i < devices.length; i++) {
+            const device = devices[i];
+            if (device?.type !== UPowerDeviceType.Battery || !device?.isPresent) {
+                continue;
+            }
+
+            const nativePath = String(device.nativePath || "");
+            if (nativePath.length === 0) {
+                continue;
+            }
+            if (nativePath.startsWith("/")) {
+                return nativePath;
+            }
+            return "/sys/class/power_supply/" + nativePath;
+        }
+        return "/sys/class/power_supply/BAT1";
+    }
+
+    function updateBatteryRateFromSnapshot(text) {
+        const values = {};
+        const lines = (text || "").split("\n");
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line.startsWith("POWER_SUPPLY_")) continue;
+            const separator = line.indexOf("=");
+            if (separator <= 0) continue;
+            values[line.slice(13, separator)] = line.slice(separator + 1);
+        }
+
+        const status = (values.STATUS || "").toLowerCase();
+        const rawPowerUw = Number(values.POWER_NOW || 0);
+        const rawCurrentUa = Number(values.CURRENT_NOW || 0);
+        const rawVoltageUv = Number(values.VOLTAGE_NOW || 0);
+        let absW = 0;
+        if (rawPowerUw > 0) {
+            absW = rawPowerUw / 1000000;
+        } else if (rawCurrentUa > 0 && rawVoltageUv > 0) {
+            absW = (rawCurrentUa * rawVoltageUv) / 1000000000000;
+        }
+
+        if (!isFinite(absW) || absW <= 0) {
+            root.batteryCurrentW = 0;
+            return;
+        }
+
+        const charging = status.indexOf("charging") >= 0 && status.indexOf("not charging") < 0;
+        root.batteryCurrentW = charging ? absW : -absW;
+        root.powerDrawHistory = root.appendHistory(root.powerDrawHistory, absW, root.statsHistoryLimit);
+    }
+
     function parseNumberMap(text) {
         const result = {};
         const lines = (text || "").split("\n");
@@ -684,7 +738,7 @@ ShellRoot {
     }
 
     function networkTrayGlyph() {
-        if (wiredConnectionActive || otherConnectionActive) {
+        if (wiredConnectionActive) {
             return icons.wired;
         }
         if (wifiConnectionActive) {
@@ -804,7 +858,7 @@ ShellRoot {
             return;
         }
         if (trayMenuController) {
-            trayMenuController.openFor(item, sourceItem, parentWindow);
+            trayMenuController.openMenu(item, sourceItem, parentWindow);
         }
     }
 
@@ -831,6 +885,10 @@ ShellRoot {
 
     function openControlPanelPopup(sourceItem, parentWindow) {
         controlPanelPopup.toggleFor(sourceItem, parentWindow || primaryBarWindow);
+    }
+
+    function toggleNotificationPanel() {
+        notificationController.togglePanel();
     }
 
     function openWifiManager() {
@@ -1062,32 +1120,14 @@ ShellRoot {
     }
 
     PollCommand {
-        id: batteryPathDetect
-
-        scheduled: false
-        command: [root.configDir + "/quickshell/scripts/lib/detect-battery-path.sh"]
-        onUpdated: function(output, exitCode) {
-            const path = output.trim();
-            if (exitCode === 0 && path.length > 0) root.batteryDevPath = path;
-        }
-    }
-
-    PollCommand {
         id: batteryRatePoll
 
-        active: root.batteryDischarging
+        active: true
         scheduled: true
-        interval: root.batteryPopupOpen ? 2000 : 10000
-        command: ["sh", "-c", "cat " + root.batteryDevPath + "/current_now " + root.batteryDevPath + "/voltage_now 2>/dev/null"]
+        interval: root.batteryPopupOpen ? 500 : 10000
+        command: ["sh", "-c", "cat " + root.batteryDevPath + "/uevent 2>/dev/null"]
         onUpdated: function(output) {
-            const lines = output.trim().split("\n");
-            if (lines.length < 2) return;
-            const currentUa = parseInt(lines[0]) || 0;
-            const voltageUv = parseInt(lines[1]) || 0;
-            if (currentUa <= 0 || voltageUv <= 0) return;
-            const absW = (currentUa * voltageUv) / 1e12;
-            root.batteryCurrentW = -absW;
-            root.powerDrawHistory = root.appendHistory(root.powerDrawHistory, absW, root.statsHistoryLimit);
+            root.updateBatteryRateFromSnapshot(output);
         }
     }
 
@@ -1117,7 +1157,7 @@ ShellRoot {
     Process {
         id: audioSpectrumProcess
 
-        running: root.audioSpectrumCavaAvailable && root.mediaAvailable && root.mediaPlaying
+        running: root.audioSpectrumCavaAvailable && root.media.available && root.media.playing
         command: [root.configDir + "/quickshell/scripts/audio-spectrum.sh"]
 
         onRunningChanged: {
@@ -1159,7 +1199,6 @@ ShellRoot {
         id: trayMenuPopup
 
         shellRoot: root
-        textPixelSize: root.trayMenuTextPixelSize
         Component.onCompleted: root.trayMenuController = this
         Component.onDestruction: if (root.trayMenuController === this) {
             root.trayMenuController = null;
@@ -1397,5 +1436,3 @@ ShellRoot {
     }
 
 }
-
-

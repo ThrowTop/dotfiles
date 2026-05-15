@@ -8,6 +8,9 @@ QtObject {
     readonly property string wifiMedium: "󰤥"    // nf-md-wifi_strength_2
     readonly property string wifiStrong: "󰤥"    // nf-md-wifi_strength_4
     readonly property string wired: "󰈀"         // nf-md-ethernet
+    readonly property string check: "󰄬"        // nf-md-check
+    readonly property string close: "󰅖"        // nf-md-close
+    readonly property string trash: "󰆴"        // nf-md-delete
 
     readonly property string volumeMuted: "󰝟"   // nf-md-volume_off
     readonly property string volumeLow: "󰕿"     // nf-md-volume_low

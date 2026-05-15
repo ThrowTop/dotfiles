@@ -42,6 +42,12 @@ Then inspect the newest log under:
 
 Use `qmllint <file.qml>` to catch type and binding errors before reloading.
 
+Installed Quickshell QML module metadata is the local API source of truth. It is very
+important to reference this documentation before using or changing Quickshell APIs:
+check `/usr/lib/qt6/qml/Quickshell` for available modules, `.qmltypes`, and `qmldir`
+files before relying on online docs. Do not guess Quickshell API names, properties,
+signals, methods, enum values, or singleton behavior.
+
 ## Architecture
 
 `shell.qml` is the composition root. It creates shared controllers, pollers, top-level popups, and one `BarWindow` per screen. It should not become the permanent home for every feature's parsing and action logic.
@@ -89,11 +95,13 @@ Never mix `iconFont` and `baseFont` in the same `Text` element. When a bar modul
 | `quickshell/features/audio/AudioController.qml` | Pipewire output device, volume, and mute state/actions |
 | `quickshell/features/audio/AudioPopup.qml` | Output device picker opened from the bar audio module |
 | `quickshell/features/bluetooth/BluetoothController.qml` | Bluetooth adapter/device state and actions |
-| `quickshell/features/network/NetworkController.qml` | Wi-Fi status/action state, polling, and monitor refresh |
+| `quickshell/features/network/NetworkController.qml` | Native Wi-Fi device/network state and actions through `Quickshell.Networking` |
+| `quickshell/features/network/WifiPopup.qml` | Wi-Fi network picker and connection popup |
+| `quickshell/features/network/WifiFallback.qml` | Thin Wi-Fi bar indicator that opens `WifiPopup.qml` |
+| `quickshell/features/notifications/NotificationController.qml` | swaync-backed notification badge state, DND state, panel/DND actions |
 | `quickshell/features/system/SystemStatsController.qml` | CPU/memory/network/temp parsing and history; popup-gated per-core, load, freq |
 | `quickshell/features/system/SystemStatsPopup.qml` | System stats popup: CPU (per-core grid), RAM, temperature, network with trend charts |
 | `quickshell/features/power/BatteryInfoPopup.qml` | Battery popup: live power draw, rolling avg, health %, cycle count, charge limit |
-| `quickshell/features/network/WifiFallback.qml` | Wi-Fi tray indicator and popup UI |
 | `quickshell/components/ActionChip.qml` | Shared compact action button used by Wi-Fi/Bluetooth/control UI |
 
 ## Battery Widget
@@ -113,9 +121,13 @@ Bluetooth state, actions, timers, and device signal watchers live in `BluetoothC
 
 System stats parsing is in `SystemStatsController.qml`. The poll command switches between a lightweight snapshot (head of `/proc/stat` + meminfo + temp + net) when the popup is closed, and a full snapshot (all CPU cores, loadavg, cpufreq) when open. `shell.qml` exposes `cpuUsage`, `memoryUsage`, `memoryUsedGB`, `memoryTotalGB`, `temperatureC`, network rates, histories, per-core usages, CPU model/cores/freq, and RAM speed for bar/popup consumers.
 
-Battery power is tracked event-driven via a `batteryRatePoll` PollCommand in `shell.qml`: 2s interval when the battery popup is open, 10s otherwise, stopped entirely when plugged in. This feeds `batteryCurrentW` (live) and `powerDrawHistory` (rolling average). `BatteryInfoPopup` reads static facts (health %, cycle count) once per open from sysfs.
+Battery power is tracked via a lightweight `batteryRatePoll` PollCommand in `shell.qml`: 500 ms interval when the battery popup is open, 10s otherwise, with an immediate refresh when the popup opens. The battery sysfs path comes from `UPower.devices` native paths, not a startup probe script. The poll reads the battery `uevent` sysfs snapshot, feeds signed `batteryCurrentW` for live charge/discharge rate, and stores absolute samples in `powerDrawHistory` so average power is draw regardless of charging state. `BatteryInfoPopup` reads static facts (health %, cycle count) once per open from sysfs.
 
-Wi-Fi is partially modular. `features/network/NetworkController.qml` owns status polling, action process state, cached network lists, and monitor-triggered refreshes. The current Wi-Fi UI still consumes root compatibility aliases and methods.
+Wi-Fi is native. `features/network/NetworkController.qml` owns Wi-Fi device state, connectivity, scan/connect/disconnect/forget actions, and exposes native `WifiNetwork` objects to `WifiPopup.qml`.
+
+Notifications intentionally stay swaync-backed. Do not use `Quickshell.Services.Notifications`
+unless replacing swaync entirely; `NotificationServer` would make Quickshell the notification
+daemon instead of passively observing swaync.
 
 Audio output state is owned by `features/audio/AudioController.qml` through `Quickshell.Services.Pipewire`. `shell.qml` keeps compatibility methods/properties such as `audioVolumePercent`, `toggleAudioMute()`, and `setAudioVolumePercent()` for existing consumers.
 
@@ -138,10 +150,10 @@ Keep the shell compact, desktop-native, and Apple-flavored:
 
 - Public scripts live directly under `quickshell/scripts/` with feature-prefixed filenames.
 - Shared helper implementations live under `quickshell/scripts/lib/` and should not be called directly from QML.
-- Wi-Fi status/actions are handled through `wifi.sh`.
+- Wi-Fi status/actions are handled through `Quickshell.Networking`; there is no Wi-Fi shell helper path.
 - Media state is handled reactively through `Quickshell.Services.Mpris`.
 - Audio output device, volume, and mute state/actions are handled reactively through `Quickshell.Services.Pipewire`.
-- Battery state is handled through `Quickshell.Services.UPower`; charge limit actions go through `battery.sh`. Live power draw is read from `/sys/class/power_supply/BAT1/current_now` × `voltage_now` via `batteryRatePoll` — not polled when on AC.
+- Battery state and battery sysfs path detection are handled through `Quickshell.Services.UPower`; charge limit actions go through `battery.sh`. Live power draw is read from the selected battery's `uevent` via `batteryRatePoll`, preferring `POWER_SUPPLY_POWER_NOW` and falling back to `CURRENT_NOW × VOLTAGE_NOW`.
 - Long-running status that needs QML updates should prefer native Quickshell services, event streams, or Hyprland Lua IPC. Use scripts and `PollCommand` only for integrations Quickshell does not expose natively.
 - Hyprland keybinds call Quickshell IPC through Lua in `~/.config/hypr/modules/helpers/hyprv.lua`.
 
@@ -157,7 +169,5 @@ Keep the shell compact, desktop-native, and Apple-flavored:
 See `CLEANUP_PLAN.md` for the current tracked cleanup plan.
 
 1. Phase 3: `AnchoredPopup.qml` — shared popup lifecycle host.
-2. Phase 4a: Split `WifiFallback.qml`; move network list state into `NetworkController`.
+2. Phase 4a: Split `WifiPopup.qml`; keep Wi-Fi UI structure aligned with native `NetworkController` state.
 3. Phase 4b: Extract `ControlPanelMainPage.qml` from `ControlPanelPopup.qml`.
-
-

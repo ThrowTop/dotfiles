@@ -61,8 +61,8 @@ quickshell/
     network/
       NetworkController.qml
       WifiFallback.qml
-      WifiIconWithFallback.qml
       WifiIndicator.qml
+      WifiPopup.qml
       WifiSecurityBadge.qml
     power/
       PowerController.qml
@@ -82,15 +82,18 @@ quickshell/
     audio-spectrum.sh
     battery.sh
     brightness.sh
+    debug.sh
+    launch.sh
+    media-focus.sh
+    open-manager.sh
     osd.sh
+    power-profile.sh
     prevent-sleep.sh
+    reload.sh
     system-status.sh
-    wifi.sh
     lib/
       battery-limit.sh
-      wifi-action.sh
-      wifi-common.sh
-      wifi-status.sh
+      detect-thermal-zone.sh
 ```
 
 ## Ownership Rules
@@ -165,7 +168,7 @@ BarWindow
 Bar module click
   -> shell.qml open/toggle function
   -> feature popup instance
-  -> feature controller or shell compatibility API
+  -> feature controller or shell-owned global API
   -> scripts / Quickshell services / detached commands
 ```
 
@@ -174,14 +177,14 @@ Bar module click
 Implemented:
 
 - `features/bluetooth/BluetoothController.qml`: Bluetooth adapter state, device snapshots, connect/disconnect/pair/remove/scan, action messages, timeouts, signal watchers.
-- `features/network/NetworkController.qml`: Wi-Fi status polling, cached network snapshots, radio/connect/disconnect/scan, action messages, `nmcli monitor` refresh path.
+- `features/network/NetworkController.qml`: native Wi-Fi device/network state via `Quickshell.Networking`, radio/connect/disconnect/scan/forget actions, action messages, and native connectivity state for shell consumers.
 - `features/audio/AudioController.qml`: native Pipewire output devices, default sink selection, output volume, mute state.
 - `features/media/MediaController.qml`: MPRIS player selection, media metadata, playback state, position ticking, seek/playback actions, app focus.
-- `features/notifications/NotificationController.qml`: swaync initial state, D-Bus monitoring, DND state, notification dot/tooltip, panel/DND actions.
+- `features/notifications/NotificationController.qml`: swaync initial state, D-Bus monitoring, DND state, notification dot/tooltip, panel/DND actions. Quickshell notification integration is intentionally not used because `Quickshell.Services.Notifications.NotificationServer` would make Quickshell the notification daemon instead of swaync.
 - `features/power/PowerController.qml`: power profile probe/monitor/actions, prevent-sleep state/actions.
 - `features/system/SystemStatsController.qml`: parses `/proc` snapshots; updates CPU (aggregate + per-core), memory (usage + GB used/total), temperature, network rates, load avg, CPU freq, and history arrays. Light command when popup closed, full command when open.
 
-Battery power tracking uses `batteryRatePoll` in `shell.qml` (not a controller): reads sysfs `current_now × voltage_now` at 2s when battery popup open, 10s otherwise, stopped on AC. Feeds `batteryCurrentW` and `powerDrawHistory` for rolling average. `BatteryInfoPopup` reads health % and cycle count once per open.
+Battery power tracking uses `batteryRatePoll` in `shell.qml` (not a controller): derives the battery sysfs path from `UPower.devices`, reads that battery's `uevent` snapshot at 500 ms when the battery popup is open, 10s otherwise, and refreshes immediately on popup open. It prefers `POWER_SUPPLY_POWER_NOW`, falls back to `CURRENT_NOW × VOLTAGE_NOW`, feeds signed `batteryCurrentW`, and stores absolute samples in `powerDrawHistory` so the rolling average is power draw regardless of charging state. `BatteryInfoPopup` reads health % and cycle count once per open.
 
 ## Scripts
 
@@ -189,9 +192,11 @@ Battery power tracking uses `batteryRatePoll` in `shell.qml` (not a controller):
 |---|---|---|
 | `audio-spectrum.sh` | `shell.qml` | Audio spectrum data for the island |
 | `brightness.sh` | `shell.qml` / quick-adjust | Backlight get/set and brightness IPC feedback |
-| `wifi.sh` | Wi-Fi popup | Wi-Fi status, scan, connect, disconnect, radio toggle |
 | `battery.sh` | battery popup | Battery charge limit actions |
+| `media-focus.sh` | media controller | Focus the active media player application |
+| `open-manager.sh` | Wi-Fi/Bluetooth popups | Open advanced external managers |
 | `osd.sh` | external scripts / IPC | OSD trigger helper |
+| `power-profile.sh` | power controller | Power profile monitor/probe helper |
 | `prevent-sleep.sh` | control panel | Sleep inhibition toggle |
 | `system-status.sh` | control panel / refresh | Batch status for brightness, recording, prevent-sleep |
 
@@ -207,5 +212,3 @@ HyprV should feel like a dense, native desktop bar — compact, Apple-inspired, 
 - Use `qmllint` on every modified file before reloading.
 - The bar has no guardrails for hypothetical external reuse — keep it lean.
 - **Always prefer the most robust and proper approach.** Event-driven and native Quickshell service integrations are the default. Polling via `PollCommand` or shell scripts is only acceptable for state Quickshell cannot expose natively (sampled `/proc` values, on-demand probes, external tool output).
-
-

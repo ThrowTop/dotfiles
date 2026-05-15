@@ -37,17 +37,17 @@ AnchoredPopup {
     readonly property int sectionSpacing: 10
     readonly property int innerPadding: 10
     readonly property int panelMaxHeight: 960
+    property string expandedNetworkName: ""
+    property string passwordText: ""
 
     readonly property bool wifiEnabled: sr.network.radioEnabled
-    readonly property bool wifiConnected: sr.wifiConnectionActive || sr.network.connected
-    readonly property bool networkConnected: sr.networkConnected
-    readonly property bool wiredConnected: sr.wiredConnectionActive
-    readonly property bool otherConnected: sr.otherConnectionActive
+    readonly property bool wifiConnected: sr.network.wifiConnectionActive
+    readonly property bool networkConnected: sr.network.networkConnected
+    readonly property bool wiredConnected: sr.network.wiredConnectionActive
     readonly property bool wifiAvailable: sr.network.devicePresent || sr.network.capabilityDetected
 
     readonly property string connectionSummary: {
         if (wiredConnected) return "Ethernet connected";
-        if (otherConnected) return "Connected via " + (sr.defaultInterface || "network");
         if (!wifiAvailable) return "No wireless device detected";
         if (!sr.network.hardwareEnabled) return "Hardware blocked";
         if (!wifiEnabled) return "Wi-Fi disabled";
@@ -65,24 +65,43 @@ AnchoredPopup {
         + (messageCard.visible ? 1 : 0)
         + (emptyStateCard.visible ? 1 : 0)
     readonly property real fixedSpacingHeight: Math.max(0, fixedSectionCount - 1) * sectionSpacing
-    readonly property real networkListTopSpacing: sr.network.displayedNetworks.length > 0 ? sectionSpacing : 0
+    readonly property real networkListTopSpacing: sr.network.networks.length > 0 ? sectionSpacing : 0
     readonly property real maxNetworkListHeight: Math.max(0,
         panelMaxHeight - popupPadding * 2 - fixedSectionHeight - fixedSpacingHeight - networkListTopSpacing)
 
     onAboutToOpen: {
-        sr.network.popupOpen = true;
-        if (!Array.isArray(sr.network.networks) || sr.network.networks.length === 0)
-            sr.network.refresh();
-        sr.network.syncNetworkList(true);
+        sr.network.refresh();
     }
 
     onIsOpenChanged: {
         if (!isOpen) {
-            sr.network.popupOpen = false;
-            sr.network.expandedSsid = "";
-            sr.network.passwordText = "";
-            sr.network.syncNetworkList(true);
+            expandedNetworkName = "";
+            passwordText = "";
         }
+    }
+
+    function activateNetwork(network) {
+        if (!network || sr.network.actionBusy) return;
+        if (network.connected) {
+            expandedNetworkName = "";
+            passwordText = "";
+            sr.network.disconnectNetwork(network);
+            return;
+        }
+        if (sr.network.isEnterprise(network) && !network.known) {
+            sr.network.actionMessage = "802.1X networks need a saved profile. Open the editor for first-time setup.";
+            sr.openWifiManager();
+            return;
+        }
+        if (sr.network.isSecure(network) && !network.known && expandedNetworkName === network.name && passwordText.length === 0) return;
+        if (sr.network.isSecure(network) && !network.known && expandedNetworkName !== network.name) {
+            expandedNetworkName = network.name;
+            passwordText = "";
+            return;
+        }
+        sr.network.connectNetwork(network, sr.network.isSecure(network) && !network.known ? passwordText : "");
+        expandedNetworkName = "";
+        passwordText = "";
     }
 
     Column {
@@ -159,7 +178,6 @@ AnchoredPopup {
                     shellRoot: wifiPopup.sr
                     cornerRadius: wifiPopup.innerRadius
                     label: wifiPopup.wiredConnected ? "Wired"
-                        : wifiPopup.otherConnected ? "Online"
                         : !wifiPopup.wifiAvailable ? "No Wi-Fi"
                         : !wifiPopup.sr.network.hardwareEnabled ? "Blocked"
                         : wifiPopup.wifiEnabled ? (wifiPopup.wifiConnected ? "Online" : "Ready") : "Off"
@@ -196,7 +214,7 @@ AnchoredPopup {
                     Text {
                         width: parent.width
                         text: wifiPopup.networkConnected
-                            ? "Interface: " + (wifiPopup.sr.defaultInterface || "network")
+                            ? "Interface: " + (wifiPopup.sr.network.defaultInterface || "network")
                             : (wifiPopup.sr.network.devicePresent
                                 ? "Wireless interface: " + (wifiPopup.sr.network.iface || "wifi")
                                 : "No wireless device detected")
@@ -281,7 +299,7 @@ AnchoredPopup {
             id: emptyStateCard
 
             width: parent.width
-            visible: wifiPopup.sr.network.displayedNetworks.length === 0
+            visible: wifiPopup.sr.network.networks.length === 0
             implicitHeight: emptyStateText.implicitHeight + 26
             radius: wifiPopup.innerRadius
             color: wifiPopup.cardFill
@@ -313,7 +331,7 @@ AnchoredPopup {
             width: parent.width
             height: visible ? Math.min(contentHeight, wifiPopup.maxNetworkListHeight) : 0
             contentHeight: networkColumn.implicitHeight
-            visible: wifiPopup.sr.network.displayedNetworks.length > 0
+            visible: wifiPopup.sr.network.networks.length > 0
             clip: true
             interactive: contentHeight > height
             boundsBehavior: Flickable.StopAtBounds
@@ -325,24 +343,24 @@ AnchoredPopup {
                 spacing: 10
 
                 Repeater {
-                    model: wifiPopup.sr.network.displayedNetworks
+                    model: wifiPopup.sr.network.networks
 
                     delegate: Rectangle {
                         id: networkCard
 
                         required property var modelData
 
-                        readonly property bool isExpanded: wifiPopup.sr.network.expandedSsid === modelData.ssid
-                        readonly property string buttonIconLabel: modelData.active ? ""
-                            : (modelData.enterprise && !modelData.known ? ""
-                            : (modelData.secure && !modelData.known && !isExpanded ? "" : ""))
+                        readonly property bool isExpanded: wifiPopup.expandedNetworkName === modelData.name
+                        readonly property bool secure: wifiPopup.sr.network.isSecure(modelData)
+                        readonly property bool enterprise: wifiPopup.sr.network.isEnterprise(modelData)
+                        readonly property string buttonIconLabel: modelData.connected ? wifiPopup.sr.icons.close : wifiPopup.sr.icons.check
 
                         width: networkColumn.width
                         implicitHeight: networkBody.implicitHeight + 20
                         radius: wifiPopup.innerRadius
-                        color: modelData.active ? wifiPopup.accentFill : wifiPopup.cardFill
+                        color: modelData.connected ? wifiPopup.accentFill : wifiPopup.cardFill
                         border.width: 1
-                        border.color: modelData.active ? wifiPopup.accentStroke : wifiPopup.cardStroke
+                        border.color: modelData.connected ? wifiPopup.accentStroke : wifiPopup.cardStroke
 
                         onIsExpandedChanged: {
                             if (isExpanded) passwordFocusTimer.restart();
@@ -367,7 +385,7 @@ AnchoredPopup {
 
                                     anchors.left: parent.left
                                     anchors.verticalCenter: parent.verticalCenter
-                                    text: wifiPopup.sr.wifiSignalGlyph(networkCard.modelData.signal)
+                                    text: wifiPopup.sr.wifiSignalGlyph(wifiPopup.sr.network.signalPercent(networkCard.modelData))
                                     color: wifiPopup.sr.primaryText
                                     font.family: wifiPopup.sr.iconFont
                                     font.pixelSize: 24
@@ -386,14 +404,32 @@ AnchoredPopup {
                                     iconLabel: networkCard.buttonIconLabel
                                     minimumWidth: 50
                                     disabled: wifiPopup.sr.network.actionBusy
-                                        || (!wifiPopup.wifiEnabled && !networkCard.modelData.active)
-                                        || (networkCard.isExpanded && networkCard.modelData.secure && !networkCard.modelData.known && wifiPopup.sr.network.passwordText.length === 0)
-                                    fillColor: networkCard.modelData.active ? wifiPopup.cardStrongFill : wifiPopup.cardFill
-                                    foregroundColor: networkCard.modelData.active ? wifiPopup.sr.criticalColor : wifiPopup.sr.launchColor
-                                    strokeColor: networkCard.modelData.active
+                                        || (!wifiPopup.wifiEnabled && !networkCard.modelData.connected)
+                                        || (networkCard.isExpanded && networkCard.secure && !networkCard.modelData.known && wifiPopup.passwordText.length === 0)
+                                    fillColor: networkCard.modelData.connected ? wifiPopup.cardStrongFill : wifiPopup.cardFill
+                                    foregroundColor: networkCard.modelData.connected ? wifiPopup.sr.criticalColor : wifiPopup.sr.launchColor
+                                    strokeColor: networkCard.modelData.connected
                                         ? wifiPopup.sr.withAlpha(wifiPopup.sr.criticalColor, 0.2)
                                         : wifiPopup.sr.withAlpha(wifiPopup.sr.launchColor, 0.18)
-                                    onClicked: wifiPopup.sr.network.activateNetwork(networkCard.modelData)
+                                    onClicked: wifiPopup.activateNetwork(networkCard.modelData)
+                                }
+
+                                ActionChip {
+                                    id: forgetChip
+
+                                    anchors.right: connectChip.left
+                                    anchors.rightMargin: 8
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    shellRoot: wifiPopup.sr
+                                    cornerRadius: wifiPopup.innerRadius
+                                    iconLabel: wifiPopup.sr.icons.trash
+                                    minimumWidth: 42
+                                    visible: networkCard.modelData.known && !networkCard.modelData.connected
+                                    disabled: wifiPopup.sr.network.actionBusy
+                                    fillColor: wifiPopup.cardFill
+                                    foregroundColor: wifiPopup.sr.criticalColor
+                                    strokeColor: wifiPopup.sr.withAlpha(wifiPopup.sr.criticalColor, 0.2)
+                                    onClicked: wifiPopup.sr.network.forgetNetwork(networkCard.modelData)
                                 }
 
                                 Column {
@@ -401,7 +437,7 @@ AnchoredPopup {
 
                                     anchors.left: networkIcon.right
                                     anchors.leftMargin: wifiPopup.innerPadding
-                                    anchors.right: connectChip.left
+                                    anchors.right: forgetChip.visible ? forgetChip.left : connectChip.left
                                     anchors.rightMargin: wifiPopup.innerPadding
                                     anchors.verticalCenter: parent.verticalCenter
                                     spacing: 4
@@ -426,7 +462,7 @@ AnchoredPopup {
                                                 id: networkTitle
 
                                                 width: Math.max(0, Math.min(implicitWidth, titleLine.width - titleLine.badgeWidth))
-                                                text: networkCard.modelData.ssid
+                                                text: networkCard.modelData.name
                                                 elide: Text.ElideRight
                                                 color: wifiPopup.sr.primaryText
                                                 font.family: wifiPopup.sr.baseFont
@@ -440,7 +476,7 @@ AnchoredPopup {
 
                                                 shellRoot: wifiPopup.sr
                                                 cornerRadius: wifiPopup.innerRadius
-                                                active: networkCard.modelData.secure
+                                                active: networkCard.secure
                                             }
                                         }
                                     }
@@ -460,7 +496,7 @@ AnchoredPopup {
                             ExpandableSection {
                                 width: parent.width
                                 fullHeight: passwordRow.implicitHeight
-                                expanded: networkCard.isExpanded && networkCard.modelData.secure && !networkCard.modelData.known
+                                expanded: networkCard.isExpanded && networkCard.secure && !networkCard.modelData.known
                                 openRevealDuration: 180
                                 openContentDelay: 20
                                 openFadeDuration: 130
@@ -493,7 +529,7 @@ AnchoredPopup {
                                             anchors.verticalCenter: parent.verticalCenter
                                             anchors.leftMargin: wifiPopup.innerPadding
                                             anchors.rightMargin: wifiPopup.innerPadding
-                                            text: networkCard.isExpanded ? wifiPopup.sr.network.passwordText : ""
+                                            text: networkCard.isExpanded ? wifiPopup.passwordText : ""
                                             activeFocusOnPress: true
                                             focus: networkCard.isExpanded && wifiPopup.isOpen && !wifiPopup.animatingClose
                                             selectByMouse: true
@@ -504,11 +540,11 @@ AnchoredPopup {
                                             echoMode: TextInput.Password
                                             inputMethodHints: Qt.ImhSensitiveData | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
                                             renderType: Text.NativeRendering
-                                            onTextChanged: wifiPopup.sr.network.passwordText = text
+                                            onTextChanged: wifiPopup.passwordText = text
 
                                             Keys.onReturnPressed: {
-                                                if (wifiPopup.sr.network.passwordText.length > 0)
-                                                    wifiPopup.sr.network.activateNetwork(networkCard.modelData);
+                                                if (wifiPopup.passwordText.length > 0)
+                                                    wifiPopup.activateNetwork(networkCard.modelData);
                                             }
                                         }
 
@@ -533,11 +569,11 @@ AnchoredPopup {
                                             cornerRadius: wifiPopup.innerRadius
                                             label: "Join"
                                             minimumWidth: 82
-                                            disabled: wifiPopup.sr.network.passwordText.length === 0 || wifiPopup.sr.network.actionBusy
+                                            disabled: wifiPopup.passwordText.length === 0 || wifiPopup.sr.network.actionBusy
                                             fillColor: wifiPopup.cardStrongFill
                                             foregroundColor: wifiPopup.sr.launchColor
                                             strokeColor: wifiPopup.sr.withAlpha(wifiPopup.sr.launchColor, 0.18)
-                                            onClicked: wifiPopup.sr.network.activateNetwork(networkCard.modelData)
+                                            onClicked: wifiPopup.activateNetwork(networkCard.modelData)
                                         }
 
                                         ActionChip {
@@ -548,8 +584,8 @@ AnchoredPopup {
                                             fillColor: wifiPopup.cardFill
                                             strokeColor: wifiPopup.cardStroke
                                             onClicked: {
-                                                wifiPopup.sr.network.expandedSsid = "";
-                                                wifiPopup.sr.network.passwordText = "";
+                                                wifiPopup.expandedNetworkName = "";
+                                                wifiPopup.passwordText = "";
                                             }
                                         }
                                     }

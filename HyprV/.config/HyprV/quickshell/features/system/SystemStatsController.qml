@@ -110,7 +110,7 @@ Item {
 
         // Network — always needed for bar
         const iface = root.parseDefaultInterface((sections.__ROUTE__ || []).join("\n"));
-        root.defaultInterface = iface;
+        root.networkRateInterface = iface;
         const counters = root.interfaceCounters((sections.__NET__ || []).join("\n"), iface);
         if (!iface || !counters) {
             root.networkRxRate = 0;

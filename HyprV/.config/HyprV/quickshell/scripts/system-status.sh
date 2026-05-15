@@ -6,14 +6,6 @@ run_quick() {
     timeout 2s "$@" 2>/dev/null || true
 }
 
-# WiFi radio state
-wifi_enabled=false
-if command -v nmcli >/dev/null 2>&1; then
-    state="$(run_quick nmcli radio wifi)"
-    [[ "$state" == "enabled" ]] && wifi_enabled=true
-fi
-printf 'wifi_enabled=%s\n' "$wifi_enabled"
-
 # Screen brightness
 brightness=50
 brightness_script="$(readlink -f "${HOME}/.config/HyprV/quickshell")/scripts/brightness.sh"

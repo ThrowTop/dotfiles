@@ -1,354 +1,229 @@
 import QtQuick
-import Quickshell.Io
-import "../.."
+import Quickshell.Networking
 
 Item {
     id: controller
 
     required property var shellRoot
 
-    property bool devicePresent: false
-    property bool radioEnabled: false
-    property bool hardwareEnabled: true
-    property bool connected: false
-    property real signalStrength: 0
-    property string iface: ""
-    property string ssid: ""
-    property bool secure: false
-    property var networks: []
-    property bool capabilityDetected: false
+    readonly property var devices: Array.from(Networking.devices?.values || [])
+    readonly property var wifiDevice: firstDeviceOfType(DeviceType.Wifi)
+    readonly property var wiredDevice: firstDeviceOfType(DeviceType.Wired)
+    readonly property var wifiNetworks: sortedWifiNetworks()
+    readonly property var connectedWifiNetwork: firstConnectedNetwork(wifiNetworks)
+
+    readonly property bool devicePresent: !!wifiDevice
+    readonly property bool radioEnabled: Networking.wifiEnabled
+    readonly property bool hardwareEnabled: Networking.wifiHardwareEnabled
+    readonly property bool connected: !!connectedWifiNetwork
+    readonly property bool networkConnected: Networking.connectivity >= NetworkConnectivity.Limited
+    readonly property bool wifiConnectionActive: connected
+    readonly property bool wiredConnectionActive: !!wiredDevice && !!wiredDevice.hasLink
+    readonly property bool capabilityDetected: devicePresent || _capabilityDetected
+    readonly property bool actionBusy: _actionBusy || wifiNetworks.some(network => !!network.stateChanging)
+
+    readonly property real signalStrength: connectedWifiNetwork ? normalizedSignal(connectedWifiNetwork.signalStrength) : 0
+    readonly property string iface: wifiDevice?.name || ""
+    readonly property string ssid: connectedWifiNetwork?.name || ""
+    readonly property string defaultInterface: connected ? iface : (wiredConnectionActive ? (wiredDevice?.name || "") : "")
+    readonly property var networks: wifiNetworks
+
     property string actionMessage: ""
-    property bool actionBusy: false
-    property bool statusInitialized: false
+    property bool _capabilityDetected: false
+    property bool _actionBusy: false
 
-    property bool popupOpen: false
-    property var displayedNetworks: []
-    property double displayedNetworksTimestamp: 0
-    property string expandedSsid: ""
-    property string passwordText: ""
-
-    property var _cachedNetworks: []
-    property double _cachedNetworksTimestamp: 0
-    property string _actionSuccessMessage: ""
-    property int _monitorRestartDelay: 1000
-
-    readonly property string wifiScriptPath: shellRoot.configDir + "/quickshell/scripts/wifi.sh"
-
-    onNetworksChanged: syncNetworkList(false)
+    onDevicePresentChanged: if (devicePresent) _capabilityDetected = true
 
     Component.onCompleted: refresh()
 
-    function refresh() {
-        statusPoll.refresh();
-    }
-
-    function resetStatus() {
-        devicePresent = false;
-        radioEnabled = false;
-        hardwareEnabled = true;
-        connected = false;
-        iface = "";
-        ssid = "";
-        secure = false;
-        signalStrength = 0;
-        networks = [];
-    }
-
-    function cloneNetworks(sourceNetworks) {
-        if (!Array.isArray(sourceNetworks)) {
-            return [];
-        }
-        return sourceNetworks.map(network => ({
-            active: !!network.active,
-            ssid: network.ssid || "",
-            signal: Number(network.signal) || 0,
-            security: network.security || "",
-            bars: network.bars || "",
-            secure: !!network.secure,
-            known: !!network.known,
-            enterprise: !!network.enterprise
-        }));
-    }
-
-    function resolveNetworks(data) {
-        const nextNetworks = Array.isArray(data.networks) ? data.networks : [];
-        if (nextNetworks.length > 0) {
-            _cachedNetworks = cloneNetworks(nextNetworks);
-            _cachedNetworksTimestamp = Date.now();
-            return nextNetworks;
-        }
-
-        const cacheAgeMs = Date.now() - _cachedNetworksTimestamp;
-        const shouldReuseCachedNetworks = !!data.present
-            && data.hardwareEnabled !== false
-            && (!!data.enabled || !!data.connected)
-            && _cachedNetworks.length > 0
-            && cacheAgeMs < 30000;
-
-        if (shouldReuseCachedNetworks) {
-            return cloneNetworks(_cachedNetworks);
-        }
-
-        if (!data.present || data.hardwareEnabled === false || !data.enabled) {
-            _cachedNetworks = [];
-            _cachedNetworksTimestamp = 0;
-        }
-
-        return [];
-    }
-
-    function applyStatus(data) {
-        const nextDevicePresent = !!data.present;
-        const nextIface = data.iface || "";
-
-        resetStatus();
-        hardwareEnabled = data.hardwareEnabled !== false;
-        devicePresent = nextDevicePresent;
-        if (nextDevicePresent || nextIface.length > 0) {
-            capabilityDetected = true;
-        }
-
-        if (!nextDevicePresent) {
-            _cachedNetworks = [];
-            _cachedNetworksTimestamp = 0;
-            statusInitialized = true;
-            return;
-        }
-
-        radioEnabled = !!data.enabled;
-        connected = !!data.connected;
-        iface = nextIface;
-        ssid = data.ssid || "";
-        secure = (data.security || "").trim().length > 0;
-        signalStrength = connected ? Math.max(0, Math.min(1, (Number(data.signal) || 0) / 100)) : 0;
-        networks = resolveNetworks(data);
-        statusInitialized = true;
-    }
-
-    function updateStatus(raw) {
-        if (!raw) {
-            if (!statusInitialized) {
-                resetStatus();
-            }
-            return;
-        }
-        try {
-            applyStatus(JSON.parse(raw));
-        } catch (_) {
-            if (!statusInitialized) {
-                resetStatus();
+    function firstDeviceOfType(type) {
+        for (let i = 0; i < devices.length; i++) {
+            const device = devices[i];
+            if (device?.type === type) {
+                return device;
             }
         }
+        return null;
     }
 
-    function startAction(command, pendingMessage, successMessage) {
-        if (!command || command.length === 0 || actionRunner.running) {
-            return;
-        }
-        actionBusy = true;
-        actionMessage = pendingMessage || "";
-        _actionSuccessMessage = successMessage || "";
-        actionRunner.command = command;
-        actionRunner.running = true;
-    }
-
-    function setRadio(enabled) {
-        startAction([wifiScriptPath, "toggle", enabled ? "on" : "off"], enabled ? "Turning Wi-Fi on..." : "Turning Wi-Fi off...", enabled ? "Wi-Fi enabled" : "Wi-Fi disabled");
-    }
-
-    function rescan() {
-        startAction([wifiScriptPath, "rescan"], "Scanning for networks...", "Scan started");
-    }
-
-    function disconnect() {
-        startAction([wifiScriptPath, "disconnect"], "Disconnecting...", "Disconnected");
-    }
-
-    function connect(ssid, password, security) {
-        const command = [wifiScriptPath, "connect", ssid || "", password || "", security || ""];
-        startAction(command, "Connecting to " + (ssid || "network") + "...", "Connection requested for " + (ssid || "network"));
-    }
-
-    function cloneNetwork(network) {
-        return {
-            active: !!network.active,
-            ssid: network.ssid || "",
-            signal: Number(network.signal) || 0,
-            security: network.security || "",
-            secure: !!network.secure,
-            known: !!network.known,
-            enterprise: !!network.enterprise
-        };
-    }
-
-    function mergeNetworkLists(primary, fallback) {
-        const bySsid = {};
-        const merged = [];
-        for (let i = 0; i < primary.length; i++) {
-            const n = cloneNetwork(primary[i]);
-            if (!n.ssid || bySsid[n.ssid]) continue;
-            bySsid[n.ssid] = true;
-            merged.push(n);
-        }
-        for (let i = 0; i < fallback.length; i++) {
-            const n = cloneNetwork(fallback[i]);
-            if (!n.ssid || bySsid[n.ssid]) continue;
-            bySsid[n.ssid] = true;
-            merged.push(n);
-        }
-        return merged;
-    }
-
-    function syncNetworkList(force) {
-        const source = Array.isArray(networks) ? networks : [];
-        const nextNetworks = source.map(n => cloneNetwork(n));
-        const cacheAgeMs = Date.now() - displayedNetworksTimestamp;
-        const shouldHoldSnapshot = popupOpen && radioEnabled && hardwareEnabled;
-
-        if (!force && expandedSsid.length > 0) {
-            if (source.some(n => (n.ssid || "") === expandedSsid)) return;
-        }
-
-        if (nextNetworks.length > 0) {
-            const shouldMerge = shouldHoldSnapshot
-                && displayedNetworks.length > 0
-                && nextNetworks.length < displayedNetworks.length
-                && cacheAgeMs < 30000;
-            displayedNetworks = shouldMerge ? mergeNetworkLists(nextNetworks, displayedNetworks) : nextNetworks;
-            displayedNetworksTimestamp = Date.now();
-        } else if (!(shouldHoldSnapshot && displayedNetworks.length > 0 && cacheAgeMs < 30000)) {
-            displayedNetworks = [];
-            displayedNetworksTimestamp = Date.now();
-        }
-
-        if (expandedSsid.length > 0) {
-            if (!displayedNetworks.some(n => n.ssid === expandedSsid && n.secure && !n.known)) {
-                expandedSsid = "";
-                passwordText = "";
+    function firstConnectedNetwork(sourceNetworks) {
+        for (let i = 0; i < sourceNetworks.length; i++) {
+            const network = sourceNetworks[i];
+            if (network?.connected) {
+                return network;
             }
         }
+        return null;
+    }
+
+    function sortedWifiNetworks() {
+        const byName = {};
+        const result = [];
+        const source = Array.from(wifiDevice?.networks?.values || []);
+        source.sort((a, b) => {
+            if (!!a.connected !== !!b.connected) {
+                return a.connected ? -1 : 1;
+            }
+            return signalPercent(b) - signalPercent(a);
+        });
+
+        for (let i = 0; i < source.length; i++) {
+            const network = source[i];
+            const name = network?.name || "";
+            if (name.length === 0 || byName[name]) {
+                continue;
+            }
+            byName[name] = true;
+            result.push(network);
+        }
+        return result;
+    }
+
+    function normalizedSignal(value) {
+        const number = Number(value);
+        if (!isFinite(number)) {
+            return 0;
+        }
+        return Math.max(0, Math.min(1, number > 1 ? number / 100 : number));
+    }
+
+    function signalPercent(network) {
+        return Math.round(normalizedSignal(network?.signalStrength || 0) * 100);
+    }
+
+    function securityText(network) {
+        const type = network?.security;
+        switch (type) {
+        case WifiSecurityType.Open:
+            return "";
+        case WifiSecurityType.Wpa3SuiteB192:
+        case WifiSecurityType.Sae:
+            return "WPA3";
+        case WifiSecurityType.Wpa2Eap:
+        case WifiSecurityType.WpaEap:
+            return "802.1X";
+        case WifiSecurityType.Wpa2Psk:
+            return "WPA2";
+        case WifiSecurityType.WpaPsk:
+            return "WPA";
+        case WifiSecurityType.StaticWep:
+        case WifiSecurityType.DynamicWep:
+            return "WEP";
+        case WifiSecurityType.Leap:
+            return "LEAP";
+        case WifiSecurityType.Owe:
+            return "OWE";
+        default:
+            return "Secured";
+        }
+    }
+
+    function isSecure(network) {
+        return network?.security !== WifiSecurityType.Open;
+    }
+
+    function isEnterprise(network) {
+        const type = network?.security;
+        return type === WifiSecurityType.Wpa2Eap
+            || type === WifiSecurityType.WpaEap
+            || type === WifiSecurityType.Leap;
     }
 
     function networkMeta(network) {
         const parts = [];
-        if (network.active) parts.push("Connected");
-        else if (network.known) parts.push("Saved");
-        if (network.enterprise) parts.push("802.1X");
-        else if (network.security) parts.push(network.security);
-        else parts.push("Open");
-        parts.push(network.signal + "%");
+        if (network?.connected) parts.push("Connected");
+        else if (network?.known) parts.push("Saved");
+        if (isEnterprise(network)) parts.push("802.1X");
+        else {
+            const security = securityText(network);
+            parts.push(security.length > 0 ? security : "Open");
+        }
+        parts.push(signalPercent(network) + "%");
         return parts.join("  •  ");
     }
 
-    function activateNetwork(network) {
-        if (!network || actionBusy) return;
-        if (network.active) {
-            expandedSsid = "";
-            passwordText = "";
-            disconnect();
+    function refresh() {
+        if (wifiDevice && radioEnabled && hardwareEnabled) {
+            wifiDevice.scannerEnabled = true;
+        }
+    }
+
+    function setActionFeedback(message, busy) {
+        actionMessage = message || "";
+        _actionBusy = !!busy;
+        actionResetTimer.restart();
+    }
+
+    function setRadio(enabled) {
+        if (!devicePresent && !capabilityDetected) {
+            actionMessage = "No wireless device detected";
             return;
         }
-        if (network.enterprise && !network.known) {
-            actionMessage = "802.1X networks need a saved profile. Open the editor for first-time setup.";
-            shellRoot.openWifiManager();
+        _actionBusy = true;
+        actionMessage = enabled ? "Turning Wi-Fi on..." : "Turning Wi-Fi off...";
+        Networking.wifiEnabled = !!enabled;
+        actionResetTimer.restart();
+    }
+
+    function rescan() {
+        if (!wifiDevice || !radioEnabled || !hardwareEnabled) {
+            actionMessage = !hardwareEnabled ? "Wi-Fi hardware blocked" : "Wi-Fi disabled";
             return;
         }
-        if (network.secure && !network.known && expandedSsid === network.ssid && passwordText.length === 0) return;
-        if (network.secure && !network.known && expandedSsid !== network.ssid) {
-            expandedSsid = network.ssid;
-            passwordText = "";
+        wifiDevice.scannerEnabled = true;
+        setActionFeedback("Scanning for networks...", true);
+        scanStopTimer.restart();
+    }
+
+    function connectNetwork(network, password) {
+        if (!network) {
+            actionMessage = "Network not found";
             return;
         }
-        connect(network.ssid, network.secure && !network.known ? passwordText : "", network.security || "");
-        expandedSsid = "";
-        passwordText = "";
+        setActionFeedback("Connecting to " + (network.name || "network") + "...", true);
+        if ((password || "").length > 0 && network.connectWithPsk) {
+            network.connectWithPsk(password);
+        } else {
+            network.connect();
+        }
+    }
+
+    function disconnectNetwork(network) {
+        const target = network || connectedWifiNetwork;
+        if (!target) {
+            actionMessage = "No Wi-Fi network connected";
+            return;
+        }
+        setActionFeedback("Disconnecting...", true);
+        target.disconnect();
+    }
+
+    function forgetNetwork(network) {
+        if (!network || !network.known) {
+            return;
+        }
+        setActionFeedback("Forgetting " + (network.name || "network") + "...", true);
+        network.forget();
     }
 
     Timer {
-        id: followupRefresh
+        id: actionResetTimer
 
-        interval: 1500
+        interval: 1600
         repeat: false
-        onTriggered: statusPoll.refresh()
+        onTriggered: controller._actionBusy = false
     }
 
     Timer {
-        id: monitorRefreshDebounce
+        id: scanStopTimer
 
-        interval: 350
+        interval: 5000
         repeat: false
-        onTriggered: controller.refresh()
-    }
-
-    PollCommand {
-        id: statusPoll
-
-        scheduled: false
-        interval: 8000
-        command: [controller.wifiScriptPath, "status"]
-        onUpdated: function(output, exitCode) {
-            if (exitCode === 0) {
-                controller.updateStatus(output);
+        onTriggered: {
+            if (controller.wifiDevice) {
+                controller.wifiDevice.scannerEnabled = false;
             }
+            controller._actionBusy = false;
         }
-    }
-
-    Process {
-        id: actionRunner
-
-        running: false
-        stdout: StdioCollector {
-            id: actionStdout
-        }
-        stderr: StdioCollector {
-            id: actionStderr
-        }
-
-        // qmllint disable signal-handler-parameters
-        onExited: function(exitCode) {
-            const stdout = (actionStdout.text || "").trim();
-            const stderr = (actionStderr.text || "").trim();
-            controller.actionBusy = false;
-            if (exitCode === 0) {
-                controller.actionMessage = stdout.length > 0 ? stdout : controller._actionSuccessMessage;
-            } else {
-                controller.actionMessage = stderr.length > 0 ? stderr : (stdout.length > 0 ? stdout : "Wi-Fi action failed");
-            }
-            statusPoll.refresh();
-            followupRefresh.restart();
-        }
-    }
-
-    Process {
-        id: monitor
-
-        running: true
-        command: ["nmcli", "monitor"]
-
-        stdout: SplitParser {
-            splitMarker: "\n"
-            onRead: function(line) {
-                const text = (line || "").trim();
-                if (text.length > 0) {
-                    controller._monitorRestartDelay = 1000;
-                    monitorRefreshDebounce.restart();
-                }
-            }
-        }
-
-        // qmllint disable signal-handler-parameters
-        onExited: function() {
-            monitorRestartTimer.interval = controller._monitorRestartDelay;
-            controller._monitorRestartDelay = Math.min(controller.shellRoot.monitorRestartMaxDelay, controller._monitorRestartDelay * 2);
-            monitorRestartTimer.restart();
-        }
-    }
-
-    Timer {
-        id: monitorRestartTimer
-
-        interval: 1000
-        repeat: false
-        onTriggered: monitor.running = true
     }
 }
