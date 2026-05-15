@@ -1,4 +1,3 @@
-local hlc = require("hlc")
 
 local w, h = 600, 600
 local x_gap = 20 -- gap from right edge

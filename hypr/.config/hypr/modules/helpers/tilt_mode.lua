@@ -1,4 +1,3 @@
-local hlc = require("hlc")
 local hyprv = require("helpers/hyprv")
 
 local BACKLIGHT = "/sys/class/leds/samsung-galaxybook::kbd_backlight/brightness"

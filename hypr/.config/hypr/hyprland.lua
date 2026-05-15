@@ -1,7 +1,7 @@
 package.path = os.getenv("HOME") .. "/.config/hypr/modules/?.lua;" .. package.path
 
 require("settings")
-local hlc = require("hlc")
+hlc = require("hlc")
 hlc.notify("Hyprland Config Reloaded")
 
 require("keybindings")

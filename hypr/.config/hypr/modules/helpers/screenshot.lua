@@ -1,4 +1,3 @@
-local hlc = require("hlc")
 
 local function screenshot()
     local m = hl.get_active_monitor()

@@ -1,4 +1,3 @@
-local hlc = require("hlc")
 local hyprv = require("helpers/hyprv")
 
 local DEVICE = "i2c-GXTP7936:00"

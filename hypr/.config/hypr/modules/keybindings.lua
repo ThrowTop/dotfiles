@@ -1,10 +1,18 @@
-local hlc = require("hlc")
-
 local screenshot = require("helpers/screenshot")
 local tilt_mode = require("helpers/tilt_mode")
 local touchscreen = require("helpers/touchscreen")
 local bitwarden = require("helpers/bitwarden")
 local hyprv = require("helpers/hyprv")
+
+hypr = {
+    tilt_mode = tilt_mode,
+    touchscreen = touchscreen,
+    tap_to_click = function()
+        hlc.input.touchpad.tap_to_click = not hlc.input.touchpad.tap_to_click
+        local tcc = hlc.input.touchpad.tap_to_click
+        hyprv.osd("Tap Click", tcc and "On" or "Off", tcc and "#a6e3a1" or "#f38ba8", "0xF052F")
+    end,
+}
 local mod = settings.main_mod
 local qs_scripts = settings.qs
 

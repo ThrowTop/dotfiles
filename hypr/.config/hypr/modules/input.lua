@@ -1,4 +1,3 @@
-local hlc = require("hlc")
 
 hlc.config({
     input = {
