@@ -4,13 +4,27 @@ local touchscreen = require("helpers/touchscreen")
 local bitwarden = require("helpers/bitwarden")
 local hyprv = require("helpers/hyprv")
 
-hypr = {
+_G.hypr = {
     tilt_mode = tilt_mode,
     touchscreen = touchscreen,
     tap_to_click = function()
         hlc.input.touchpad.tap_to_click = not hlc.input.touchpad.tap_to_click
         local tcc = hlc.input.touchpad.tap_to_click
         hyprv.osd("Tap Click", tcc and "On" or "Off", tcc and "#a6e3a1" or "#f38ba8", "0xF052F")
+        hyprv.toggle_state("tapToClick")
+    end,
+    push_state = function()
+        local ts = io.open("/sys/bus/i2c/drivers/i2c_hid_acpi/i2c-GXTP7936:00") ~= nil
+        hyprv.set_state("touchscreen", ts)
+        local f = io.popen("lsmod | grep -c '^intel_hid'")
+        local tilt = false
+        if f then
+            local n = tonumber(f:read("*l") or "0")
+            f:close()
+            tilt = (n or 0) == 0
+        end
+        hyprv.set_state("tiltMode", tilt)
+        hyprv.set_state("tapToClick", hlc.input.touchpad.tap_to_click)
     end,
 }
 local mod = settings.main_mod
@@ -28,7 +42,7 @@ hl.bind("Print", screenshot)
 hl.bind(mod .. "Print", hl.dsp.exec_cmd("hyprpicker | wl-copy"))
 hl.bind(mod .. "F5", touchscreen)
 hl.bind("CTRL + SUPER + XF86TouchpadToggle", touchscreen)
-hl.bind(mod .. "SHIFT + U", hl.dsp.exec_cmd("pkill quickshell; bash " .. qs_scripts .. "/launch.sh"))
+hl.bind(mod .. "SHIFT + U", hl.dsp.exec_cmd("bash " .. qs_scripts .. "/reload.sh"))
 hl.bind(mod .. "M", hl.dsp.exit())
 
 hl.bind(mod .. "P", bitwarden)
@@ -203,10 +217,6 @@ hl.bind("ALT+TAB", hl.dsp.window.cycle_next())
 -- hlc.input.touchpad.tap_to_click = false
 -- hlc.input.touchpad.tap_and_drag = false
 
-hl.bind(mod .. "X", function()
-    hlc.input.touchpad.tap_to_click = not hlc.input.touchpad.tap_to_click
-    local tcc = hlc.input.touchpad.tap_to_click
-    hyprv.osd("Tap Click", tcc and "On" or "Off", tcc and "#a6e3a1" or "#f38ba8", "0xF052F")
-end)
+hl.bind(mod .. "X", hypr.tap_to_click)
 
 

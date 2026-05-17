@@ -44,6 +44,9 @@ Column {
     function toggleDnd() { shellRoot.notifications.toggleDnd(); }
     function togglePreventSleep() { shellRoot.power.togglePreventSleep(); }
     function togglePowerExpanded() { powerExpanded = !powerExpanded; }
+    function toggleTouchscreen() { shellRoot.runDetached(["hyprctl", "eval", "hypr.touchscreen()"]); }
+    function toggleTiltMode() { shellRoot.runDetached(["hyprctl", "eval", "hypr.tilt_mode()"]); }
+    function toggleTapToClick() { shellRoot.runDetached(["hyprctl", "eval", "hypr.tap_to_click()"]); }
     function toggleSessionExpanded() { sessionExpanded = !sessionExpanded; }
 
     function toggleRecording() {
@@ -191,6 +194,35 @@ Column {
                 }
             }
 
+            Row {
+                width: parent.width
+                spacing: root.cardSpacing
+
+                ControlPanelToggle {
+                    width: (parent.width - root.cardSpacing) / 2
+                    height: root.moduleSize
+
+                    shellRoot: root.shellRoot
+                    icon: root.shellRoot.icons.touchscreen
+                    iconOnly: true
+                    label: "Touch\nscreen"
+                    active: root.shellRoot.touchscreenEnabled
+                    onClicked: root.toggleTouchscreen()
+                }
+
+                ControlPanelToggle {
+                    width: (parent.width - root.cardSpacing) / 2
+                    height: root.moduleSize
+
+                    shellRoot: root.shellRoot
+                    icon: root.shellRoot.icons.tiltMode
+                    iconOnly: true
+                    label: "Tilt\nmode"
+                    active: root.shellRoot.tiltModeEnabled
+                    onClicked: root.toggleTiltMode()
+                }
+            }
+
             ControlPanelSplitTile {
                 width: parent.width
                 height: root.moduleSize
@@ -290,6 +322,18 @@ Column {
                 label: "No\ndisturb"
                 active: root.shellRoot.notifications.dndEnabled
                 onClicked: root.toggleDnd()
+            }
+
+            ControlPanelToggle {
+                width: parent.width
+                height: root.moduleSize
+
+                shellRoot: root.shellRoot
+                icon: root.shellRoot.icons.touchpadTap
+                iconOnly: true
+                label: "Tap\nto click"
+                active: root.shellRoot.tapToClickEnabled
+                onClicked: root.toggleTapToClick()
             }
 
             ControlPanelSplitTile {

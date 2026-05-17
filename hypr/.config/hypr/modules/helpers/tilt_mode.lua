@@ -38,10 +38,12 @@ return function()
         refresh_stop()
         refresh_start()
         hyprv.osd("Tilt Mode", "On", "#a6e3a1", "0xF0475", 2500)
+        hyprv.toggle_state("tiltMode")
     else
         refresh_stop()
         hlc.d.exec_cmd("sudo modprobe intel_hid")
         hyprv.osd("Tilt Mode", "Off", "#f38ba8", "0xF0475", 2500)
+        hyprv.toggle_state("tiltMode")
     end
 end
 

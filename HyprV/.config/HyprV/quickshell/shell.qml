@@ -67,6 +67,9 @@ ShellRoot {
     readonly property int brightnessUiStepPercent: 10
     property int brightnessPercent: 50
     property bool screenRecording: false
+    property bool touchscreenEnabled: false
+    property bool tiltModeEnabled: false
+    property bool tapToClickEnabled: true
     property bool audioSpectrumCavaAvailable: false
     property var audioSpectrumValues: []
     property var primaryBarWindow: null
@@ -100,6 +103,7 @@ ShellRoot {
         cpuInfoSnapshot.refresh();
         ramInfoSnapshot.refresh();
         thermalZoneDetect.refresh();
+        root.runDetached(["hyprctl", "eval", "hypr.push_state()"]);
     }
 
     Colors { id: colors }
@@ -1348,6 +1352,26 @@ ShellRoot {
             root.islandOsdDuration  = duration ? parseInt(duration) : 1500;
             root.islandOsdType      = "sidetext";
             root.islandOsdTrigger   = !root.islandOsdTrigger;
+        }
+    }
+
+    IpcHandler {
+        target: "hyprState"
+
+        function set(key: string, value: string) {
+            if (key === "touchscreen") root.touchscreenEnabled = (value === "true");
+            else if (key === "tiltMode") root.tiltModeEnabled = (value === "true");
+            else if (key === "tapToClick") root.tapToClickEnabled = (value === "true");
+        }
+
+        function toggle(key: string) {
+            if (key === "touchscreen") root.touchscreenEnabled = !root.touchscreenEnabled;
+            else if (key === "tiltMode") root.tiltModeEnabled = !root.tiltModeEnabled;
+            else if (key === "tapToClick") root.tapToClickEnabled = !root.tapToClickEnabled;
+        }
+
+        function query() {
+            root.runDetached(["hyprctl", "eval", "hypr.push_state()"]);
         }
     }
 

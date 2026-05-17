@@ -66,6 +66,14 @@ function M.control_volume_toggle()
     ipc("controls", "volumeToggleMute")
 end
 
+function M.set_state(key, value)
+    ipc("hyprState", "set", key, value and "true" or "false")
+end
+
+function M.toggle_state(key)
+    ipc("hyprState", "toggle", key)
+end
+
 return M
 
 

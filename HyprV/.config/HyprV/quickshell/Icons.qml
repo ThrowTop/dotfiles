@@ -56,6 +56,10 @@ QtObject {
     readonly property string mediaPause: "󰏤"    // nf-md-pause
     readonly property string mediaNext: "󰒭"     // nf-md-skip_next
 
+    readonly property string touchscreen: String.fromCodePoint(0xF11FF)  // nf-md-gesture_tap (matches OSD icon)
+    readonly property string tiltMode: String.fromCodePoint(0xF0475)    // nf-md-rotate_right (matches OSD icon)
+    readonly property string touchpadTap: String.fromCodePoint(0xF052F) // nf-md-gesture_tap_button (matches OSD icon)
+
     readonly property string batteryCharging: "󰂄" // nf-md-battery_charging_50
     readonly property string bolt: "󱐋"            // nf-md-lightning_bolt
     readonly property var batteryLevels: ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"] // nf-md-battery_0 through nf-md-battery_10

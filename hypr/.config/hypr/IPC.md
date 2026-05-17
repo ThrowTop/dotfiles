@@ -18,6 +18,7 @@ hyprctl eval 'hypr.<action>()'
 | `hypr.touchscreen('on')` | Force touchscreen on |
 | `hypr.touchscreen('off')` | Force touchscreen off |
 | `hypr.tap_to_click()` | Toggle touchpad tap-to-click |
+| `hypr.push_state()` | Push all toggle states to QuickShell via hyprState IPC |
 
 ## Examples
 

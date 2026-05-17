@@ -18,11 +18,19 @@ local function disable()
 end
 
 return function(state)
+    local enabled = is_enabled()
     if state == "on" then
-        if not is_enabled() then enable() end
+        if not enabled then
+            enable()
+            hyprv.toggle_state("touchscreen")
+        end
     elseif state == "off" then
-        if is_enabled() then disable() end
+        if enabled then
+            disable()
+            hyprv.toggle_state("touchscreen")
+        end
     else
-        if is_enabled() then disable() else enable() end
+        if enabled then disable() else enable() end
+        hyprv.toggle_state("touchscreen")
     end
 end
