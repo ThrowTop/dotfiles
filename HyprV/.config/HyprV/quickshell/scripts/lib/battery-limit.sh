@@ -2,6 +2,8 @@
 # Battery charge limit setter
 # Usage: battery limit 80
 
+set -euo pipefail
+
 LIMIT="${1:-80}"
 BAT_PATH=""
 for _bat in /sys/class/power_supply/BAT*/; do

@@ -4,6 +4,7 @@ set -euo pipefail
 
 player="${1:-}"
 if [[ -z "$player" ]]; then
+    printf 'Usage: %s <player-name|org.mpris.MediaPlayer2.*>\n' "$0" >&2
     exit 1
 fi
 

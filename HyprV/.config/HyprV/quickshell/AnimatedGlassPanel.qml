@@ -196,13 +196,22 @@ Item {
                     shadowColor: root.shadowColor
                 }
 
+                // Stroke ring — full size, renders as a 1px border around the fill.
+                // Using stacked rects instead of border.width avoids Qt's corner
+                // AA artifact where curved borders appear brighter/thicker.
                 Rectangle {
                     anchors.fill: parent
                     radius: root.radius
+                    color: root.strokeColor
+                    antialiasing: true
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.margins: 1
+                    radius: Math.max(0, root.radius - 1)
                     opacity: root.surfaceOpacity
                     color: root.fillColor
-                    border.width: 1
-                    border.color: root.strokeColor
                     antialiasing: true
                 }
             }

@@ -10,7 +10,6 @@ BarButton {
 
     visible: available
     implicitWidth: available ? 30 : 0
-    implicitHeight: 37
 
     Text {
         anchors.centerIn: parent

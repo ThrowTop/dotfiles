@@ -13,6 +13,7 @@ QtObject {
     readonly property string trash: "󰆴"        // nf-md-delete
     readonly property string chevronUp: ""      // nf-fa-chevron_up
     readonly property string chevronDown: ""    // nf-fa-chevron_down
+    readonly property string chevronLeft: ""   // nf-fa-chevron_left
     readonly property string chevronRight: ""  // nf-fa-chevron_right
 
     readonly property string volumeMuted: ""   // nf-md-volume_off

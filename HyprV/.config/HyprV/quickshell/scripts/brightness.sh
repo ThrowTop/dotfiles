@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 STEP=10  # Percentage points per keypress
 MIN=1   # Minimum raw value — 1 = right before the screen turns off
-MAX=$(brightnessctl m 2>/dev/null)
+MAX=$(brightnessctl m 2>/dev/null) || true
 if [[ -z "$MAX" || ! "$MAX" =~ ^[0-9]+$ ]]; then
     MAX=$(cat /sys/class/backlight/*/max_brightness 2>/dev/null | head -1)
 fi

@@ -13,53 +13,29 @@ Keep this file blunt and current: when a task is started, finished, abandoned, o
 
 ## Current Baseline
 
-All controller extraction done. All compat wrappers removed. Hardware assumptions eliminated. Bar and system stats polished. qmllint clean (no real warnings; `unqualified` suppressions deferred to Phase 6). All popups migrated to `AnchoredPopup`. `ControlPanelMainPage.qml` extracted. All Nerd Font glyphs routed through `Icons.qml` (`scan-icons.py` confirms clean).
+All controller extraction done. All compat wrappers removed. Hardware assumptions eliminated. Bar and system stats polished. All popups migrated to `AnchoredPopup`. `ControlPanelMainPage.qml` extracted. All Nerd Font glyphs routed through `Icons.qml`. Script quality pass done (shellcheck clean, strict mode everywhere, dead `osd.sh` deleted).
+
+Wi-Fi is fully native via `Quickshell.Networking` / `NetworkController.qml`. Wi-Fi bar layer collapsed: `WifiModule.qml` extends `WifiIndicator` directly, dead files removed.
 
 What remains:
 
-- Shell scripts have not had a quality pass.
-- ~355 unqualified access warnings in delegates.
+- ~351 unqualified access warnings in delegates.
 
 ---
 
-## Phase 3: AnchoredPopup Component — `Done`
+## Phase 1: Collapse Wi-Fi Bar Layer — `Done`
 
-Shared popup lifecycle host created in `components/AnchoredPopup.qml`. All popups migrated: `TrayOverflowPopup`, `BatteryInfoPopup`, `SystemStatsPopup`, `AudioPopup`, `ControlPanelPopup`, `WifiPopup`, `TrayMenuPopup`.
-
----
-
-## Phase 4: Break Up Giant QML Files
-
-### Phase 4a: Split WifiPopup.qml — `Tried, abandoned`
-
-File went from ~970 to ~611 lines after native network migration. None of the extracted pieces would be reused elsewhere — splitting adds indirection with no payoff. Keeping WifiPopup whole.
-
-### Phase 4b: Split ControlPanelPopup.qml — `Done`
-
-All UI, state, and actions extracted to `ControlPanelMainPage.qml`. `ControlPanelPopup.qml` is now the popup shell only (~55 lines).
+Deleted `WifiNative.qml` (dead) and `WifiFallback.qml` (only path, misleading name). `WifiModule.qml` now extends `WifiIndicator` directly. Also fixed a latent bug: `WifiIndicator` had a hardcoded `implicitHeight: 37` overriding `BarButton`'s correct `shellRoot.barHeight`; removed it so the inheritance works properly.
 
 ---
 
-## Phase 5: Improve Remaining Script Quality — `Todo`
+## Phase 2: Qualify Unqualified Accesses — `Later`
 
-- [ ] `shellcheck` pass on remaining scripts.
-- [ ] Normalize to one dialect per script (POSIX `sh` or Bash, not mixed).
-- [ ] Add usage output to public action scripts.
-- [ ] Confirm each remaining script has a current owner and no dead Wi-Fi or battery-path branches.
-
-Remaining scripts: `brightness.sh`, `battery.sh`, `power-profile.sh`, `prevent-sleep.sh`,
-`audio-spectrum.sh`, `system-status.sh`, `media-focus.sh`, `open-manager.sh`, `osd.sh`,
-plus launch/debug/reload helpers.
-
----
-
-## Phase 6: Qualify Unqualified Accesses — `Later`
-
-~355 `unqualified` access warnings from delegates reaching outer scope IDs without `required property`.
+~351 `unqualified` access warnings from delegates reaching outer scope IDs without `required property`.
 
 - Work file by file: `find quickshell -name "*.qml" | xargs qmllint 2>&1 | grep unqualified`
-- Smallest files first; `ControlPanelPopup` and `WifiPopup` last.
-- Files created in Phases 3–4 already have `pragma ComponentBehavior: Bound`, so this is retrofit-only.
+- Smallest files first; `DynamicIsland.qml` and `WifiPopup.qml` last.
+- Files created in earlier phases already have `pragma ComponentBehavior: Bound`, so this is retrofit-only.
 
 ---
 
@@ -68,6 +44,6 @@ plus launch/debug/reload helpers.
 - DynamicIsland split: `Tried, abandoned` — bidirectional coupling, 15+ properties to pass, no reuse.
 - ControlPanelBluetoothDetails internal split: `Tried, abandoned` — already the right atomic unit, no reuse.
 - TrayMenuPopup split: `Tried, abandoned` — bidirectional coupling between row delegate and popup root.
-- AudioPopup split: `Tried, abandoned` — ~250 lines after Phase 3; nothing reused elsewhere.
-- WifiPopup split: `Tried, abandoned` — see Phase 4a.
+- AudioPopup split: `Tried, abandoned` — ~250 lines after AnchoredPopup migration; nothing reused elsewhere.
+- WifiPopup split: `Tried, abandoned` — went from ~970 to ~611 lines after native migration; no pieces reused elsewhere, splitting adds indirection with no payoff.
 - Icon audit (MDI-outline pass): `Tried, abandoned` — glyph codepoints need font charmap, no lookup source available.

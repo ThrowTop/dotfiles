@@ -3,6 +3,8 @@
 # Outputs the full sysfs path to the temp file.
 # Priority: x86_pkg_temp > TCPU_PCI > TCPU > acpitz > first readable zone
 
+set -euo pipefail
+
 THERMAL_BASE="/sys/class/thermal"
 
 for preferred in x86_pkg_temp TCPU_PCI TCPU acpitz; do

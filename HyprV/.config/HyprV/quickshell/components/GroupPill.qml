@@ -5,6 +5,7 @@ Rectangle {
 
     required property var shellRoot
     default property alias contentData: contentRow.data
+    readonly property bool hovered: hoverHandler.hovered
 
     radius: shellRoot.pillRadius
     color: shellRoot.moduleBackground
@@ -14,6 +15,10 @@ Rectangle {
     height: implicitHeight
     border.width: 1
     border.color: shellRoot.pillBorder
+
+    HoverHandler {
+        id: hoverHandler
+    }
 
     Row {
         id: contentRow

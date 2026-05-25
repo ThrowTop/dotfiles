@@ -166,16 +166,53 @@ PanelWindow {
                     implicitHeight: barWindow.shellRoot.barHeight
                 }
 
-                SystemTrayModule {
-                    shellRoot: barWindow.shellRoot
-                    parentWindow: barWindow
-                    contentRoot: contentRoot
-                    rightSection: rightSection
-                    centerSection: centerSection
-                    statusPill: rightStatusPill
-                    connectivityPill: connectivityPill
-                    controlPanelPill: controlPanelPill
-                    fixedSiblingWidth: notificationModule.implicitWidth + 14
+                // Animated tray container — clips tray icons and reveals them
+                // from right to left as the pill expands on hover.
+                Item {
+                    id: trayContainer
+
+                    clip: true
+                    implicitHeight: barWindow.shellRoot.barHeight
+                    implicitWidth: trayNotificationsPill.hovered ? systemTrayModule.implicitWidth : 0
+
+                    Behavior on implicitWidth {
+                        NumberAnimation { duration: 200; easing.type: Easing.InOutCubic }
+                    }
+
+                    SystemTrayModule {
+                        id: systemTrayModule
+
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        shellRoot: barWindow.shellRoot
+                        parentWindow: barWindow
+                        contentRoot: contentRoot
+                        rightSection: rightSection
+                        centerSection: centerSection
+                        statusPill: rightStatusPill
+                        connectivityPill: connectivityPill
+                        controlPanelPill: controlPanelPill
+                        fixedSiblingWidth: notificationModule.implicitWidth + trayChevron.implicitWidth + 14
+                    }
+                }
+
+                // Always-visible chevron — indicates tray expands to the left on hover.
+                Item {
+                    id: trayChevron
+
+                    implicitWidth: 10
+                    implicitHeight: barWindow.shellRoot.barHeight
+
+                    Text {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: barWindow.shellRoot.icons.chevronLeft
+                        color: barWindow.shellRoot.subtext
+                        font.family: barWindow.shellRoot.iconFont
+                        font.pixelSize: 10
+                        font.weight: Font.Bold
+                        renderType: Text.NativeRendering
+                    }
                 }
 
                 NotificationsModule {

@@ -17,10 +17,12 @@ hl.permission("/usr/(bin|local/bin)/hyprpm", "plugin", "allow")
 hl.on("hyprland.start", function()
     hl.exec_cmd("hyprlock")
     hl.exec_cmd("vicinae server")
+    hl.exec_cmd("wl-clip-persist --selection both")
     hl.exec_cmd("swaync")
     hl.exec_cmd("bash " .. settings.qs .. "/launch.sh")
     hl.exec_cmd("awww-daemon & waypaper --restore")
     hl.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme prefer-dark")
+    hl.exec_cmd("bash -c 'echo i2c-GXTP7936:00 | sudo tee /sys/bus/i2c/drivers/i2c_hid_acpi/unbind > /dev/null 2>&1'")
 end)
 
 
