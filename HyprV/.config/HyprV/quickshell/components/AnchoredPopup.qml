@@ -263,7 +263,7 @@ Item {
             fullPanelHeight: innerContent.implicitHeight + root.popupPadding * 2
             radius: root.popupRadius
             fillColor: root.shellRoot.glassFill
-            strokeColor: root.shellRoot.glassStroke
+            strokeColor: root.shellRoot.glassInnerStroke
             shadowColor: root.popupShadowColor
             surfaceOpacity: root.popupSurfaceOpacity
             devicePixelRatio: panelWindow.devicePixelRatio
