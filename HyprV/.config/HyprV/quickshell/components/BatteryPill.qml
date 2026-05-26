@@ -24,10 +24,32 @@ Item {
         width: 33
         height: 18
         radius: 6
-        color: root.fillColor
+        color: root.shellRoot.subtext
 
         Behavior on color {
             ColorAnimation { duration: 300 }
+        }
+
+        Rectangle {
+            id: fillRect
+            anchors {
+                left: parent.left
+                top: parent.top
+                bottom: parent.bottom
+            }
+            width: parent.width * Math.max(0, Math.min(1, root.percent / 100))
+            topLeftRadius: body.radius
+            bottomLeftRadius: body.radius
+            topRightRadius: root.percent >= 99 ? body.radius : 0
+            bottomRightRadius: root.percent >= 99 ? body.radius : 0
+            color: root.fillColor
+
+            Behavior on width {
+                NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
+            }
+            Behavior on color {
+                ColorAnimation { duration: 300 }
+            }
         }
 
         Row {
@@ -74,5 +96,3 @@ Item {
         }
     }
 }
-
-
