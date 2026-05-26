@@ -60,6 +60,7 @@ ShellRoot {
     property int cpuThreads: 0
     property string ramSpeedText: ""
     readonly property bool systemStatsPopupOpen: systemStatsPopup.isOpen || systemStatsPopup.animatingClose
+    readonly property bool trayPopupOpen: trayMenuPopup.isOpen || trayMenuPopup.animatingClose || trayOverflowPopup.isOpen || trayOverflowPopup.animatingClose
     property var trayMenuController: null
     readonly property string brightnessScriptPath: configDir + "/quickshell/scripts/brightness.sh"
     readonly property string mediaFocusScriptPath: configDir + "/quickshell/scripts/media-focus.sh"

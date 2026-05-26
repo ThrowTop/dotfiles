@@ -160,6 +160,7 @@ PanelWindow {
                 id: trayNotificationsPill
 
                 shellRoot: barWindow.shellRoot
+                readonly property bool expanded: hovered || barWindow.shellRoot.trayPopupOpen
 
                 Item {
                     implicitWidth: 8
@@ -173,7 +174,7 @@ PanelWindow {
 
                     clip: true
                     implicitHeight: barWindow.shellRoot.barHeight
-                    implicitWidth: trayNotificationsPill.hovered ? systemTrayModule.implicitWidth : 0
+                    implicitWidth: trayNotificationsPill.expanded ? systemTrayModule.implicitWidth : 0
 
                     Behavior on implicitWidth {
                         NumberAnimation { duration: 200; easing.type: Easing.InOutCubic }
@@ -212,6 +213,12 @@ PanelWindow {
                         font.pixelSize: 10
                         font.weight: Font.Bold
                         renderType: Text.NativeRendering
+                        transformOrigin: Item.Center
+                        rotation: trayNotificationsPill.expanded ? 180 : 0
+
+                        Behavior on rotation {
+                            NumberAnimation { duration: 180; easing.type: Easing.InOutCubic }
+                        }
                     }
                 }
 
