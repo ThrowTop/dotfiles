@@ -37,19 +37,6 @@ function M.control_panel_toggle()
     ipc("controlPanel", "toggle")
 end
 
--- Quick-adjust popups
-function M.show_brightness()
-    ipc("quickAdjust", "showBrightness")
-end
-function M.show_volume()
-    ipc("quickAdjust", "showVolume")
-end
-function M.brightness_inc()
-    ipc("quickAdjust", "showBrightnessIncrease")
-end
-function M.brightness_dec()
-    ipc("quickAdjust", "showBrightnessDecrease")
-end
 function M.control_brightness_inc()
     ipc("controls", "brightnessIncrease")
 end
@@ -75,5 +62,4 @@ function M.toggle_state(key)
 end
 
 return M
-
 

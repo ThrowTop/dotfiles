@@ -14,7 +14,6 @@ import "features/network"
 import "features/power"
 import "features/control"
 import "features/media"
-import "features/quickadjust"
 import "features/notifications"
 import "features/system"
 import "features/tray"
@@ -74,7 +73,6 @@ ShellRoot {
     property bool audioSpectrumCavaAvailable: false
     property var audioSpectrumValues: []
     property var primaryBarWindow: null
-    property var quickAdjustAnchorItem: null
     property string islandOsdType: ""
     property int islandOsdValue: 0
     property bool islandOsdTrigger: false
@@ -86,7 +84,6 @@ ShellRoot {
     property bool _osdReady: false
     property bool _brightnessFromPoll: false
 
-    property bool _showQuickAdjustAfterBrightnessProbe: false
     property bool _brightnessProbeQueued: false
     property int _pendingBrightnessPercent: -1
     readonly property int monitorRestartMaxDelay: 30000
@@ -100,7 +97,7 @@ ShellRoot {
     Component.onCompleted: {
         networkController.refresh();
         root.refreshControlPanelStatus();
-        root.refreshBrightnessStatus(false);
+        root.refreshBrightnessStatus();
         cpuInfoSnapshot.refresh();
         ramInfoSnapshot.refresh();
         thermalZoneDetect.refresh();
@@ -955,15 +952,12 @@ ShellRoot {
         return nextValue;
     }
 
-    function refreshBrightnessStatus(showQuickAdjust) {
-        if (showQuickAdjust) {
-            _showQuickAdjustAfterBrightnessProbe = true;
-        }
-        if (quickAdjustBrightnessProbe.running) {
+    function refreshBrightnessStatus() {
+        if (brightnessProbe.running) {
             _brightnessProbeQueued = true;
             return;
         }
-        quickAdjustBrightnessProbe.running = true;
+        brightnessProbe.running = true;
     }
 
 
@@ -974,27 +968,26 @@ ShellRoot {
     }
 
     Process {
-        id: quickAdjustBrightnessProbe
+        id: brightnessProbe
 
         running: false
         command: [root.brightnessScriptPath, "--get-level"]
         stdout: StdioCollector {
-            id: quickAdjustBrightnessProbeStdout
+            id: brightnessProbeStdout
         }
 
         // qmllint disable signal-handler-parameters
         onExited: function(exitCode) {
-            const parsed = Number((quickAdjustBrightnessProbeStdout.text || "").trim());
+            const parsed = Number((brightnessProbeStdout.text || "").trim());
             if (exitCode === 0 && isFinite(parsed)) {
                 root._brightnessFromPoll = true;
                 root.brightnessPercent = root.snapBrightnessPercent(parsed);
                 root._brightnessFromPoll = false;
             }
-            root._showQuickAdjustAfterBrightnessProbe = false;
             root.refreshControlPanelStatus();
             if (root._brightnessProbeQueued) {
                 root._brightnessProbeQueued = false;
-                quickAdjustBrightnessProbe.running = true;
+                brightnessProbe.running = true;
             }
         }
     }
@@ -1018,7 +1011,7 @@ ShellRoot {
 
         interval: 90
         repeat: false
-        onTriggered: root.refreshBrightnessStatus(false)
+        onTriggered: root.refreshBrightnessStatus()
     }
 
     Timer {
@@ -1262,12 +1255,6 @@ ShellRoot {
         shellRoot: root
     }
 
-    QuickAdjustPopup {
-        id: quickAdjustPopup
-
-        shellRoot: root
-    }
-
     IpcHandler {
         target: "controlPanel"
         enabled: true
@@ -1278,48 +1265,15 @@ ShellRoot {
     }
 
     IpcHandler {
-        target: "quickAdjust"
+        target: "controls"
         enabled: true
 
-        function showBrightness() {
-            quickAdjustPopup.show("brightness");
-        }
-
-        function showBrightnessLevel(level: real) {
+        function brightnessSetLevel(level: real) {
             const parsed = Number(level);
             if (isFinite(parsed)) {
                 root.updateBrightnessPercentLocally(parsed);
             }
         }
-
-        function showBrightnessIncrease() {
-            root.applyBrightnessPercent(root.brightnessPercent + root.brightnessUiStepPercent);
-        }
-
-        function showBrightnessDecrease() {
-            root.applyBrightnessPercent(root.brightnessPercent - root.brightnessUiStepPercent);
-        }
-
-        function showVolume() {
-            quickAdjustPopup.show("volume");
-        }
-
-        function volumeIncrease() {
-            audioController.adjustVolume(5);
-        }
-
-        function volumeDecrease() {
-            audioController.adjustVolume(-5);
-        }
-
-        function volumeToggleMute() {
-            audioController.toggleMute();
-        }
-    }
-
-    IpcHandler {
-        target: "controls"
-        enabled: true
 
         function brightnessIncrease() {
             const nextValue = root.applyBrightnessPercent(root.brightnessPercent + root.brightnessUiStepPercent);

@@ -6,14 +6,6 @@ GroupPill {
 
     property var parentWindow: null
 
-    Component.onCompleted: if (pill.parentWindow === pill.shellRoot.primaryBarWindow) {
-        pill.shellRoot.quickAdjustAnchorItem = pill;
-    }
-
-    Component.onDestruction: if (pill.shellRoot.quickAdjustAnchorItem === pill) {
-        pill.shellRoot.quickAdjustAnchorItem = null;
-    }
-
     Item {
         id: controlPanelTrigger
 

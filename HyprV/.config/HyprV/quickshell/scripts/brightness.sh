@@ -32,7 +32,7 @@ level_from_raw() {
 }
 
 notify_user() {
-    quickshell -p "$QS_CONFIG_DIR" ipc call quickAdjust showBrightnessLevel "$1" >/dev/null 2>&1 || true
+    quickshell -p "$QS_CONFIG_DIR" ipc call controls brightnessSetLevel "$1" >/dev/null 2>&1 || true
 }
 
 case "$1" in
@@ -84,5 +84,4 @@ case "$1" in
         exit 1
         ;;
 esac
-
 
