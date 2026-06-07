@@ -6,6 +6,13 @@ Item {
 
     required property var shellRoot
     property date now: new Date()
+
+    Timer {
+        interval: 1000
+        running: true
+        repeat: true
+        onTriggered: island.now = new Date()
+    }
     property bool mediaAvailable: false
     property bool mediaPlaying: false
     property string mediaTitle: ""
