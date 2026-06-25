@@ -17,6 +17,7 @@ Item {
     readonly property bool hardwareEnabled: Networking.wifiHardwareEnabled
     readonly property bool connected: !!connectedWifiNetwork
     readonly property bool networkConnected: Networking.connectivity >= NetworkConnectivity.Limited
+    readonly property bool captivePortal: Networking.connectivity === NetworkConnectivity.Portal
     readonly property bool wifiConnectionActive: connected
     readonly property bool wiredConnectionActive: !!wiredDevice && !!wiredDevice.hasLink
     readonly property bool capabilityDetected: devicePresent || _capabilityDetected
@@ -204,6 +205,11 @@ Item {
         }
         setActionFeedback("Forgetting " + (network.name || "network") + "...", true);
         network.forget();
+    }
+
+    function openCaptivePortalSignIn() {
+        shellRoot.openWifiSignIn();
+        setActionFeedback("Opening Wi-Fi sign-in page...", false);
     }
 
     Timer {

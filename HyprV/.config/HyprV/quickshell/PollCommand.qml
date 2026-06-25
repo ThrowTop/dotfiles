@@ -25,6 +25,7 @@ Item {
         repeat: true
         running: poll.active && poll.scheduled
         triggeredOnStart: true
+        onIntervalChanged: if (running) restart()
         onTriggered: poll.refresh()
     }
 

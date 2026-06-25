@@ -38,6 +38,11 @@ ShellRoot {
     property var temperatureHistory: []
     property var powerDrawHistory: []
     property real batteryCurrentW: 0
+    property real batterySnapshotPercent: -1
+    property string batterySnapshotStatus: ""
+    property real batterySnapshotPowerW: 0
+    property real batterySnapshotEnergyNowWh: 0
+    property real batterySnapshotEnergyFullWh: 0
     readonly property bool batteryDischarging: !!batteryDevice && !batteryPlugged
     readonly property bool batteryPopupOpen: batteryInfoPopup.isOpen || batteryInfoPopup.animatingClose
     readonly property real avgPowerW: {
@@ -198,14 +203,21 @@ ShellRoot {
     readonly property string activeWindowTitle: Hyprland.activeToplevel?.title || ""
     readonly property var batteryDevice: UPower.displayDevice
     readonly property real batteryPercent: {
+        if (root.batterySnapshotPercent >= 0) {
+            const percent = Math.max(0, Math.min(100, root.batterySnapshotPercent));
+            return root.batteryReportedFull && percent >= 99 ? 100 : percent;
+        }
         const percent = batteryDevice?.percentage;
         if (percent === undefined || percent === null || isNaN(percent)) {
             return 0;
         }
-        return Math.max(0, Math.min(100, percent * 100));
+        const scaled = Math.max(0, Math.min(100, percent * 100));
+        return root.batteryReportedFull && scaled >= 99 ? 100 : scaled;
     }
-    readonly property bool batteryCharging: batteryDevice?.state === UPowerDeviceState.Charging || batteryDevice?.state === UPowerDeviceState.PendingCharge
-    readonly property bool batteryPlugged: batteryCharging || batteryDevice?.state === UPowerDeviceState.FullyCharged
+    readonly property string batteryMode: batteryModeFromState()
+    readonly property bool batteryReportedFull: batteryMode === "full" || batteryDevice?.state === UPowerDeviceState.FullyCharged
+    readonly property bool batteryCharging: batteryMode === "charging"
+    readonly property bool batteryPlugged: batteryMode === "charging" || batteryMode === "full" || batteryMode === "plugged"
     readonly property bool batteryCritical: batteryPercent <= 20
     readonly property string batteryText: {
         if (!batteryDevice) {
@@ -255,7 +267,7 @@ ShellRoot {
     readonly property string batteryEstimateTitle: {
         const mode = batteryInfo?.mode || "";
         if (mode === "charging") return root.chargeLimit < 100 ? "Time to limit" : "Time to full";
-        if (mode === "full" || mode === "plugged") return "Time to full";
+        if (mode === "full" || mode === "plugged") return "Charge state";
         return "Time remaining";
     }
     readonly property string batteryEstimateText: {
@@ -559,6 +571,34 @@ ShellRoot {
         return levels[index];
     }
 
+    function batteryModeFromStatus(status) {
+        const normalized = (status || "").toLowerCase();
+        if (normalized === "charging") return "charging";
+        if (normalized === "discharging") return "discharging";
+        if (normalized === "full") return "full";
+        if (normalized === "not charging") return "plugged";
+        return "idle";
+    }
+
+    function batteryModeFromState() {
+        if (root.batterySnapshotStatus.length > 0) {
+            return root.batteryModeFromStatus(root.batterySnapshotStatus);
+        }
+
+        const device = root.batteryDevice;
+        if (!device) return "unknown";
+        if (device.state === UPowerDeviceState.Charging || device.state === UPowerDeviceState.PendingCharge) {
+            return "charging";
+        }
+        if (device.state === UPowerDeviceState.Discharging || device.state === UPowerDeviceState.PendingDischarge) {
+            return "discharging";
+        }
+        if (device.state === UPowerDeviceState.FullyCharged) {
+            return "full";
+        }
+        return "idle";
+    }
+
     function currentBatteryInfo() {
         const device = root.batteryDevice;
         if (!device) {
@@ -579,26 +619,37 @@ ShellRoot {
             };
         }
 
-        let mode = "idle";
-        if (device.state === UPowerDeviceState.Charging || device.state === UPowerDeviceState.PendingCharge) {
-            mode = "charging";
-        } else if (device.state === UPowerDeviceState.Discharging || device.state === UPowerDeviceState.PendingDischarge) {
-            mode = "discharging";
-        } else if (device.state === UPowerDeviceState.FullyCharged) {
-            mode = "full";
-        }
-
+        const mode = root.batteryMode;
         const changeRate = Number(device.changeRate || 0);
-        const powerW = mode === "discharging" ? -Math.abs(changeRate) : Math.abs(changeRate);
-        const estimateSeconds = mode === "charging"
-            ? (Number(device.timeToFull || 0) > 0 ? Number(device.timeToFull || 0) : null)
-            : (mode === "discharging"
-                ? (Number(device.timeToEmpty || 0) > 0 ? Number(device.timeToEmpty || 0) : null)
-                : (mode === "full" ? 0 : null));
+        const snapshotPowerW = Number(root.batterySnapshotPowerW || 0);
+        const powerW = snapshotPowerW !== 0
+            ? snapshotPowerW
+            : (mode === "discharging" ? -Math.abs(changeRate) : Math.abs(changeRate));
+        const absPowerW = Math.abs(powerW);
+        const energyNowWh = Number(root.batterySnapshotEnergyNowWh || 0) > 0
+            ? Number(root.batterySnapshotEnergyNowWh || 0)
+            : Number(device.energy || 0);
+        const energyFullWh = Number(root.batterySnapshotEnergyFullWh || 0) > 0
+            ? Number(root.batterySnapshotEnergyFullWh || 0)
+            : Number(device.energyCapacity || 0);
+        let estimateSeconds = null;
+        if (mode === "charging") {
+            estimateSeconds = Number(device.timeToFull || 0) > 0 ? Number(device.timeToFull || 0) : null;
+            if (estimateSeconds === null && absPowerW > 0 && energyFullWh > energyNowWh) {
+                estimateSeconds = (energyFullWh - energyNowWh) / absPowerW * 3600;
+            }
+        } else if (mode === "discharging") {
+            estimateSeconds = Number(device.timeToEmpty || 0) > 0 ? Number(device.timeToEmpty || 0) : null;
+            if (estimateSeconds === null && absPowerW > 0 && energyNowWh > 0) {
+                estimateSeconds = energyNowWh / absPowerW * 3600;
+            }
+        } else if (mode === "full") {
+            estimateSeconds = 0;
+        }
 
         return {
             available: !!device.isPresent,
-            status: UPowerDeviceState.toString(device.state),
+            status: root.batterySnapshotStatus.length > 0 ? root.batterySnapshotStatus : UPowerDeviceState.toString(device.state),
             mode: mode,
             capacity: Math.round(root.batteryPercent),
             powerW: powerW,
@@ -607,9 +658,9 @@ ShellRoot {
             sampleWindowSeconds: 0,
             windowComplete: false,
             estimateSeconds: estimateSeconds,
-            estimateBasis: changeRate > 0 ? "upower" : "none",
-            energyNowWh: Number(device.energy || 0),
-            energyFullWh: Number(device.energyCapacity || 0)
+            estimateBasis: absPowerW > 0 ? (snapshotPowerW !== 0 ? "sysfs" : "upower") : "none",
+            energyNowWh: energyNowWh,
+            energyFullWh: energyFullWh
         };
     }
 
@@ -643,8 +694,19 @@ ShellRoot {
             if (separator <= 0) continue;
             values[line.slice(13, separator)] = line.slice(separator + 1);
         }
+        if (Object.keys(values).length === 0) {
+            return;
+        }
 
-        const status = (values.STATUS || "").toLowerCase();
+        const capacity = Number(values.CAPACITY);
+        if (isFinite(capacity)) {
+            root.batterySnapshotPercent = Math.max(0, Math.min(100, capacity));
+        }
+        if ((values.STATUS || "").length > 0) {
+            root.batterySnapshotStatus = values.STATUS;
+        }
+
+        const status = (values.STATUS || root.batterySnapshotStatus || "").toLowerCase();
         const rawPowerUw = Number(values.POWER_NOW || 0);
         const rawCurrentUa = Number(values.CURRENT_NOW || 0);
         const rawVoltageUv = Number(values.VOLTAGE_NOW || 0);
@@ -655,13 +717,30 @@ ShellRoot {
             absW = (rawCurrentUa * rawVoltageUv) / 1000000000000;
         }
 
+        const rawEnergyNowUwh = Number(values.ENERGY_NOW || 0);
+        const rawEnergyFullUwh = Number(values.ENERGY_FULL || values.ENERGY_FULL_DESIGN || 0);
+        const rawChargeNowUah = Number(values.CHARGE_NOW || 0);
+        const rawChargeFullUah = Number(values.CHARGE_FULL || values.CHARGE_FULL_DESIGN || 0);
+        if (rawEnergyNowUwh > 0) {
+            root.batterySnapshotEnergyNowWh = rawEnergyNowUwh / 1000000;
+        } else if (rawChargeNowUah > 0 && rawVoltageUv > 0) {
+            root.batterySnapshotEnergyNowWh = rawChargeNowUah * rawVoltageUv / 1000000000000;
+        }
+        if (rawEnergyFullUwh > 0) {
+            root.batterySnapshotEnergyFullWh = rawEnergyFullUwh / 1000000;
+        } else if (rawChargeFullUah > 0 && rawVoltageUv > 0) {
+            root.batterySnapshotEnergyFullWh = rawChargeFullUah * rawVoltageUv / 1000000000000;
+        }
+
         if (!isFinite(absW) || absW <= 0) {
             root.batteryCurrentW = 0;
+            root.batterySnapshotPowerW = 0;
             return;
         }
 
         const charging = status.indexOf("charging") >= 0 && status.indexOf("not charging") < 0;
         root.batteryCurrentW = charging ? absW : -absW;
+        root.batterySnapshotPowerW = root.batteryCurrentW;
         root.powerDrawHistory = root.appendHistory(root.powerDrawHistory, absW, root.statsHistoryLimit);
     }
 
@@ -892,6 +971,10 @@ ShellRoot {
 
     function openWifiManager() {
         runDetached([openManagerScriptPath, "wifi"]);
+    }
+
+    function openWifiSignIn() {
+        runDetached([openManagerScriptPath, "wifi-sign-in"]);
     }
 
     function openWifiPanel(sourceItem, parentWindow) {

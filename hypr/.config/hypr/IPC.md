@@ -18,6 +18,9 @@ hyprctl eval 'hypr.<action>()'
 | `hypr.touchscreen('on')` | Force touchscreen on |
 | `hypr.touchscreen('off')` | Force touchscreen off |
 | `hypr.tap_to_click()` | Toggle touchpad tap-to-click |
+| `hypr.battery_saver()` | Toggle battery saver visuals |
+| `hypr.battery_saver('on')` | Force battery saver visuals on |
+| `hypr.battery_saver('off')` | Force battery saver visuals off |
 | `hypr.push_state()` | Push all toggle states to QuickShell via hyprState IPC |
 
 ## Examples
@@ -34,6 +37,9 @@ hyprctl eval 'hypr.touchscreen("on")'
 
 # Toggle tap-to-click
 hyprctl eval 'hypr.tap_to_click()'
+
+# Toggle battery saver visuals
+hyprctl eval 'hypr.battery_saver()'
 ```
 
 ## Adding actions

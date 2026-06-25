@@ -18,6 +18,10 @@ _open_terminal() {
     exit 1
 }
 
+_open_captive_portal() {
+    exec xdg-open "http://neverssl.com/"
+}
+
 case "${1:-}" in
     wifi)
         if command -v nm-connection-editor >/dev/null 2>&1; then
@@ -27,6 +31,9 @@ case "${1:-}" in
         else
             _open_terminal nmtui nmtui
         fi
+        ;;
+    wifi-sign-in)
+        _open_captive_portal
         ;;
     bluetooth)
         if command -v blueman-manager >/dev/null 2>&1; then
@@ -38,7 +45,7 @@ case "${1:-}" in
         fi
         ;;
     *)
-        printf 'Usage: %s [wifi|bluetooth]\n' "$0" >&2
+        printf 'Usage: %s [wifi|wifi-sign-in|bluetooth]\n' "$0" >&2
         exit 2
         ;;
 esac

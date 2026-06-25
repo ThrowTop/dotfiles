@@ -4,9 +4,29 @@ local touchscreen = require("helpers/touchscreen")
 local bitwarden = require("helpers/bitwarden")
 local hyprv = require("helpers/hyprv")
 
+local battery_saver_enabled = false
+
+local function set_battery_saver(enabled)
+    battery_saver_enabled = enabled
+    hlc.animations.enabled = not enabled
+    hlc.decoration.blur.enabled = not enabled
+    hlc.decoration.inactive_opacity = enabled and 1.0 or 0.9
+    hyprv.set_state("batterySaver", enabled)
+    hyprv.osd("Battery Saver", enabled and "On" or "Off", enabled and "#f9e2af" or "#a6e3a1", "0xF06C0")
+end
+
 _G.hypr = {
     tilt_mode = tilt_mode,
     touchscreen = touchscreen,
+    battery_saver = function(state)
+        if state == "on" then
+            set_battery_saver(true)
+        elseif state == "off" then
+            set_battery_saver(false)
+        else
+            set_battery_saver(not battery_saver_enabled)
+        end
+    end,
     tap_to_click = function()
         hlc.input.touchpad.tap_to_click = not hlc.input.touchpad.tap_to_click
         local tcc = hlc.input.touchpad.tap_to_click
@@ -210,6 +230,7 @@ hl.bind(mod .. "SHIFT + D", function()
     hlc.notify("dim: " .. (on and "off" or "on"), 1500)
 end)
 
+hl.bind(mod .. "SHIFT + S", hypr.battery_saver)
 hl.bind(mod .. "SHIFT + T", tilt_mode)
 
 hl.bind("ALT+TAB", hl.dsp.window.cycle_next())
@@ -218,5 +239,3 @@ hl.bind("ALT+TAB", hl.dsp.window.cycle_next())
 -- hlc.input.touchpad.tap_and_drag = false
 
 hl.bind(mod .. "X", hypr.tap_to_click)
-
-

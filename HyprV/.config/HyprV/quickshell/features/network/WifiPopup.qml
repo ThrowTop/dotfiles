@@ -51,6 +51,7 @@ AnchoredPopup {
         if (!wifiAvailable) return "No wireless device detected";
         if (!sr.network.hardwareEnabled) return "Hardware blocked";
         if (!wifiEnabled) return "Wi-Fi disabled";
+        if (sr.network.captivePortal && wifiConnected) return (sr.network.ssid || "Wi-Fi connected") + " needs sign-in";
         if (wifiConnected) return (sr.network.ssid || "Wi-Fi connected") + "  " + Math.round(sr.network.signalStrength * 100) + "%";
         return "Not connected";
     }
@@ -180,6 +181,7 @@ AnchoredPopup {
                     label: wifiPopup.wiredConnected ? "Wired"
                         : !wifiPopup.wifiAvailable ? "No Wi-Fi"
                         : !wifiPopup.sr.network.hardwareEnabled ? "Blocked"
+                        : wifiPopup.sr.network.captivePortal ? "Portal"
                         : wifiPopup.wifiEnabled ? (wifiPopup.wifiConnected ? "Online" : "Ready") : "Off"
                     disabled: true
                     minimumWidth: 72
@@ -238,7 +240,7 @@ AnchoredPopup {
                 shellRoot: wifiPopup.sr
                 cornerRadius: wifiPopup.innerRadius
                 label: wifiPopup.wifiEnabled ? "Turn Off" : "Turn On"
-                minimumWidth: 96
+                minimumWidth: 86
                 disabled: !wifiPopup.wifiAvailable || !wifiPopup.sr.network.hardwareEnabled || wifiPopup.sr.network.actionBusy
                 fillColor: wifiPopup.cardStrongFill
                 foregroundColor: wifiPopup.sr.launchColor
@@ -250,7 +252,7 @@ AnchoredPopup {
                 shellRoot: wifiPopup.sr
                 cornerRadius: wifiPopup.innerRadius
                 label: "Rescan"
-                minimumWidth: 88
+                minimumWidth: 76
                 disabled: !wifiPopup.wifiAvailable || !wifiPopup.wifiEnabled || wifiPopup.sr.network.actionBusy
                 fillColor: wifiPopup.cardFill
                 strokeColor: wifiPopup.cardStroke
@@ -260,8 +262,21 @@ AnchoredPopup {
             ActionChip {
                 shellRoot: wifiPopup.sr
                 cornerRadius: wifiPopup.innerRadius
+                label: "Sign In"
+                minimumWidth: 82
+                visible: wifiPopup.sr.network.captivePortal && wifiPopup.wifiConnected
+                disabled: wifiPopup.sr.network.actionBusy
+                fillColor: wifiPopup.cardStrongFill
+                foregroundColor: wifiPopup.sr.launchColor
+                strokeColor: wifiPopup.sr.withAlpha(wifiPopup.sr.launchColor, 0.18)
+                onClicked: wifiPopup.sr.network.openCaptivePortalSignIn()
+            }
+
+            ActionChip {
+                shellRoot: wifiPopup.sr
+                cornerRadius: wifiPopup.innerRadius
                 label: "Advanced"
-                minimumWidth: 98
+                minimumWidth: 86
                 fillColor: wifiPopup.cardFill
                 strokeColor: wifiPopup.cardStroke
                 onClicked: wifiPopup.sr.openWifiManager()
