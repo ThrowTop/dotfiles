@@ -93,7 +93,7 @@ Item {
                 anchors.fill: parent
                 acceptedButtons: Qt.LeftButton
                 cursorShape: Qt.PointingHandCursor
-                onClicked: module.shellRoot.openTrayOverflowPopup(trayOverflowTrigger, module.parentWindow, module.overflowTrayItems)
+                onPressed: module.shellRoot.openTrayOverflowPopup(trayOverflowTrigger, module.parentWindow, module.overflowTrayItems)
             }
         }
     }

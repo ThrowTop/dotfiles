@@ -12,18 +12,6 @@ AnchoredPopup {
     popupPadding: 10
     screenMargin: 10
 
-    openRevealPause: 85
-    openRevealDuration: 280
-    openContentDelay: 60
-    openFadeDuration: 180
-    openSlideDuration: 220
-    openContentOffset: -10
-    closeRevealPause: 35
-    closeRevealDuration: 210
-    closeFadeDuration: 110
-    closeSlideDuration: 170
-    closeContentOffset: -8
-
     readonly property color cardFill: sr.withAlpha("#ffffff", 0.07)
     readonly property color cardStrongFill: sr.withAlpha("#ffffff", 0.11)
     readonly property color cardStroke: sr.withAlpha(sr.primaryText, 0.12)

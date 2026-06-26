@@ -51,17 +51,17 @@ Item {
     property real popupSurfaceOpacity: 0.82
     property color popupShadowColor: shellRoot.withAlpha("#000000", 0.45)
 
-    property int openRevealPause: 20
-    property int openRevealDuration: 200
+    property int openRevealPause: 0
+    property int openRevealDuration: 430
     property int openContentDelay: 20
-    property int openFadeDuration: 140
-    property int openSlideDuration: 180
-    property real openContentOffset: -8
-    property int closeRevealPause: 30
-    property int closeRevealDuration: 180
-    property int closeFadeDuration: 90
-    property int closeSlideDuration: 150
-    property real closeContentOffset: -8
+    property int openFadeDuration: 220
+    property int openSlideDuration: 430
+    property real openContentOffset: 4
+    property int closeRevealPause: 0
+    property int closeRevealDuration: 220
+    property int closeFadeDuration: 150
+    property int closeSlideDuration: 220
+    property real closeContentOffset: 2
 
     readonly property bool isOpen: panelWindow.visible
     readonly property bool animatingClose: _animatingClose
@@ -147,6 +147,7 @@ Item {
             }
             root._openAnimationPending = false;
             panelWindow.updatePopupPosition();
+            popupCard.prepareOpenAnimation();
             popupCard.playOpenAnimation();
         }
     }
@@ -194,12 +195,12 @@ Item {
 
             // X positioning
             if (root.popupAlignRight) {
-                popupCard.x = Math.max(root.screenMargin, width - popupCard.width - root.screenMargin);
+                popupViewport.x = Math.max(root.screenMargin, width - popupViewport.width - root.screenMargin);
             } else if (root.popupFixedX >= 0) {
-                popupCard.x = root.popupFixedX;
+                popupViewport.x = root.popupFixedX;
             } else {
-                const maxX = Math.max(root.screenMargin, width - popupCard.width - root.screenMargin);
-                popupCard.x = Math.max(root.screenMargin, Math.min(maxX, Math.round(relativeX - popupCard.width / 2)));
+                const maxX = Math.max(root.screenMargin, width - popupViewport.width - root.screenMargin);
+                popupViewport.x = Math.max(root.screenMargin, Math.min(maxX, Math.round(relativeX - popupViewport.width / 2)));
             }
 
             // Y positioning
@@ -256,77 +257,87 @@ Item {
             }
         }
 
-        AnimatedGlassPanel {
-            id: popupCard
+        Item {
+            id: popupViewport
 
+            y: 0
             width: root.popupWidth
-            fullPanelHeight: innerContent.implicitHeight + root.popupPadding * 2
-            radius: root.popupRadius
-            fillColor: root.shellRoot.glassFill
-            strokeColor: root.shellRoot.glassInnerStroke
-            shadowColor: root.popupShadowColor
-            surfaceOpacity: root.popupSurfaceOpacity
-            devicePixelRatio: panelWindow.devicePixelRatio
+            height: panelWindow.height
+            clip: true
 
-            openRevealPause: root.openRevealPause
-            openRevealDuration: root.openRevealDuration
-            openContentDelay: root.openContentDelay
-            openFadeDuration: root.openFadeDuration
-            openSlideDuration: root.openSlideDuration
-            openContentOffset: root.openContentOffset
-            closeRevealPause: root.closeRevealPause
-            closeRevealDuration: root.closeRevealDuration
-            closeFadeDuration: root.closeFadeDuration
-            closeSlideDuration: root.closeSlideDuration
-            closeContentOffset: root.closeContentOffset
+            AnimatedGlassPanel {
+                id: popupCard
 
-            onFullPanelHeightChanged: {
-                if (root._openAnimationPending) {
-                    positionTimer.restart();
-                    popupOpenTimer.restart();
-                    return;
-                }
-                if (panelWindow.visible && !root._animatingClose) {
-                    if (popupCard.openAnimationRunning || popupCard.closeAnimationRunning) {
+                width: root.popupWidth
+                fullPanelHeight: innerContent.implicitHeight + root.popupPadding * 2
+                radius: root.popupRadius
+                fillColor: root.shellRoot.glassFill
+                strokeColor: root.shellRoot.glassInnerStroke
+                shadowColor: root.popupShadowColor
+                surfaceOpacity: root.popupSurfaceOpacity
+                devicePixelRatio: panelWindow.devicePixelRatio
+                transformOrigin: root.popupAlignRight ? Item.TopRight : Item.Top
+
+                openRevealPause: root.openRevealPause
+                openRevealDuration: root.openRevealDuration
+                openContentDelay: root.openContentDelay
+                openFadeDuration: root.openFadeDuration
+                openSlideDuration: root.openSlideDuration
+                openContentOffset: root.openContentOffset
+                closeRevealPause: root.closeRevealPause
+                closeRevealDuration: root.closeRevealDuration
+                closeFadeDuration: root.closeFadeDuration
+                closeSlideDuration: root.closeSlideDuration
+                closeContentOffset: root.closeContentOffset
+
+                onFullPanelHeightChanged: {
+                    if (root._openAnimationPending) {
                         positionTimer.restart();
+                        popupOpenTimer.restart();
                         return;
                     }
-                    revealHeight = fullPanelHeight;
-                    contentOpacity = 1;
-                    contentOffset = 0;
-                } else if (!popupCard.openAnimationRunning && !popupCard.closeAnimationRunning) {
-                    revealHeight = fullPanelHeight;
-                    if (!panelWindow.visible) {
+                    if (panelWindow.visible && !root._animatingClose) {
+                        if (popupCard.openAnimationRunning || popupCard.closeAnimationRunning) {
+                            positionTimer.restart();
+                            return;
+                        }
+                        revealHeight = fullPanelHeight;
                         contentOpacity = 1;
                         contentOffset = 0;
+                    } else if (!popupCard.openAnimationRunning && !popupCard.closeAnimationRunning) {
+                        revealHeight = fullPanelHeight;
+                        if (!panelWindow.visible) {
+                            contentOpacity = 1;
+                            contentOffset = 0;
+                        }
+                    }
+                    positionTimer.restart();
+                }
+
+                onOpenAnimationFinished: {
+                    if (!panelWindow.visible || root._animatingClose) return;
+                    positionTimer.restart();
+                }
+
+                onCloseAnimationFinished: {
+                    if (root._animatingClose && !root._popupRequested) {
+                        root._animatingClose = false;
+                        panelWindow.visible = false;
                     }
                 }
-                positionTimer.restart();
-            }
 
-            onOpenAnimationFinished: {
-                if (!panelWindow.visible || root._animatingClose) return;
-                positionTimer.restart();
-            }
-
-            onCloseAnimationFinished: {
-                if (root._animatingClose && !root._popupRequested) {
-                    root._animatingClose = false;
-                    panelWindow.visible = false;
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
                 }
-            }
 
-            MouseArea {
-                anchors.fill: parent
-                acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-            }
+                Item {
+                    id: innerContent
 
-            Item {
-                id: innerContent
-
-                anchors.fill: parent
-                anchors.margins: root.popupPadding
-                implicitHeight: childrenRect.height
+                    anchors.fill: parent
+                    anchors.margins: root.popupPadding
+                    implicitHeight: childrenRect.height
+                }
             }
         }
     }

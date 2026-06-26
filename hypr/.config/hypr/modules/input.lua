@@ -1,4 +1,3 @@
-
 hlc.config({
     input = {
         kb_layout = "us,se",
@@ -12,6 +11,7 @@ hlc.config({
         scroll_button = 274,
         scroll_button_lock = false,
         touchpad = {
+            scroll_factor = 0.3,
             natural_scroll = true,
             drag_lock = false,
             disable_while_typing = true,

@@ -12,18 +12,6 @@ AnchoredPopup {
     popupWidth: 324
     popupPadding: 12
 
-    openRevealPause: 20
-    openRevealDuration: 200
-    openContentDelay: 20
-    openFadeDuration: 140
-    openSlideDuration: 180
-    openContentOffset: -8
-    closeRevealPause: 30
-    closeRevealDuration: 180
-    closeFadeDuration: 90
-    closeSlideDuration: 150
-    closeContentOffset: -8
-
     readonly property color mutedTextColor: sr.withAlpha(sr.primaryText, 0.72)
     property int chargeLimitIndex: 0
     property real batteryHealthPercent: 0

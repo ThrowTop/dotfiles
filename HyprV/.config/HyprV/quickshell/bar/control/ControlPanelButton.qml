@@ -28,7 +28,7 @@ GroupPill {
         MouseArea {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
-            onClicked: pill.shellRoot.openControlPanelPopup(controlPanelTrigger, pill.parentWindow)
+            onPressed: pill.shellRoot.openControlPanelPopup(controlPanelTrigger, pill.parentWindow)
         }
     }
 }

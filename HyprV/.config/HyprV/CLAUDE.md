@@ -165,6 +165,10 @@ Do not move the border back inside `shadowLayer`. `opacity: surfaceOpacity` on t
 
 Color tokens for popup borders live in `shell.qml`: `glassInnerStroke` (visible border ring) and `glassOuterStroke` (reserved for a future outer dark ring). `glassStroke` (the original faint value) is kept for separator/divider uses elsewhere.
 
+### Popup animation
+
+`AnchoredPopup` positions a full-height viewport at the top of the monitor and places `AnimatedGlassPanel` at its final popup Y inside that viewport, then animates the panel from `-fullPanelHeight` to `0` so the whole popup slides down from behind the bar and exits upward. Hyprland layer animation for `shell:.*` popup namespaces is disabled in `~/.config/hypr/modules/rules.lua`; otherwise the compositor's fast layer slide controls the visible dropdown motion and QML timing only affects inner content. Do not reintroduce a height-mask reveal for outer popup surfaces: it clips rounded corners/content at the bottom and can make popups appear to reveal through the top bar. Outer dropdown animation timing should stay centralized in `AnchoredPopup`; individual popups should not override it unless their interaction model is genuinely different. Inline sections such as Wi-Fi password expansion may still use `AnimatedReveal` because they are layout reveals inside an already-open popup.
+
 ## Script Conventions
 
 All scripts use `#!/usr/bin/env bash` and `set -euo pipefail`. They are shellcheck-clean. Do not add scripts without both.

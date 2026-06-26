@@ -23,7 +23,7 @@ Item {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: Qt.PointingHandCursor
-        onClicked: function(mouse) {
+        onPressed: function(mouse) {
             if (mouse.button === Qt.LeftButton) {
                 module.shellRoot.openAudioPopup(module, module.parentWindow);
             } else {

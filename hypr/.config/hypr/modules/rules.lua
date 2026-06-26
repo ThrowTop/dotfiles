@@ -45,6 +45,7 @@ hl.layer_rule({
     blur = true,
     blur_popups = true,
     ignore_alpha = 0.05,
+    no_anim = true,
 })
 
 -- -------------------------
@@ -131,5 +132,4 @@ hl.window_rule({
     pin = true,
     no_focus = true,
 })
-
 

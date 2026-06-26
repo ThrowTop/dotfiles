@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Effects
 
@@ -13,6 +15,13 @@ Item {
     property real revealHeight: 0
     property real contentOpacity: 0
     property real contentOffset: openContentOffset
+    property real panelOpacity: 1
+    property real panelScale: 1
+    property real panelOffset: 0
+    property real openPanelScale: 1
+    property real closePanelScale: 1
+    property real openPanelOffset: -fullPanelHeight
+    property real closePanelOffset: -fullPanelHeight
 
     property real fullPanelHeight: 0
     property real lineHeight: 2
@@ -28,31 +37,37 @@ Item {
     property int openContentDelay: 20
     property int openFadeDuration: 140
     property int openSlideDuration: 180
-    property real openContentOffset: -8
+    property real openContentOffset: 0
 
     property int closeRevealPause: 0
     property int closeRevealDuration: 180
     property int closeFadeDuration: 90
     property int closeSlideDuration: 150
-    property real closeContentOffset: -8
+    property real closeContentOffset: 0
 
     signal openAnimationFinished()
     signal closeAnimationFinished()
 
-    implicitHeight: revealHeight
-    height: revealHeight
+    implicitHeight: fullPanelHeight
+    height: fullPanelHeight
 
     function resetAnimationState() {
         revealHeight = fullPanelHeight;
         contentOpacity = 1;
         contentOffset = 0;
+        panelOpacity = 1;
+        panelScale = 1;
+        panelOffset = 0;
     }
 
     function prepareOpenAnimation() {
         stopAnimations();
-        revealHeight = 0;
+        revealHeight = fullPanelHeight;
         contentOpacity = 0;
         contentOffset = openContentOffset;
+        panelOpacity = 0;
+        panelScale = openPanelScale;
+        panelOffset = openPanelOffset;
     }
 
     function playOpenAnimation() {
@@ -77,6 +92,9 @@ Item {
             root.revealHeight = root.fullPanelHeight;
             root.contentOpacity = 1;
             root.contentOffset = 0;
+            root.panelOpacity = 1;
+            root.panelScale = 1;
+            root.panelOffset = 0;
             root.openAnimationFinished();
         }
 
@@ -87,9 +105,25 @@ Item {
         ParallelAnimation {
             NumberAnimation {
                 target: root
-                property: "revealHeight"
-                to: root.fullPanelHeight
+                property: "panelOpacity"
+                to: 1
+                duration: Math.max(120, root.openFadeDuration)
+                easing.type: Easing.OutQuad
+            }
+
+            NumberAnimation {
+                target: root
+                property: "panelScale"
+                to: 1
                 duration: root.openRevealDuration
+                easing.type: Easing.InOutCubic
+            }
+
+            NumberAnimation {
+                target: root
+                property: "panelOffset"
+                to: 0
+                duration: root.openSlideDuration
                 easing.type: Easing.OutCubic
             }
 
@@ -124,6 +158,30 @@ Item {
 
         NumberAnimation {
             target: root
+            property: "panelOpacity"
+            to: 0
+            duration: Math.max(90, root.closeFadeDuration)
+            easing.type: Easing.InQuad
+        }
+
+        NumberAnimation {
+            target: root
+            property: "panelScale"
+            to: root.closePanelScale
+            duration: root.closeSlideDuration
+            easing.type: Easing.InOutCubic
+        }
+
+        NumberAnimation {
+            target: root
+            property: "panelOffset"
+            to: root.closePanelOffset
+            duration: root.closeSlideDuration
+            easing.type: Easing.InCubic
+        }
+
+        NumberAnimation {
+            target: root
             property: "contentOpacity"
             to: 0
             duration: root.closeFadeDuration
@@ -138,29 +196,18 @@ Item {
             easing.type: Easing.InCubic
         }
 
-        SequentialAnimation {
-            PauseAnimation {
-                duration: root.closeRevealPause
-            }
-
-            NumberAnimation {
-                target: root
-                property: "revealHeight"
-                to: root.lineHeight
-                duration: root.closeRevealDuration
-                easing.type: Easing.InCubic
-            }
-        }
-
         onFinished: root.closeAnimationFinished()
     }
 
     Item {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        height: root.revealHeight
-        clip: true
+        x: 0
+        width: root.width
+        y: root.panelOffset
+        height: root.fullPanelHeight
+        opacity: root.panelOpacity
+        scale: root.panelScale
+        transformOrigin: root.transformOrigin
+        clip: false
 
         Rectangle {
             id: panelFrame

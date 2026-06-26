@@ -14,18 +14,6 @@ AnchoredPopup {
     popupWidth: mainPage.columnWidth * 2 + mainPage.columnSpacing + popupPadding * 2
     popupPadding: 12
 
-    openRevealPause: 85
-    openRevealDuration: 280
-    openContentDelay: 60
-    openFadeDuration: 180
-    openSlideDuration: 220
-    openContentOffset: -10
-    closeRevealPause: 35
-    closeRevealDuration: 210
-    closeFadeDuration: 110
-    closeSlideDuration: 170
-    closeContentOffset: -8
-
     function toggleCentered(window) {
         toggleFor(null, window);
     }

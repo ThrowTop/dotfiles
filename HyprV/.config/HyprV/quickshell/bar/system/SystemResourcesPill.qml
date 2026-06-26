@@ -60,7 +60,7 @@ GroupPill {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
             acceptedButtons: Qt.LeftButton | Qt.RightButton
-            onClicked: function(mouse) {
+            onPressed: function(mouse) {
                 if (mouse.button === Qt.LeftButton)
                     pill.shellRoot.openSystemStatsPopup(cpuTrigger, pill.parentWindow);
                 else
@@ -123,7 +123,7 @@ GroupPill {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
             acceptedButtons: Qt.LeftButton | Qt.RightButton
-            onClicked: function(mouse) {
+            onPressed: function(mouse) {
                 if (mouse.button === Qt.LeftButton)
                     pill.shellRoot.openSystemStatsPopup(ramTrigger, pill.parentWindow);
                 else
@@ -186,7 +186,7 @@ GroupPill {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
             acceptedButtons: Qt.LeftButton | Qt.RightButton
-            onClicked: function(mouse) {
+            onPressed: function(mouse) {
                 if (mouse.button === Qt.LeftButton)
                     pill.shellRoot.openSystemStatsPopup(tempTrigger, pill.parentWindow);
                 else
@@ -248,7 +248,7 @@ GroupPill {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
             acceptedButtons: Qt.LeftButton | Qt.RightButton
-            onClicked: function(mouse) {
+            onPressed: function(mouse) {
                 if (mouse.button === Qt.LeftButton)
                     pill.shellRoot.openSystemStatsPopup(netTrigger, pill.parentWindow);
                 else

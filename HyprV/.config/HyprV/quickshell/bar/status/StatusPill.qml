@@ -38,7 +38,7 @@ GroupPill {
         MouseArea {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
-            onClicked: pill.shellRoot.openBatteryInfoPopup(batteryTrigger, pill.parentWindow)
+            onPressed: pill.shellRoot.openBatteryInfoPopup(batteryTrigger, pill.parentWindow)
         }
     }
 }

@@ -11,7 +11,6 @@ AnchoredPopup {
     popupRadius: shellRoot.pillRadius
     closeOnEscape: false
 
-    readonly property int animationDuration: 200
     readonly property int rowHeight: Math.max(34, shellRoot.trayMenuTextPixelSize + 18)
     readonly property int menuMaxHeight: 420
     readonly property color hoverFill: shellRoot.withAlpha(shellRoot.primaryText, 0.10)
@@ -21,16 +20,6 @@ AnchoredPopup {
     property var menuHandle: null
     property int hydratorSequence: 0
     property bool hydratorOpen: false
-
-    openRevealDuration: animationDuration
-    openContentDelay: 20
-    openFadeDuration: 140
-    openSlideDuration: 180
-    openContentOffset: -8
-    closeRevealDuration: animationDuration
-    closeFadeDuration: 90
-    closeSlideDuration: 150
-    closeContentOffset: -6
 
     function topEntry() {
         return entryStack.count ? entryStack.get(entryStack.count - 1).handle : null;

@@ -51,7 +51,7 @@ Item {
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: button.interactive || button.wheelInteractive ? Qt.PointingHandCursor : Qt.ArrowCursor
 
-        onClicked: function(mouse) {
+        onPressed: function(mouse) {
             if (!button.interactive) {
                 return;
             }
