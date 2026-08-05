@@ -1,4 +1,3 @@
-
 hlc.config({
     general = {
         gaps_in = 5,
@@ -14,7 +13,7 @@ hlc.config({
     },
     decoration = {
         rounding = 19,
-        rounding_power = 2,
+        rounding_power = 3.5,
         active_opacity = 1.0,
         inactive_opacity = 0.9,
         border_part_of_window = true,
@@ -63,6 +62,7 @@ local gnomed = hlc.style.gnomed()
 
 hlc.animation = {
     global = hlc.anim(10, curves.linear),
+    monitorAdded = { enabled = false },
 
     -- border: snappy focus highlight
     border = hlc.anim(2.5, curves.outCubic),

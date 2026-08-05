@@ -205,21 +205,21 @@ hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = tr
 hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
 
-hl.bind(mod .. "SHIFT + A", function()
-    hlc.animations.enabled = not hlc.animations.enabled
-    hlc.notify("animations: " .. (hlc.animations.enabled and "on" or "off"), 1500)
-end)
-
-hl.bind(mod .. "SHIFT + R", function()
-    local cur = hlc.decoration.rounding
-    hlc.decoration.rounding = cur == 0 and 19 or 0
-    hlc.notify("rounding: " .. hlc.decoration.rounding, 1500)
-end)
-
-hl.bind(mod .. "SHIFT + B", function()
-    hlc.decoration.blur.enabled = not hlc.decoration.blur.enabled
-    hlc.notify("blur: " .. (hlc.decoration.blur.enabled and "on" or "off"), 1500)
-end)
+-- hl.bind(mod .. "SHIFT + A", function()
+--     hlc.animations.enabled = not hlc.animations.enabled
+--     hlc.notify("animations: " .. (hlc.animations.enabled and "on" or "off"), 1500)
+-- end)
+--
+-- hl.bind(mod .. "SHIFT + R", function()
+--     local cur = hlc.decoration.rounding
+--     hlc.decoration.rounding = cur == 0 and 19 or 0
+--     hlc.notify("rounding: " .. hlc.decoration.rounding, 1500)
+-- end)
+--
+-- hl.bind(mod .. "SHIFT + B", function()
+--     hlc.decoration.blur.enabled = not hlc.decoration.blur.enabled
+--     hlc.notify("blur: " .. (hlc.decoration.blur.enabled and "on" or "off"), 1500)
+-- end)
 
 hl.bind(mod .. "SHIFT + D", function()
     local on = hlc.decoration.inactive_opacity < 1.0
@@ -236,3 +236,5 @@ hl.bind("ALT+TAB", hl.dsp.window.cycle_next())
 -- hlc.input.touchpad.tap_and_drag = false
 
 hl.bind(mod .. "X", hypr.tap_to_click)
+
+

@@ -37,6 +37,19 @@ hl.layer_rule({
     blur = true,
     blur_popups = true,
     ignore_alpha = 0.15,
+    no_anim = true,
+})
+
+hl.layer_rule({
+    name = "hyprpaper-no-animation",
+    match = { namespace = "hyprpaper" },
+    no_anim = true,
+})
+
+hl.layer_rule({
+    name = "quickshell-corners-no-animation",
+    match = { namespace = "hyprv-screen-corner-overlay-.*" },
+    no_anim = true,
 })
 
 hl.layer_rule({
@@ -132,4 +145,3 @@ hl.window_rule({
     pin = true,
     no_focus = true,
 })
-

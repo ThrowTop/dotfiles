@@ -153,7 +153,7 @@ ShellRoot {
     readonly property int   pillRadius:  19
     readonly property int   barHeight:   38
     readonly property color pillBorder:  withAlpha(primaryText, 0.13)
-    readonly property color glassFill:        withAlpha(colors.glass, 0.42)
+    readonly property color glassFill:        withAlpha(colors.glass, 0.8)
     readonly property color glassStroke:      withAlpha(primaryText, 0.14)
     readonly property color glassOuterStroke: withAlpha("#000000", 0.50)
     readonly property color glassInnerStroke: withAlpha(primaryText, 0.28)
