@@ -37,13 +37,17 @@ Item {
     readonly property real trackHeight: 6
     readonly property real thumbSize: 14
 
-    Rectangle {
+    Superellipse {
         anchors.fill: parent
         radius: slider.frameRadius
+        radiusScale: 1.63
+        exponent: 3
         color: slider.frameFill
-        border.width: 1
-        border.color: slider.frameStroke
-        antialiasing: true
+        strokeWidth: 1
+        outlineColor: slider.frameStroke
+        innerStrokeWidth: 1
+        innerOutlineColor: slider.shellRoot.glassInnerStroke
+        directionalShine: true
 
         Row {
             anchors.left: parent.left
@@ -54,14 +58,9 @@ Item {
             anchors.rightMargin: slider.outerPadding
             spacing: slider.contentGap
 
-            Rectangle {
+            Item {
                 width: slider.iconBoxSize
                 height: slider.iconBoxSize
-                radius: slider.iconRadius
-                color: slider.shellRoot
-                    ? slider.shellRoot.withAlpha(slider.accentColor, 0.18)
-                    : Qt.rgba(slider.accentColor.r, slider.accentColor.g, slider.accentColor.b, 0.14)
-                antialiasing: true
 
                 Text {
                     anchors.centerIn: parent

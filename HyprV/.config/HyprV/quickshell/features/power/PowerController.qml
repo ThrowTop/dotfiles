@@ -15,6 +15,16 @@ Item {
     }
     property bool preventSleepEnabled: false
 
+    Component.onCompleted: syncCompositorEffects()
+
+    Connections {
+        target: PowerProfiles
+
+        function onProfileChanged() {
+            controller.syncCompositorEffects();
+        }
+    }
+
     IdleInhibitor {
         enabled: controller.preventSleepEnabled
         window: controller.shellRoot.primaryBarWindow
@@ -25,6 +35,11 @@ Item {
         if (nextProfile === "power-saver") PowerProfiles.profile = PowerProfile.PowerSaver;
         else if (nextProfile === "performance") PowerProfiles.profile = PowerProfile.Performance;
         else PowerProfiles.profile = PowerProfile.Balanced;
+    }
+
+    function syncCompositorEffects() {
+        const state = profile === "power-saver" ? "on" : "off";
+        shellRoot.runDetached(["hyprctl", "eval", "hypr.power_saver_visuals('" + state + "')"]);
     }
 
     function togglePreventSleep() {

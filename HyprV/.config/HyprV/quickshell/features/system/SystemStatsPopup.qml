@@ -116,13 +116,13 @@ AnchoredPopup {
         }
 
         // CPU card
-        Rectangle {
+        Superellipse {
             width: parent.width
             implicitHeight: cpuCardCol.implicitHeight + statsPopup.cardPadding * 2
             radius: statsPopup.cardRadius
             color: statsPopup.cardFill
-            border.width: 1
-            border.color: statsPopup.cardStroke
+            strokeWidth: 1
+            outlineColor: statsPopup.cardStroke
             antialiasing: true
 
             Column {
@@ -246,13 +246,13 @@ AnchoredPopup {
         }
 
         // RAM card
-        Rectangle {
+        Superellipse {
             width: parent.width
             implicitHeight: ramCardCol.implicitHeight + statsPopup.cardPadding * 2
             radius: statsPopup.cardRadius
             color: statsPopup.cardFill
-            border.width: 1
-            border.color: statsPopup.cardStroke
+            strokeWidth: 1
+            outlineColor: statsPopup.cardStroke
             antialiasing: true
 
             Column {
@@ -329,13 +329,13 @@ AnchoredPopup {
         }
 
         // Temp card
-        Rectangle {
+        Superellipse {
             width: parent.width
             implicitHeight: tempCardCol.implicitHeight + statsPopup.cardPadding * 2
             radius: statsPopup.cardRadius
             color: statsPopup.cardFill
-            border.width: 1
-            border.color: statsPopup.cardStroke
+            strokeWidth: 1
+            outlineColor: statsPopup.cardStroke
             antialiasing: true
 
             Column {
@@ -400,13 +400,13 @@ AnchoredPopup {
         }
 
         // Network card
-        Rectangle {
+        Superellipse {
             width: parent.width
             implicitHeight: netCardCol.implicitHeight + statsPopup.cardPadding * 2
             radius: statsPopup.cardRadius
             color: statsPopup.cardFill
-            border.width: 1
-            border.color: statsPopup.cardStroke
+            strokeWidth: 1
+            outlineColor: statsPopup.cardStroke
             antialiasing: true
 
             Column {

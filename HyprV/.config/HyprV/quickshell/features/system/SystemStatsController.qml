@@ -12,6 +12,7 @@ Item {
     property real _previousRxBytes: -1
     property real _previousTxBytes: -1
     property string _previousInterface: ""
+    property real _previousSnapshotMs: -1
 
     function updateRamStaticInfo(output) {
         const root = shellRoot;
@@ -45,6 +46,9 @@ Item {
         const root = shellRoot;
         const popupOpen = root.systemStatsPopupOpen;
         const sections = root.splitSections(output);
+        const snapshotMs = Date.now();
+        const elapsedSeconds = _previousSnapshotMs >= 0 ? Math.max(0.001, (snapshotMs - _previousSnapshotMs) / 1000) : 0;
+        _previousSnapshotMs = snapshotMs;
 
         // Aggregate CPU — always needed for bar
         const statLines = sections.__STAT__ || [];
@@ -126,8 +130,8 @@ Item {
             root.networkTxRate = 0;
         } else {
             if (_previousRxBytes >= 0 && _previousTxBytes >= 0) {
-                root.networkRxRate = Math.max(0, counters.rx - _previousRxBytes);
-                root.networkTxRate = Math.max(0, counters.tx - _previousTxBytes);
+                root.networkRxRate = elapsedSeconds > 0 ? Math.max(0, counters.rx - _previousRxBytes) / elapsedSeconds : 0;
+                root.networkTxRate = elapsedSeconds > 0 ? Math.max(0, counters.tx - _previousTxBytes) / elapsedSeconds : 0;
             }
             _previousRxBytes = counters.rx;
             _previousTxBytes = counters.tx;

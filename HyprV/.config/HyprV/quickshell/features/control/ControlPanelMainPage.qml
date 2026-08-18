@@ -241,12 +241,12 @@ Column {
                 width: parent.width
                 expanded: root.powerExpanded
 
-                Rectangle {
+                Superellipse {
                     width: parent.width
                     radius: 19
                     color: root.detailFill
-                    border.width: 1
-                    border.color: root.detailStroke
+                    strokeWidth: 1
+                    outlineColor: root.detailStroke
                     implicitHeight: powerModes.implicitHeight + 20
 
                     Column {
@@ -355,12 +355,12 @@ Column {
                 width: parent.width
                 expanded: root.sessionExpanded
 
-                Rectangle {
+                Superellipse {
                     width: parent.width
                     radius: 19
                     color: root.detailFill
-                    border.width: 1
-                    border.color: root.detailStroke
+                    strokeWidth: 1
+                    outlineColor: root.detailStroke
                     implicitHeight: sessionActions.implicitHeight + 20
 
                     Column {

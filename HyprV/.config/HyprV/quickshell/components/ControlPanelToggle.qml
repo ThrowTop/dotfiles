@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Effects
 
-Rectangle {
+Superellipse {
     id: toggle
 
     required property var shellRoot
@@ -25,13 +25,14 @@ Rectangle {
     readonly property color inactiveStroke: shellRoot.withAlpha(shellRoot.primaryText, 0.12)
     readonly property color iconWellFill: shellRoot.withAlpha("#ffffff", active ? 0.14 : 0.11)
     readonly property color iconColor: toggle.active ? "#ffffff" : toggle.titleColor
-    readonly property real frameRadius: 19
     readonly property real iconBoxSize: iconOnly ? Math.max(22, Math.min(30, Math.min(toggle.width, toggle.height) - 12)) : Math.max(28, Math.min(34, toggle.height - 16))
     readonly property real iconRadius: Math.round(iconBoxSize * 0.34)
     readonly property real iconPixelSize: iconOnly ? Math.max(15, Math.min(18, iconBoxSize * 0.5)) : Math.max(15, Math.min(18, iconBoxSize * 0.46))
     readonly property real iconImageSize: iconOnly ? Math.max(18, Math.min(22, iconBoxSize * 0.74)) : Math.max(18, Math.min(20, iconBoxSize * 0.64))
 
-    radius: frameRadius
+    radius: height / 2
+    radiusScale: 1
+    exponent: 2
     height: 72
     color: {
         const base = active ? activeFill : inactiveFill;
@@ -46,8 +47,8 @@ Rectangle {
         }
         return base;
     }
-    border.width: 1
-    border.color: {
+    strokeWidth: 1
+    outlineColor: {
         if (!toggleEnabled) {
             return inactiveStroke;
         }
@@ -56,8 +57,10 @@ Rectangle {
         }
         return active ? activeStroke : inactiveStroke;
     }
+    innerStrokeWidth: 1
+    innerOutlineColor: shellRoot.glassInnerStroke
+    directionalShine: true
     opacity: toggleEnabled ? 1 : 0.56
-    antialiasing: true
 
     Column {
         anchors.centerIn: parent

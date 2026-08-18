@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Effects
+import "components"
 
 Item {
     id: root
@@ -26,9 +27,11 @@ Item {
     property real fullPanelHeight: 0
     property real lineHeight: 2
     property real radius: 19
+    property real radiusScale: 1.63
     property real surfaceOpacity: 0.82
     property color fillColor: "#202020"
     property color strokeColor: "#404040"
+    property color shineColor: "transparent"
     property color shadowColor: "transparent"
     property real devicePixelRatio: 1
 
@@ -209,18 +212,13 @@ Item {
         transformOrigin: root.transformOrigin
         clip: false
 
-        Rectangle {
+        Item {
             id: panelFrame
 
             x: 0
             y: 0
             width: root.width
             height: root.fullPanelHeight
-            radius: root.radius
-            color: "transparent"
-            border.width: 0
-            antialiasing: true
-            clip: true
 
             Item {
                 id: shadowLayer
@@ -245,25 +243,27 @@ Item {
 
                 // Fill only — border is a separate sibling so surfaceOpacity
                 // doesn't dilute the stroke color.
-                Rectangle {
+                Superellipse {
                     anchors.fill: parent
                     radius: root.radius
+                    radiusScale: root.radiusScale
                     opacity: root.surfaceOpacity
                     color: root.fillColor
-                    antialiasing: true
                 }
             }
 
             // Border overlay — transparent rect with border.width rendered on top
             // of the fill as a sibling of shadowLayer so strokeColor is at its
             // full intended opacity, not diluted by surfaceOpacity.
-            Rectangle {
+            Superellipse {
                 anchors.fill: parent
                 radius: root.radius
+                radiusScale: root.radiusScale
                 color: "transparent"
-                border.width: 1
-                border.color: root.strokeColor
-                antialiasing: true
+                strokeWidth: 1
+                outlineColor: root.strokeColor
+                innerStrokeWidth: 1
+                innerOutlineColor: root.shineColor
             }
 
             Item {

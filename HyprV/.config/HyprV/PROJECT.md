@@ -1,4 +1,4 @@
-# CLAUDE.md
+# HyprV project guide
 
 This file gives coding agents the project context needed to work in this repository.
 
@@ -15,32 +15,39 @@ HyprV is a custom Hyprland shell built with Quickshell and QML. It lives under `
 
 The styling is dark-only, Apple-inspired. Colors come from `Colors.qml` (Catppuccin Mocha palette) with tokens exposed on `shell.qml`.
 
-## Running And Reloading
+## Development workflow
 
 ```bash
 # Start the shell
 ~/.config/HyprV/quickshell/scripts/launch.sh
 
-# Hot-reload after QML changes
-~/.config/HyprV/quickshell/scripts/reload.sh
+# Show the available development commands
+./quickshell/scripts/dev.sh help
 ```
 
 There is no build step. QML is interpreted at runtime by Quickshell.
 
-After meaningful QML changes, run:
+Use the compact development helper instead of invoking linters, runtime log readers,
+IPC commands, and screenshot tools separately:
 
 ```bash
-./quickshell/scripts/reload.sh
+./quickshell/scripts/dev.sh check [FILE...]
+./quickshell/scripts/dev.sh status
+./quickshell/scripts/dev.sh logs [LINES]
+./quickshell/scripts/dev.sh reload
+./quickshell/scripts/dev.sh ipc
+./quickshell/scripts/dev.sh call TARGET FUNCTION [ARGS...]
+./quickshell/scripts/dev.sh shot [OUTPUT.png]
 ```
 
-Then inspect the newest log under:
+After meaningful QML changes, run `dev.sh check` and `dev.sh reload`. The helper
+summarizes successful checks and log health in one line and caps failure diagnostics.
+Only inspect broader raw logs when that compact output identifies a problem requiring
+more context.
 
-```text
-/run/user/1000/quickshell/by-id/*/log.qslog
-/run/user/1000/quickshell/by-id/*/log.log
-```
-
-Use `qmllint <file.qml>` to catch type and binding errors before reloading.
+For visual changes, use IPC to expose the relevant UI state when possible, capture the
+focused monitor with `dev.sh shot`, and inspect the resulting image. Check behavior on
+every affected monitor when changing screen selection, popup placement, or bar layout.
 
 Installed Quickshell QML module metadata is the local API source of truth. It is very
 important to reference this documentation before using or changing Quickshell APIs:
@@ -84,6 +91,7 @@ Never mix `iconFont` and `baseFont` in the same `Text` element. When a bar modul
 | `quickshell/Icons.qml` | Nerd Font glyph strings — MDI + FA family |
 | `quickshell/PollCommand.qml` | Timer-based command polling primitive |
 | `quickshell/AnimatedGlassPanel.qml` | Glass popup surface: fill + shadow layer + border overlay |
+| `quickshell/components/Superellipse.qml` | Native vector surface for continuous corners and normal-aware shine contours |
 | `quickshell/bar/BarWindow.qml` | Top bar PanelWindow layout |
 | `quickshell/bar/status/StatusPill.qml` | Right-side status pill: keyboard layout, battery |
 | `quickshell/bar/system/SystemResourcesPill.qml` | Left-side resources: CPU, RAM, temperature, network — all color-coded |
@@ -125,7 +133,7 @@ Bluetooth state, actions, timers, and device signal watchers live in `BluetoothC
 
 System stats parsing is in `SystemStatsController.qml`. The poll command switches between a lightweight snapshot (head of `/proc/stat` + meminfo + temp + net) when the popup is closed, and a full snapshot (all CPU cores, loadavg, cpufreq) when open. `shell.qml` exposes `cpuUsage`, `memoryUsage`, `memoryUsedGB`, `memoryTotalGB`, `temperatureC`, network rates, histories, per-core usages, CPU model/cores/freq, and RAM speed for bar/popup consumers.
 
-Battery state is tracked via a lightweight `batteryRatePoll` PollCommand in `shell.qml`: 500 ms interval when the battery popup is open, 10s otherwise, with an immediate refresh when the popup opens. The battery sysfs path comes from `UPower.devices` native paths, not a startup probe script. The poll reads the battery `uevent` sysfs snapshot, feeds visible capacity/status plus signed `batteryCurrentW` for live charge/discharge rate, and stores absolute samples in `powerDrawHistory` so average power is draw regardless of charging state. `BatteryInfoPopup` reads static facts (health %, cycle count) once per open from sysfs.
+Battery state is tracked via a lightweight `batteryRatePoll` PollCommand in `shell.qml`: 500 ms interval when the battery popup is open, 10s otherwise, with an immediate refresh when the popup opens. The battery sysfs path comes from `UPower.devices` native paths, not a startup probe script. The poll reads the battery `uevent` sysfs snapshot, feeds visible capacity/status plus signed `batteryCurrentW` for live charge/discharge rate, and stores timestamped samples in `batteryPowerSamples`. The time-weighted five-minute average gives equal importance to elapsed time at either polling cadence and backs local time estimates when UPower does not provide one. `BatteryInfoPopup` reads static facts (health %, cycle count) once per open from sysfs.
 
 Wi-Fi is fully native via `Quickshell.Networking`. `features/network/NetworkController.qml` owns Wi-Fi device state, connectivity, captive-portal detection, scan/connect/disconnect/forget actions, and exposes native `WifiNetwork` objects to `WifiPopup.qml`. The popup's captive-portal Sign In button opens a plain HTTP page through `open-manager.sh wifi-sign-in`; captive networks should intercept that request and redirect to their login page. The bar Wi-Fi button is `bar/modules/WifiModule.qml`, which extends `features/network/WifiIndicator.qml` directly — there is no intermediate fallback or native-vs-script split. `WifiFallback.qml` and `WifiNative.qml` were deleted; do not recreate them.
 
@@ -145,10 +153,29 @@ Keep the shell compact, desktop-native, and Apple-flavored:
 - Preserve existing property/method names during refactors, then narrow APIs in a later pass.
 - Use existing primitives: `AnimatedGlassPanel`, `ActionChip`, `DeviceRow`, `ControlPanelToggle`, `ControlPanelSplitTile`, `ControlPanelSlider`, `GroupPill`, `TextModule`, `BatteryPill`.
 - Keep bar modules thin. They should trigger feature popups and display state, not parse command output.
-- Use `qmllint` on any file you touch before reloading.
+- Run `./quickshell/scripts/dev.sh check` on touched files before reloading.
 - Never mix `iconFont` and text in the same `Text` element — always split them.
 - **Prefer the most robust and proper implementation.** Use event-driven approaches and native Quickshell service integrations over polling or scripts wherever possible. Polling and `PollCommand` are last resorts for things Quickshell cannot expose natively.
 - **No legacy paths.** When an API, property, or pattern changes, update all consumers immediately. Do not leave compatibility shims, forwarding aliases, or old call sites around. The codebase has one way to do each thing — if that changes, the old way is deleted, not preserved alongside the new one.
+
+### Control surface geometry
+
+Follow the macOS control-center shape hierarchy rather than applying one corner
+treatment everywhere:
+
+- Small square controls are circles; wide controls are capsules/pills.
+- Full slider surfaces, media playback cards, popup shells, and other substantial
+  non-pill cards use `Superellipse`.
+- The default continuous-corner exponent is `3.5`. Control-center sliders and the
+  media card intentionally use exponent `3` for a softer curve. Popup shells use
+  the larger compensated radius scale; the media card additionally uses its
+  feature-specific larger radius scale.
+- Slider leading icons sit directly on the slider surface. Do not add a circular,
+  squircle, or tinted icon well around them. Keep the invisible icon-sized `Item`
+  when a stable layout slot or click target is needed.
+- Do not substitute `Rectangle.radius` for an established superellipse surface.
+  Use `components/Superellipse.qml` so fill, outline, and shine follow the same
+  vector contour.
 
 ### Hover-expand pattern
 
@@ -158,12 +185,30 @@ Keep the shell compact, desktop-native, and Apple-flavored:
 
 `AnimatedGlassPanel` renders the popup surface in two independent layers inside `panelFrame`:
 
-1. `shadowLayer` (Item with `layer.enabled`): renders the glass fill (`fillColor` at `surfaceOpacity`) with a drop shadow via `MultiEffect`. **No border here.**
-2. A sibling `Rectangle` on top: `color: "transparent"; border.width: 1; border.color: strokeColor`. This renders the visible border at full intended opacity — not diluted by `surfaceOpacity`.
+1. `shadowLayer` (Item with `layer.enabled`) renders a `Superellipse` glass fill
+   (`fillColor` at `surfaceOpacity`) with a drop shadow via `MultiEffect`. **No
+   border here.**
+2. A sibling transparent `Superellipse` renders the outer 1 px dark outline and a
+   continuous, brighter 1 px shine contour inset from it. The popup inset shine is
+   filled all the way around; it is not directional.
 
 Do not move the border back inside `shadowLayer`. `opacity: surfaceOpacity` on the fill rect would multiply the border color by ~0.82, making it much fainter than intended. The separation is intentional.
 
-Color tokens for popup borders live in `shell.qml`: `glassInnerStroke` (visible border ring) and `glassOuterStroke` (reserved for a future outer dark ring). `glassStroke` (the original faint value) is kept for separator/divider uses elsewhere.
+Color tokens for popup borders live in `shell.qml`: `glassOuterStroke` is the
+outer dark outline and `glassInnerStroke` is the brighter inset shine.
+`glassStroke` remains available for separators/dividers elsewhere.
+
+Individual control-center buttons, pills, sliders, and the media card use
+`Superellipse.directionalShine`. This is a contour-derived highlight, not a
+translucent overlay: it selects segments using their actual surface normals,
+starts directly at the top and bottom normals (270° and 90°), and fades toward
+the sides in three continuous angular bands. Keep adjacent sampled segments
+joined so round line caps do not produce a dotted contour. The main popup border
+must keep `directionalShine: false` so its inset shine remains continuous.
+
+Do not fake recessed liquid-glass depth with low-opacity rectangles or generic
+gradients. A convincing inset depth treatment requires a dedicated
+signed-distance shader; leave it absent until such a shader is implemented.
 
 ### Popup animation
 

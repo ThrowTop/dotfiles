@@ -29,6 +29,7 @@ ShellRoot {
     property real memoryUsage: 0
     property real temperatureC: 0
     property string keyboardLayout: "ENG"
+    property string keyboardDeviceName: ""
     property string networkRateInterface: ""
     property real networkRxRate: 0
     property real networkTxRate: 0
@@ -36,7 +37,11 @@ ShellRoot {
     property var memoryHistory: []
     property var networkHistory: []
     property var temperatureHistory: []
-    property var powerDrawHistory: []
+    property var batteryPowerSamples: []
+    property string batteryPowerSampleMode: ""
+    readonly property int batteryPowerSampleWindowMs: 300000
+    readonly property int batteryPowerSampleMaxCount: 640
+    readonly property real batteryPowerSampleMaxW: 100
     property real batteryCurrentW: 0
     property real batterySnapshotPercent: -1
     property string batterySnapshotStatus: ""
@@ -45,13 +50,8 @@ ShellRoot {
     property real batterySnapshotEnergyFullWh: 0
     readonly property bool batteryDischarging: !!batteryDevice && !batteryPlugged
     readonly property bool batteryPopupOpen: batteryInfoPopup.isOpen || batteryInfoPopup.animatingClose
-    readonly property real avgPowerW: {
-        const h = powerDrawHistory;
-        if (!h || h.length === 0) return 0;
-        let sum = 0;
-        for (let i = 0; i < h.length; i++) sum += h[i];
-        return sum / h.length;
-    }
+    readonly property var batteryPowerSampleStats: calculateBatteryPowerSampleStats()
+    readonly property real avgPowerW: Number(batteryPowerSampleStats?.averageW || 0)
     property var cpuCoreUsages: []
     property real memoryUsedGB: 0
     property real memoryTotalGB: 0
@@ -64,6 +64,9 @@ ShellRoot {
     property int cpuThreads: 0
     property string ramSpeedText: ""
     readonly property bool systemStatsPopupOpen: systemStatsPopup.isOpen || systemStatsPopup.animatingClose
+    readonly property int systemSnapshotInterval: systemStatsPopupOpen
+        ? (batteryPlugged ? 1000 : 3000)
+        : (powerController.profile === "power-saver" ? 10000 : (batteryPlugged ? 1000 : 3000))
     readonly property bool trayPopupOpen: trayMenuPopup.isOpen || trayMenuPopup.animatingClose || trayOverflowPopup.isOpen || trayOverflowPopup.animatingClose
     property var trayMenuController: null
     readonly property string brightnessScriptPath: configDir + "/quickshell/scripts/brightness.sh"
@@ -274,18 +277,11 @@ ShellRoot {
         const mode = batteryInfo?.mode || "";
         if (mode === "full") return "Full";
         if (mode === "plugged") return "Plugged in";
-        const rawSeconds = Number(batteryInfo?.estimateSeconds);
+        const estimateValue = batteryInfo?.estimateSeconds;
+        if (estimateValue === null || estimateValue === undefined) return "Calculating";
+        const rawSeconds = Number(estimateValue);
         if (!isFinite(rawSeconds) || rawSeconds < 0) return "Calculating";
-        if (mode === "charging" && root.chargeLimit < 100) {
-            const energyFull = Number(batteryInfo?.energyFullWh || 0);
-            const energyNow = Number(batteryInfo?.energyNowWh || 0);
-            const energyToFull = energyFull - energyNow;
-            const energyToLimit = energyFull * (root.chargeLimit / 100) - energyNow;
-            if (energyToFull > 0) {
-                if (energyToLimit <= 0) return "At limit";
-                return formatDuration(rawSeconds * energyToLimit / energyToFull);
-            }
-        }
+        if (mode === "charging" && root.chargeLimit < 100 && rawSeconds === 0) return "At limit";
         return formatDuration(rawSeconds);
     }
     readonly property string batterySampleWindowText: {
@@ -293,16 +289,15 @@ ShellRoot {
             return "";
         }
         const seconds = Number(batteryInfo?.sampleWindowSeconds || 0);
-        if ((batteryInfo?.estimateBasis || "") === "upower") {
-            return "UPower estimate";
+        const basis = batteryInfo?.estimateBasis || "none";
+        if (basis === "upower") return "UPower";
+        if (basis === "upower-limit") return "UPower · scaled to limit";
+        if (basis === "average") {
+            if (seconds >= 60) return "Power average · " + formatDuration(seconds);
+            return "Power averaging · " + Math.round(seconds) + "s";
         }
-        if (seconds >= 1800) {
-            return "Last 30 min sampled";
-        }
-        if (seconds >= 60) {
-            return "Sampled " + formatDuration(seconds);
-        }
-        return "Sampling...";
+        if (basis === "instant") return "Instant power · still sampling";
+        return "--";
     }
     readonly property string volumeIcon: {
         const percent = audioController.volumePercent;
@@ -363,7 +358,8 @@ ShellRoot {
         root.islandOsdTrigger = !root.islandOsdTrigger;
     }
     onBatteryPluggedChanged: {
-        root.powerDrawHistory = [];
+        root.batteryPowerSamples = [];
+        root.batteryPowerSampleMode = "";
         root.batteryCurrentW = 0;
         if (!root._osdReady || !root.batteryPlugged) return;
         root.islandOsdLabel     = "Charging";
@@ -396,6 +392,19 @@ ShellRoot {
 
     onBatteryPopupOpenChanged: {
         if (root.batteryPopupOpen) {
+            batteryRatePoll.refresh();
+        }
+    }
+    onBatteryDevPathChanged: batteryRatePoll.refresh()
+
+    Connections {
+        target: root.batteryDevice
+
+        function onPercentageChanged() {
+            batteryRatePoll.refresh();
+        }
+
+        function onStateChanged() {
             batteryRatePoll.refresh();
         }
     }
@@ -599,6 +608,78 @@ ShellRoot {
         return "idle";
     }
 
+    function recordBatteryPowerSample(powerW, mode) {
+        const value = Number(powerW);
+        if (!isFinite(value) || value <= 0 || value > root.batteryPowerSampleMaxW) return;
+
+        if (root.batteryPowerSampleMode !== mode) {
+            root.batteryPowerSamples = [];
+            root.batteryPowerSampleMode = mode;
+        }
+
+        const timestampMs = Date.now();
+        const cutoffMs = timestampMs - root.batteryPowerSampleWindowMs;
+        const previous = Array.isArray(root.batteryPowerSamples) ? root.batteryPowerSamples : [];
+        const next = [];
+        for (let i = 0; i < previous.length; i++) {
+            const sample = previous[i];
+            const sampleTimeMs = Number(sample?.timeMs || 0);
+            const samplePowerW = Number(sample?.powerW || 0);
+            if (sampleTimeMs >= cutoffMs && sampleTimeMs < timestampMs
+                    && isFinite(samplePowerW) && samplePowerW > 0
+                    && samplePowerW <= root.batteryPowerSampleMaxW) {
+                next.push({ timeMs: sampleTimeMs, powerW: samplePowerW });
+            }
+        }
+        next.push({ timeMs: timestampMs, powerW: value });
+        if (next.length > root.batteryPowerSampleMaxCount) {
+            next.splice(0, next.length - root.batteryPowerSampleMaxCount);
+        }
+        root.batteryPowerSamples = next;
+    }
+
+    function calculateBatteryPowerSampleStats() {
+        const samples = Array.isArray(root.batteryPowerSamples) ? root.batteryPowerSamples : [];
+        if (samples.length === 0) {
+            return { averageW: 0, sampleCount: 0, windowSeconds: 0, windowComplete: false };
+        }
+
+        const last = samples[samples.length - 1];
+        const lastPowerW = Number(last?.powerW || 0);
+        if (samples.length === 1) {
+            return { averageW: lastPowerW, sampleCount: 1, windowSeconds: 0, windowComplete: false };
+        }
+
+        let weightedPowerMs = 0;
+        let weightedDurationMs = 0;
+        for (let i = 1; i < samples.length; i++) {
+            const previous = samples[i - 1];
+            const current = samples[i];
+            const previousTimeMs = Number(previous?.timeMs || 0);
+            const currentTimeMs = Number(current?.timeMs || 0);
+            const previousPowerW = Number(previous?.powerW || 0);
+            const currentPowerW = Number(current?.powerW || 0);
+            const elapsedMs = currentTimeMs - previousTimeMs;
+            if (elapsedMs <= 0) continue;
+
+            // Normal background samples are 10 seconds apart. Capping a segment
+            // prevents suspend/resume gaps from dominating the average.
+            const weightMs = Math.min(elapsedMs, 15000);
+            weightedPowerMs += ((previousPowerW + currentPowerW) / 2) * weightMs;
+            weightedDurationMs += weightMs;
+        }
+
+        const firstTimeMs = Number(samples[0]?.timeMs || 0);
+        const lastTimeMs = Number(last?.timeMs || firstTimeMs);
+        const windowMs = Math.max(0, Math.min(root.batteryPowerSampleWindowMs, lastTimeMs - firstTimeMs));
+        return {
+            averageW: weightedDurationMs > 0 ? weightedPowerMs / weightedDurationMs : lastPowerW,
+            sampleCount: samples.length,
+            windowSeconds: windowMs / 1000,
+            windowComplete: windowMs >= root.batteryPowerSampleWindowMs * 0.9
+        };
+    }
+
     function currentBatteryInfo() {
         const device = root.batteryDevice;
         if (!device) {
@@ -626,6 +707,12 @@ ShellRoot {
             ? snapshotPowerW
             : (mode === "discharging" ? -Math.abs(changeRate) : Math.abs(changeRate));
         const absPowerW = Math.abs(powerW);
+        const sampleStats = root.batteryPowerSampleStats;
+        const averagePowerW = Number(sampleStats?.averageW || 0);
+        const hasAverage = Number(sampleStats?.sampleCount || 0) >= 2
+            && Number(sampleStats?.windowSeconds || 0) >= 10;
+        const localPowerW = hasAverage ? averagePowerW : absPowerW;
+        const localEstimateBasis = hasAverage ? "average" : "instant";
         const energyNowWh = Number(root.batterySnapshotEnergyNowWh || 0) > 0
             ? Number(root.batterySnapshotEnergyNowWh || 0)
             : Number(device.energy || 0);
@@ -633,15 +720,40 @@ ShellRoot {
             ? Number(root.batterySnapshotEnergyFullWh || 0)
             : Number(device.energyCapacity || 0);
         let estimateSeconds = null;
+        let estimateBasis = "none";
         if (mode === "charging") {
-            estimateSeconds = Number(device.timeToFull || 0) > 0 ? Number(device.timeToFull || 0) : null;
-            if (estimateSeconds === null && absPowerW > 0 && energyFullWh > energyNowWh) {
-                estimateSeconds = (energyFullWh - energyNowWh) / absPowerW * 3600;
+            const upowerSeconds = Number(device.timeToFull || 0) > 0 ? Number(device.timeToFull) : null;
+            const energyToFullWh = Math.max(0, energyFullWh - energyNowWh);
+            if (root.chargeLimit < 100 && energyFullWh > 0) {
+                const targetEnergyWh = energyFullWh * (root.chargeLimit / 100);
+                const energyToLimitWh = targetEnergyWh - energyNowWh;
+                if (energyToLimitWh <= 0) {
+                    estimateSeconds = 0;
+                } else if (hasAverage && localPowerW > 0) {
+                    estimateSeconds = energyToLimitWh / localPowerW * 3600;
+                    estimateBasis = "average";
+                } else if (upowerSeconds !== null && energyToFullWh > 0) {
+                    estimateSeconds = upowerSeconds * energyToLimitWh / energyToFullWh;
+                    estimateBasis = "upower-limit";
+                } else if (localPowerW > 0) {
+                    estimateSeconds = energyToLimitWh / localPowerW * 3600;
+                    estimateBasis = localEstimateBasis;
+                }
+            } else if (upowerSeconds !== null) {
+                estimateSeconds = upowerSeconds;
+                estimateBasis = "upower";
+            } else if (localPowerW > 0 && energyToFullWh > 0) {
+                estimateSeconds = energyToFullWh / localPowerW * 3600;
+                estimateBasis = localEstimateBasis;
             }
         } else if (mode === "discharging") {
-            estimateSeconds = Number(device.timeToEmpty || 0) > 0 ? Number(device.timeToEmpty || 0) : null;
-            if (estimateSeconds === null && absPowerW > 0 && energyNowWh > 0) {
-                estimateSeconds = energyNowWh / absPowerW * 3600;
+            const upowerSeconds = Number(device.timeToEmpty || 0) > 0 ? Number(device.timeToEmpty) : null;
+            if (upowerSeconds !== null) {
+                estimateSeconds = upowerSeconds;
+                estimateBasis = "upower";
+            } else if (localPowerW > 0 && energyNowWh > 0) {
+                estimateSeconds = energyNowWh / localPowerW * 3600;
+                estimateBasis = localEstimateBasis;
             }
         } else if (mode === "full") {
             estimateSeconds = 0;
@@ -653,12 +765,12 @@ ShellRoot {
             mode: mode,
             capacity: Math.round(root.batteryPercent),
             powerW: powerW,
-            averagePowerW: powerW,
-            sampleCount: 0,
-            sampleWindowSeconds: 0,
-            windowComplete: false,
+            averagePowerW: averagePowerW,
+            sampleCount: Number(sampleStats?.sampleCount || 0),
+            sampleWindowSeconds: Number(sampleStats?.windowSeconds || 0),
+            windowComplete: !!sampleStats?.windowComplete,
             estimateSeconds: estimateSeconds,
-            estimateBasis: absPowerW > 0 ? (snapshotPowerW !== 0 ? "sysfs" : "upower") : "none",
+            estimateBasis: estimateBasis,
             energyNowWh: energyNowWh,
             energyFullWh: energyFullWh
         };
@@ -732,16 +844,25 @@ ShellRoot {
             root.batterySnapshotEnergyFullWh = rawChargeFullUah * rawVoltageUv / 1000000000000;
         }
 
-        if (!isFinite(absW) || absW <= 0) {
+        const charging = status === "charging";
+        const discharging = status === "discharging";
+        const sampleMode = charging ? "charging" : (discharging ? "discharging" : "");
+        if (!sampleMode) {
+            root.batteryPowerSamples = [];
+            root.batteryPowerSampleMode = "";
+            root.batteryCurrentW = 0;
+            root.batterySnapshotPowerW = 0;
+            return;
+        }
+        if (!isFinite(absW) || absW <= 0 || absW > root.batteryPowerSampleMaxW) {
             root.batteryCurrentW = 0;
             root.batterySnapshotPowerW = 0;
             return;
         }
 
-        const charging = status.indexOf("charging") >= 0 && status.indexOf("not charging") < 0;
         root.batteryCurrentW = charging ? absW : -absW;
         root.batterySnapshotPowerW = root.batteryCurrentW;
-        root.powerDrawHistory = root.appendHistory(root.powerDrawHistory, absW, root.statsHistoryLimit);
+        root.recordBatteryPowerSample(absW, sampleMode);
     }
 
     function parseNumberMap(text) {
@@ -1116,16 +1237,24 @@ ShellRoot {
         target: Hyprland
         function onRawEvent(event) {
             if (event.name === "activelayout") {
-                const parts = event.data.split(",");
-                if (parts.length >= 2) {
-                    root.keyboardLayout = root.layoutAbbrev(parts.slice(1).join(",").trim());
+                const separator = event.data.indexOf(",");
+                if (separator < 0) return;
+
+                const deviceName = event.data.slice(0, separator).trim();
+                const layoutName = event.data.slice(separator + 1).trim();
+                if (root.keyboardDeviceName.length === 0 || deviceName === root.keyboardDeviceName) {
+                    root.keyboardLayout = root.layoutAbbrev(layoutName);
+                } else if (!keyboardLayoutProbe.running) {
+                    // Virtual keyboards can emit their own layout events. Re-read the
+                    // main keyboard so they cannot leave the bar showing their layout.
+                    keyboardLayoutProbe.running = true;
                 }
             }
         }
     }
 
     Process {
-        id: initialKeyboardLayoutProbe
+        id: keyboardLayoutProbe
 
         running: true
         command: ["hyprctl", "-j", "devices"]
@@ -1140,11 +1269,13 @@ ShellRoot {
                 for (let i = 0; i < keyboards.length; i++) {
                     const kb = keyboards[i];
                     if (kb.main) {
+                        root.keyboardDeviceName = kb.name || "";
                         root.keyboardLayout = root.layoutAbbrev(kb.active_keymap || "");
                         return;
                     }
                 }
                 if (keyboards.length > 0) {
+                    root.keyboardDeviceName = keyboards[0].name || "";
                     root.keyboardLayout = root.layoutAbbrev(keyboards[0].active_keymap || "");
                 }
             } catch (e) {}
@@ -1154,7 +1285,7 @@ ShellRoot {
     PollCommand {
         id: systemSnapshot
 
-        interval: root.batteryPlugged ? 1000 : 3000
+        interval: root.systemSnapshotInterval
         command: root.systemStatsPopupOpen
             ? ["sh", "-lc", "printf '__STAT__\\n'; cat /proc/stat; printf '\\n__MEM__\\n'; cat /proc/meminfo; printf '\\n__TEMP__\\n'; cat " + root.thermalZonePath + "; printf '\\n__ROUTE__\\n'; cat /proc/net/route; printf '\\n__NET__\\n'; cat /proc/net/dev; printf '\\n__LOAD__\\n'; cat /proc/loadavg; printf '\\n__FREQ__\\n'; cat /sys/devices/system/cpu/cpufreq/policy*/scaling_cur_freq"]
             : ["sh", "-lc", "printf '__STAT__\\n'; head -1 /proc/stat; printf '\\n__MEM__\\n'; cat /proc/meminfo; printf '\\n__TEMP__\\n'; cat " + root.thermalZonePath + "; printf '\\n__ROUTE__\\n'; cat /proc/net/route; printf '\\n__NET__\\n'; cat /proc/net/dev"]
@@ -1235,7 +1366,10 @@ ShellRoot {
     Process {
         id: audioSpectrumProcess
 
-        running: root.audioSpectrumCavaAvailable && root.media.available && root.media.playing
+        running: root.power.profile !== "power-saver"
+            && root.audioSpectrumCavaAvailable
+            && root.media.available
+            && root.media.playing
         command: [root.configDir + "/quickshell/scripts/audio-spectrum.sh"]
 
         onRunningChanged: {

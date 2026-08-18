@@ -1,6 +1,6 @@
 import QtQuick
 
-Rectangle {
+Superellipse {
     id: row
 
     required property var shellRoot
@@ -18,10 +18,9 @@ Rectangle {
     color: active
         ? shellRoot.withAlpha(shellRoot.primaryText, 0.12)
         : (rowMouse.containsMouse && !disabled ? shellRoot.withAlpha(shellRoot.primaryText, 0.08) : shellRoot.withAlpha("#ffffff", 0.06))
-    border.width: 1
-    border.color: active ? shellRoot.withAlpha(shellRoot.primaryText, 0.22) : shellRoot.withAlpha(shellRoot.primaryText, 0.1)
+    strokeWidth: 1
+    outlineColor: active ? shellRoot.withAlpha(shellRoot.primaryText, 0.22) : shellRoot.withAlpha(shellRoot.primaryText, 0.1)
     opacity: disabled ? 0.56 : 1
-    antialiasing: true
 
     Behavior on color {
         ColorAnimation { duration: 120 }

@@ -7,6 +7,7 @@ hlc.config({
         follow_mouse = 1,
         sensitivity = -0.3,
         -- accel_profile = "flat",
+        accel_profile = "adaptive",
         scroll_method = "on_button_down",
         scroll_button = 274,
         scroll_button_lock = false,
@@ -25,7 +26,7 @@ hl.device({
     -- enabled = true,
     name = "znt0001:00-14e5:650e-touchpad",
     disable_while_typing = true,
-    sensitivity = -0.4,
+    sensitivity = -0.1, -- -0.3
 })
 
 

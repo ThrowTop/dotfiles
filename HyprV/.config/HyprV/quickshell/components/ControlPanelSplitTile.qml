@@ -30,24 +30,26 @@ Item {
     readonly property color activeFill: shellRoot.withAlpha(accentColor, 0.28)
     readonly property color activeStroke: shellRoot.withAlpha(accentColor, 0.42)
     readonly property color iconWellFill: shellRoot.withAlpha("#ffffff", active ? 0.14 : 0.11)
-    readonly property real frameRadius: 19
     readonly property real inset: Math.max(6, Math.round(height * 0.14))
     readonly property real iconWellWidth: Math.max(28, iconAreaWidth - inset * 2)
     readonly property real iconWellHeight: Math.max(28, height - inset * 2)
-    readonly property real iconWellRadius: 11
     readonly property real iconPixelSize: Math.max(16, Math.min(20, Math.min(iconWellWidth, iconWellHeight) * 0.48))
     readonly property real iconTextGap: 9
     readonly property real contentStartX: inset + iconWellWidth + iconTextGap
 
-    Rectangle {
+    Superellipse {
         id: frame
 
         anchors.fill: parent
-        radius: tile.frameRadius
+        radius: height / 2
+        radiusScale: 1
+        exponent: 2
         color: tile.active ? tile.activeFill : tile.baseFill
-        border.width: 1
-        border.color: tile.active ? tile.activeStroke : tile.baseStroke
-        antialiasing: true
+        strokeWidth: 1
+        outlineColor: tile.active ? tile.activeStroke : tile.baseStroke
+        innerStrokeWidth: 1
+        innerOutlineColor: tile.shellRoot.glassInnerStroke
+        directionalShine: true
     }
 
     Rectangle {
@@ -57,7 +59,7 @@ Item {
         y: tile.inset
         width: tile.iconWellWidth
         height: tile.iconWellHeight
-        radius: tile.iconWellRadius
+        radius: Math.min(width, height) / 2
         color: iconArea.pressed
             ? Qt.darker(tile.iconWellFill, 1.08)
             : (iconArea.containsMouse ? Qt.lighter(tile.iconWellFill, 1.04) : tile.iconWellFill)

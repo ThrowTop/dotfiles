@@ -1,6 +1,6 @@
 import QtQuick
 
-Rectangle {
+Superellipse {
     id: chip
 
     required property var shellRoot
@@ -16,7 +16,9 @@ Rectangle {
 
     signal clicked()
 
-    radius: cornerRadius
+    radius: Math.max(cornerRadius, height / 2)
+    radiusScale: 1
+    exponent: 2
     height: 34
     implicitWidth: Math.max(minimumWidth, Math.max(chipLabel.contentWidth, chipIcon.contentWidth) + 24)
     color: disabled
@@ -25,13 +27,15 @@ Rectangle {
         ? Qt.darker(fillColor, 1.08)
         : (chipArea.containsMouse ? Qt.lighter(fillColor, 1.06) : fillColor))
     opacity: disabled ? 0.56 : 1
-    border.width: 1
-    border.color: disabled
+    strokeWidth: 1
+    outlineColor: disabled
     ? (shellRoot.withAlpha(shellRoot.primaryText, 0.06))
     : (chipArea.containsMouse
         ? shellRoot.withAlpha(foregroundColor, 0.22)
         : strokeColor)
-    antialiasing: true
+    innerStrokeWidth: 1
+    innerOutlineColor: shellRoot.glassInnerStroke
+    directionalShine: true
 
     Text {
         id: chipLabel

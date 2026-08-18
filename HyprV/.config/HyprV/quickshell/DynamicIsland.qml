@@ -641,6 +641,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 values: island.spectrumValues
                 active: island.mediaPlaying
+                motionEnabled: island.shellRoot.power.profile !== "power-saver"
                 barCount: 6
                 barColor: island.accentColor
                 peakColor: island.textColor
@@ -740,6 +741,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 values: island.spectrumValues
                 active: island.mediaPlaying
+                motionEnabled: island.shellRoot.power.profile !== "power-saver"
                 barCount: 8
                 barColor: island.accentColor
                 peakColor: island.textColor

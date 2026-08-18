@@ -6,6 +6,7 @@ Canvas {
     property var values: []
     property int barCount: 14
     property bool active: false
+    property bool motionEnabled: true
     property color barColor: "#407cdd"
     property color peakColor: "#cdd6f4"
     property color quietColor: Qt.rgba(0.8, 0.8, 0.8, 0.24)
@@ -57,7 +58,7 @@ Canvas {
     Timer {
         interval: 66
         repeat: true
-        running: spectrum.visible && (!spectrum.active || !spectrum.hasEnergy)
+        running: spectrum.motionEnabled && spectrum.visible && (!spectrum.active || !spectrum.hasEnergy)
         onTriggered: {
             spectrum.phase += 0.28;
             spectrum.requestPaint();
@@ -89,6 +90,7 @@ Canvas {
 
     onValuesChanged: requestPaint()
     onActiveChanged: requestPaint()
+    onMotionEnabledChanged: requestPaint()
     onBarCountChanged: requestPaint()
     onBarColorChanged: requestPaint()
     onPeakColorChanged: requestPaint()

@@ -1,7 +1,8 @@
 import QtQuick
 import QtQuick.Effects
+import "../../components"
 
-Rectangle {
+Superellipse {
     id: card
 
     required property var shellRoot
@@ -17,12 +18,15 @@ Rectangle {
     signal nextClicked()
 
     radius: frameRadius
+    radiusScale: 2.1
+    exponent: 3
     implicitHeight: 160
     color: shellRoot.withAlpha("#ffffff", 0.11)
-    border.width: 1
-    border.color: shellRoot.withAlpha(shellRoot.primaryText, 0.12)
-    antialiasing: true
-    clip: true
+    strokeWidth: 1
+    outlineColor: shellRoot.withAlpha(shellRoot.primaryText, 0.12)
+    innerStrokeWidth: 1
+    innerOutlineColor: shellRoot.glassInnerStroke
+    directionalShine: true
 
     readonly property color titleColor: shellRoot.primaryText
     readonly property color mutedColor: shellRoot.withAlpha(shellRoot.primaryText, 0.68)
@@ -203,4 +207,3 @@ Rectangle {
         }
     }
 }
-
